@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -41,6 +41,7 @@ function ExplorePathsPage() {
   const [error, setError] = useState(null);
   
   const toast = useToast();
+  const navigate = useNavigate();
 
   // Fetch learning paths from Supabase
   useEffect(() => {
@@ -250,79 +251,7 @@ function ExplorePathsPage() {
         {!isLoading && !error && (
           <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
             {learningPaths.map((path) => (
-              <Card
-                key={path.id}
-                bg={cardBg}
-                borderWidth="1px"
-                borderColor={borderColor}
-                borderRadius="lg"
-                overflow="hidden"
-                transition="all 0.3s"
-                _hover={{ transform: 'translateY(-5px)', shadow: 'lg' }}
-              >
-                <Image
-                  src={path.image}
-                  alt={path.title}
-                  height="180px"
-                  objectFit="cover"
-                  width="100%"
-                  fallbackSrc="https://via.placeholder.com/500x300?text=No+Image"
-                />
-                <CardBody>
-                  <VStack align="start" spacing={4}>
-                    <HStack>
-                      <Badge colorScheme="purple">{path.category}</Badge>
-                      <Badge>{path.level}</Badge>
-                    </HStack>
-                    <Heading size="md">{path.title}</Heading>
-                    <Text noOfLines={2} color="gray.500">
-                      {path.description}
-                    </Text>
-                    {path.tags && (
-                      <HStack flexWrap="wrap">
-                        {path.tags.map((tag) => (
-                          <Tag key={tag} size="sm" colorScheme="blue" mb={1}>
-                            {tag}
-                          </Tag>
-                        ))}
-                      </HStack>
-                    )}
-                    <Flex w="full" justify="space-between" align="center">
-                      <HStack>
-                        {path.instructor && (
-                          <>
-                            <Avatar src={path.instructor.avatar} size="sm" />
-                            <Text fontSize="sm">{path.instructor.name}</Text>
-                          </>
-                        )}
-                      </HStack>
-                      <HStack spacing={1}>
-                        <AvatarGroup size="xs" max={3}>
-                          <Avatar src="https://bit.ly/ryan-florence" />
-                          <Avatar src="https://bit.ly/kent-c-dodds" />
-                          <Avatar src="https://bit.ly/prosper-baba" />
-                        </AvatarGroup>
-                        <Text fontSize="xs" color="gray.500">+{path.students_count || 0}</Text>
-                      </HStack>
-                    </Flex>
-                    <Box pt={2} w="full">
-                      <Flex justify="space-between" align="center" w="full" fontSize="sm" color="gray.500">
-                        <Text>{path.total_sprints || 0} sprints</Text>
-                        <Text>{path.estimated_time || 'N/A'}</Text>
-                      </Flex>
-                    </Box>
-                    <Button 
-                      as={RouterLink} 
-                      to={`/paths/${path.id}`} 
-                      colorScheme="purple" 
-                      size="md"
-                      w="full"
-                    >
-                      View Path
-                    </Button>
-                  </VStack>
-                </CardBody>
-              </Card>
+              <PathCard key={path.id} path={path} />
             ))}
           </SimpleGrid>
         )}
@@ -356,6 +285,76 @@ function ExplorePathsPage() {
         )}
       </Container>
     </Box>
+  );
+}
+
+function PathCard({ path }) {
+  const navigate = useNavigate();
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const tagBg = useColorModeValue('gray.100', 'gray.700');
+
+  const handleClick = () => {
+    navigate(`/path/${path.id}`);
+  };
+
+  return (
+    <Card
+      bg={cardBg}
+      overflow="hidden"
+      variant="outline"
+      cursor="pointer"
+      onClick={handleClick}
+      _hover={{
+        transform: 'translateY(-2px)',
+        shadow: 'lg',
+        transition: 'all 0.2s',
+      }}
+    >
+      <Image
+        src={path.image}
+        alt={path.title}
+        height="200px"
+        objectFit="cover"
+      />
+      <CardBody>
+        <VStack align="start" spacing={3}>
+          <Flex justify="space-between" width="100%">
+            <Badge colorScheme={path.level === 'Beginner' ? 'green' : path.level === 'Intermediate' ? 'blue' : 'purple'}>
+              {path.level}
+            </Badge>
+            <Text fontSize="sm" color="gray.500">
+              {path.estimated_time}
+            </Text>
+          </Flex>
+          
+          <Heading size="md" noOfLines={2}>
+            {path.title}
+          </Heading>
+          
+          <Text noOfLines={2} color="gray.500">
+            {path.description}
+          </Text>
+          
+          <HStack spacing={2}>
+            {path.tags.map((tag, index) => (
+              <Tag key={index} size="sm" bg={tagBg}>
+                {tag}
+              </Tag>
+            ))}
+          </HStack>
+          
+          <Flex width="100%" justify="space-between" align="center">
+            <HStack>
+              <Avatar size="sm" src={path.instructor.avatar} name={path.instructor.name} />
+              <Text fontSize="sm">{path.instructor.name}</Text>
+            </HStack>
+            <Text fontSize="sm" color="gray.500">
+              {path.students_count.toLocaleString()} students
+            </Text>
+          </Flex>
+        </VStack>
+      </CardBody>
+    </Card>
   );
 }
 

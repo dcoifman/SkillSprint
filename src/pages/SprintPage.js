@@ -39,60 +39,60 @@ function SprintPage() {
     // Original neural networks sprint
     "101": {
       id: "101",
-      title: 'Neural Networks Fundamentals',
-      path: 'Machine Learning Basics',
-      totalSteps: 5,
-      estimatedTime: '12 min',
-      progress: 0,
-      steps: [
-        {
-          type: 'content',
-          title: 'What are Neural Networks?',
-          content: `A neural network is a series of algorithms that endeavors to recognize underlying relationships in a set of data through a process that mimics the way the human brain operates.
+    title: 'Neural Networks Fundamentals',
+    path: 'Machine Learning Basics',
+    totalSteps: 5,
+    estimatedTime: '12 min',
+    progress: 0,
+    steps: [
+      {
+        type: 'content',
+        title: 'What are Neural Networks?',
+        content: `A neural network is a series of algorithms that endeavors to recognize underlying relationships in a set of data through a process that mimics the way the human brain operates.
 
 Neural networks can adapt to changing input; so the network generates the best possible result without needing to redesign the output criteria.`,
-          image: null,
-        },
-        {
-          type: 'quiz',
-          title: 'Quick Check',
-          question: 'What do neural networks mimic in their operation?',
-          options: [
-            'Computer processors',
-            'The human brain',
-            'Database structures',
-            'Logic gates',
-          ],
-          correctAnswer: 1,
-        },
-        {
-          type: 'content',
-          title: 'Structure of Neural Networks',
-          content: `Neural networks consist of three main layers:
+        image: null,
+      },
+      {
+        type: 'quiz',
+        title: 'Quick Check',
+        question: 'What do neural networks mimic in their operation?',
+        options: [
+          'Computer processors',
+          'The human brain',
+          'Database structures',
+          'Logic gates',
+        ],
+        correctAnswer: 1,
+      },
+      {
+        type: 'content',
+        title: 'Structure of Neural Networks',
+        content: `Neural networks consist of three main layers:
 
 1. **Input Layer**: Receives the initial data
 2. **Hidden Layers**: Process the data through weighted connections
 3. **Output Layer**: Delivers the final result
 
 The power of neural networks comes from their ability to adjust these weighted connections through a process called training.`,
-          image: null,
-        },
-        {
-          type: 'quiz',
-          title: 'Layer Structure',
-          question: 'How many main types of layers are in a neural network?',
-          options: [
-            'Two',
-            'Three',
-            'Four',
-            'It varies based on the problem',
-          ],
-          correctAnswer: 1,
-        },
-        {
-          type: 'completion',
-          title: 'Congratulations!',
-          content: `You've completed this sprint on Neural Network Fundamentals.
+        image: null,
+      },
+      {
+        type: 'quiz',
+        title: 'Layer Structure',
+        question: 'How many main types of layers are in a neural network?',
+        options: [
+          'Two',
+          'Three',
+          'Four',
+          'It varies based on the problem',
+        ],
+        correctAnswer: 1,
+      },
+      {
+        type: 'completion',
+        title: 'Congratulations!',
+        content: `You've completed this sprint on Neural Network Fundamentals.
 
 Key takeaways:
 - Neural networks are inspired by the human brain
@@ -100,9 +100,9 @@ Key takeaways:
 - Their power comes from adjustable weighted connections
 
 Continue to the next sprint to learn about training neural networks and backpropagation.`,
-          nextSprintTitle: 'Training Neural Networks',
-        },
-      ],
+        nextSprintTitle: 'Training Neural Networks',
+      },
+    ],
     },
     // Functional Anatomy sprint
     "201": {

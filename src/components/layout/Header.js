@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Flex,
@@ -24,6 +24,7 @@ import {
   MenuList,
   MenuItem,
   MenuDivider,
+  VStack,
 } from '@chakra-ui/react';
 import {
   HamburgerIcon,
@@ -32,10 +33,23 @@ import {
   ChevronRightIcon,
   BellIcon,
 } from '@chakra-ui/icons';
+import { useAuth } from '../../contexts/AuthContext';
+import { signOut } from '../../services/supabaseClient';
 
 function Header() {
   const { isOpen, onToggle } = useDisclosure();
-  const isLoggedIn = false; // This would be determined by auth context in a real app
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleSignOut = async () => {
+    try {
+      const { error } = await signOut();
+      if (error) throw error;
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error.message);
+    }
+  };
 
   return (
     <Box position="sticky" top={0} zIndex="sticky" bg={useColorModeValue('white', 'gray.800')} shadow="sm">
@@ -99,73 +113,68 @@ function Header() {
             spacing={{ base: 2, md: 4 }}
             align="center"
           >
-            {isLoggedIn ? (
-              <HStack spacing={3}>
-                <Box position="relative">
-                  <IconButton
-                    icon={<BellIcon />}
-                    variant="ghost"
-                    aria-label="Notifications"
-                    fontSize="lg"
-                  />
-                  <Box
-                    position="absolute"
-                    top="0"
-                    right="0"
-                    width="8px"
-                    height="8px"
-                    borderRadius="full"
-                    bg="accent.500"
-                  />
-                </Box>
-                
-                <Menu>
-                  <MenuButton 
-                    as={Avatar}
-                    size="sm"
-                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=387&q=80" 
-                    cursor="pointer"
-                    _hover={{ shadow: 'md' }}
-                  />
-                  <MenuList>
-                    <MenuItem as={RouterLink} to="/profile">Profile</MenuItem>
-                    <MenuItem as={RouterLink} to="/dashboard">Dashboard</MenuItem>
-                    <MenuItem as={RouterLink} to="/settings">Settings</MenuItem>
-                    <MenuDivider />
-                    <MenuItem>Sign Out</MenuItem>
-                  </MenuList>
-                </Menu>
-              </HStack>
+            {isAuthenticated ? (
+              <Menu>
+                <MenuButton
+                  as={Button}
+                  rounded={'full'}
+                  variant={'link'}
+                  cursor={'pointer'}
+                  minW={0}
+                >
+                  <HStack>
+                    <Avatar
+                      size={'sm'}
+                      src={user?.user_metadata?.avatar_url}
+                      name={user?.user_metadata?.full_name || user?.email}
+                    />
+                    <VStack
+                      display={{ base: 'none', md: 'flex' }}
+                      alignItems="flex-start"
+                      spacing="1px"
+                      ml="2"
+                    >
+                      <Text fontSize="sm">
+                        {user?.user_metadata?.full_name || user?.email}
+                      </Text>
+                      <Text fontSize="xs" color="gray.600">
+                        Student
+                      </Text>
+                    </VStack>
+                    <Box display={{ base: 'none', md: 'flex' }}>
+                      <ChevronDownIcon />
+                    </Box>
+                  </HStack>
+                </MenuButton>
+                <MenuList>
+                  <MenuItem as={RouterLink} to="/profile">Profile</MenuItem>
+                  <MenuItem as={RouterLink} to="/settings">Settings</MenuItem>
+                  <MenuItem onClick={handleSignOut}>Sign Out</MenuItem>
+                </MenuList>
+              </Menu>
             ) : (
               <>
                 <Button
                   as={RouterLink}
                   fontSize={'sm'}
-                  fontWeight={500}
+                  fontWeight={400}
                   variant={'link'}
-                  color={'gray.600'}
-                  to={'/login'}
-                  display={{ base: 'none', md: 'inline-flex' }}
                 >
                   Sign In
                 </Button>
                 <Button
                   as={RouterLink}
-                  size={{ base: 'sm', md: 'md' }}
-                  fontSize={{ base: 'xs', md: 'sm' }}
+                  to="/signup"
+                  display={{ base: 'none', md: 'inline-flex' }}
+                  fontSize={'sm'}
                   fontWeight={600}
-                  colorScheme="primary"
-                  to={'/signup'}
-                  leftIcon={
-                    <Icon viewBox="0 0 24 24" boxSize={4}>
-                      <path
-                        fill="currentColor"
-                        d="M19 12.998h-6v6h-2v-6H5v-2h6v-6h2v6h6z"
-                      />
-                    </Icon>
-                  }
+                  color={'white'}
+                  bg={'purple.500'}
+                  _hover={{
+                    bg: 'purple.400',
+                  }}
                 >
-                  Sign Up Free
+                  Sign Up
                 </Button>
               </>
             )}
