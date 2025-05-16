@@ -16,10 +16,10 @@ import {
   VStack,
   HStack,
   Badge,
-  keyframes,
   Divider,
   chakra,
 } from '@chakra-ui/react';
+import { keyframes } from '@emotion/react';
 
 const pulse = keyframes`
   0% {
