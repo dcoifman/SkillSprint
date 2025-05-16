@@ -59,6 +59,8 @@ const MathEditor = ({ initialContent = '', onChange, placeholder = 'Enter conten
   
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const toolbarBgColor = useColorModeValue('gray.50', 'gray.700');
+  const hoverBgColor = useColorModeValue('gray.50', 'gray.700');
   
   // Update content when initialContent prop changes
   useEffect(() => {
@@ -121,7 +123,7 @@ const MathEditor = ({ initialContent = '', onChange, placeholder = 'Enter conten
                 p={2} 
                 borderBottomWidth="1px" 
                 borderColor={borderColor} 
-                bg={useColorModeValue('gray.50', 'gray.700')}
+                bg={toolbarBgColor}
                 overflowX="auto"
                 whiteSpace="nowrap"
               >
@@ -235,7 +237,7 @@ const MathEditor = ({ initialContent = '', onChange, placeholder = 'Enter conten
                   borderWidth="1px" 
                   borderRadius="md" 
                   borderColor={borderColor}
-                  _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }}
+                  _hover={{ bg: hoverBgColor }}
                   cursor="pointer"
                   onClick={() => {
                     insertLatex(shortcut.value, true);
@@ -247,7 +249,7 @@ const MathEditor = ({ initialContent = '', onChange, placeholder = 'Enter conten
                     <Text as="code" fontSize="sm" color="purple.500">{shortcut.value}</Text>
                   </Flex>
                   <Divider mb={2} />
-                  <Box bg={useColorModeValue('gray.50', 'gray.700')} p={2} borderRadius="md">
+                  <Box bg={hoverBgColor} p={2} borderRadius="md">
                     <MathRenderer math={shortcut.value} block />
                   </Box>
                 </Box>
