@@ -18,17 +18,18 @@ if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'https://your-project-id
 }
 
 // Custom error formatter function
-export const formatErrorAsXml = (error, type = 'api') => {
+export const formatError = (error, type = 'api') => {
   if (!error) return null;
   
-  const errorMsg = error.message || 'Unknown error';
-  const errorCode = error.code || 'unknown';
-  const timestamp = new Date().toISOString();
-  
-  return `<error type="${type}"><message>${errorMsg}</message><code>${errorCode}</code><timestamp>${timestamp}</timestamp></error>`;
+  return {
+    message: error.message || 'Unknown error',
+    code: error.code || 'unknown',
+    type,
+    timestamp: new Date().toISOString()
+  };
 };
 
-// Safe JSON parser to handle malformed JSON
+// Safe JSON parser with proper error handling
 export const safeJsonParse = (jsonString) => {
   try {
     return { 
@@ -37,26 +38,27 @@ export const safeJsonParse = (jsonString) => {
     };
   } catch (error) {
     console.error('JSON Parse Error:', error);
-    const xmlError = formatErrorAsXml({
-      message: `JSON Parse error: ${error.message}`,
-      code: 'INVALID_JSON'
-    }, 'json');
-    
     return { 
       data: null, 
-      error: {
-        message: `JSON Parse error: ${error.message}`,
-        code: 'INVALID_JSON',
-        xml: xmlError
-      }
+      error: new Error(`JSON Parse error: ${error.message}`)
     };
   }
 };
 
-// Create a Supabase client with fallback values for development if needed
+// Create a Supabase client with proper configuration
 export const supabase = createClient(
   supabaseUrl || 'https://your-project-id.supabase.co', 
-  supabaseAnonKey || 'your-anon-key'
+  supabaseAnonKey || 'your-anon-key',
+  {
+    db: {
+      schema: 'public'
+    },
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  }
 );
 
 // Augment the built-in fetch to handle malformed JSON
@@ -70,10 +72,7 @@ if (originalFetch) {
       if (error.message && error.message.includes('JSON')) {
         console.error('JSON parsing error in Supabase fetch:', error);
         
-        const xmlError = formatErrorAsXml({
-          message: `API Response JSON Parse error: ${error.message}`,
-          code: 'INVALID_JSON_RESPONSE'
-        }, 'json_response');
+        const xmlError = formatError(formatError(error, 'json_response'), 'json_response');
         
         throw {
           ...error,
@@ -91,7 +90,7 @@ const handleJsonParseError = (error) => {
     console.error('JSON parsing error:', error);
     
     const errorMessage = `JSON Parse error: ${error.message}`;
-    const errorXml = `<error type="json"><message>${errorMessage}</message><timestamp>${new Date().toISOString()}</timestamp></error>`;
+    const errorXml = formatError(formatError(new Error(errorMessage), 'json'), 'json');
     
     // Create a custom error object with XML formatting for the error
     return {
@@ -527,67 +526,82 @@ export const sendCourseToStudent = async (pathId, studentEmail) => {
   }
 };
 
-export const getInstructorProfile = async () => {
+// Helper function to get instructor by user_id
+export const getInstructorByUserId = async (userId) => {
   try {
-    const { user } = await getCurrentUser();
-    
-    if (!user) {
-      return { error: { message: 'Not authenticated' } };
-    }
-    
     const { data, error } = await supabase
       .from('instructors')
       .select('*')
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', userId)
+      .maybeSingle();
     
-    return { data, error };
+    if (error) {
+      console.error('Error fetching instructor:', error);
+      return { data: null, error };
+    }
+    
+    return { data, error: null };
   } catch (err) {
-    console.error('Exception during fetching instructor profile:', err);
-    return { error: err };
+    console.error('Exception during instructor fetch:', err);
+    return { data: null, error: handleJsonParseError(err) };
+  }
+};
+
+// Update getInstructorProfile to use the new helper
+export const getInstructorProfile = async () => {
+  try {
+    const { user, error: userError } = await getCurrentUser();
+    if (userError || !user) {
+      return { data: null, error: userError || new Error('No user found') };
+    }
+
+    return await getInstructorByUserId(user.id);
+  } catch (err) {
+    console.error('Exception during get instructor profile:', err);
+    return { data: null, error: handleJsonParseError(err) };
   }
 };
 
 export const updateInstructorProfile = async (profileData) => {
   try {
-    const { user } = await getCurrentUser();
-    
-    if (!user) {
-      return { error: { message: 'Not authenticated' } };
-    }
-    
+    // Get current user
+    const { user, error: userError } = await getCurrentUser();
+    if (userError) throw userError;
+    if (!user) throw new Error('No authenticated user');
+
     // Check if instructor profile exists
-    const { data: existingProfile } = await getInstructorProfile();
-    
+    const { data: existingProfile } = await supabase
+      .from('instructors')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    let result;
     if (existingProfile) {
       // Update existing profile
-      const { data, error } = await supabase
+      result = await supabase
         .from('instructors')
         .update(profileData)
         .eq('user_id', user.id)
         .select()
         .single();
-      
-      return { data, error };
     } else {
       // Create new profile
-      const { data, error } = await supabase
+      result = await supabase
         .from('instructors')
-        .insert([
-          { 
-            ...profileData,
-            user_id: user.id,
-            name: profileData.name || user.user_metadata?.full_name || 'Instructor'
-          }
-        ])
+        .insert([{ ...profileData, user_id: user.id }])
         .select()
         .single();
-      
-      return { data, error };
     }
+
+    if (result.error) throw result.error;
+    return { data: result.data, error: null };
   } catch (err) {
-    console.error('Exception during updating instructor profile:', err);
-    return { error: err };
+    console.error('Error updating instructor profile:', err);
+    return { 
+      data: null, 
+      error: err instanceof Error ? err : new Error(err.message || 'Unknown error')
+    };
   }
 };
 
