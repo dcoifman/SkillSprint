@@ -598,3 +598,58 @@ export const getMyInstructorCourses = async () => {
     return { error: err };
   }
 };
+
+// Debug helper functions
+export const inspectTableStructure = async (tableName) => {
+  try {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .limit(1);
+
+    if (error) {
+      console.error(`Error inspecting ${tableName}:`, error);
+      return { error };
+    }
+
+    const structure = data && data[0] ? Object.keys(data[0]) : [];
+    console.log(`Table ${tableName} structure:`, structure);
+    return { data: structure, error: null };
+  } catch (err) {
+    console.error(`Exception inspecting ${tableName}:`, err);
+    return { error: err };
+  }
+};
+
+export const debugDatabase = async () => {
+  const tables = [
+    'instructors',
+    'learning_paths',
+    'modules',
+    'sprints',
+    'user_paths',
+    'user_progress',
+    'course_invitations'
+  ];
+
+  console.log('Starting database inspection...');
+  
+  for (const table of tables) {
+    await inspectTableStructure(table);
+  }
+  
+  // Get instructor count
+  const { data: instructorCount } = await supabase
+    .from('instructors')
+    .select('*', { count: 'exact' });
+  
+  console.log('Instructor count:', instructorCount?.length || 0);
+  
+  // Get a sample instructor
+  const { data: sampleInstructor } = await supabase
+    .from('instructors')
+    .select('*')
+    .limit(1);
+  
+  console.log('Sample instructor:', sampleInstructor?.[0]);
+};
