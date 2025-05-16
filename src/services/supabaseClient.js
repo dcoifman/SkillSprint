@@ -5,16 +5,8 @@ const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 // Check if required environment variables are set
-if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'https://your-project-id.supabase.co' || supabaseAnonKey === 'your-anon-key') {
-  console.warn(`
-    Warning: Supabase environment variables may not be properly configured.
-    Make sure you have a .env.local file with:
-    
-    REACT_APP_SUPABASE_URL=your_supabase_url_here
-    REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-    
-    For development purposes, using fallback values.
-  `);
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
 }
 
 // Custom error formatter function
@@ -46,60 +38,41 @@ export const safeJsonParse = (jsonString) => {
 };
 
 // Create a Supabase client with proper configuration
-export const supabase = createClient(
-  supabaseUrl || 'https://your-project-id.supabase.co', 
-  supabaseAnonKey || 'your-anon-key',
-  {
-    db: {
-      schema: 'public'
-    },
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  db: {
+    schema: 'public'
+  },
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  },
+  global: {
+    headers: {
+      'Accept': 'application/json'
     }
   }
-);
+});
 
-// Augment the built-in fetch to handle malformed JSON
-const originalFetch = supabase.fetch;
-if (originalFetch) {
-  supabase.fetch = async (...args) => {
-    try {
-      const response = await originalFetch(...args);
-      return response;
-    } catch (error) {
-      if (error.message && error.message.includes('JSON')) {
-        console.error('JSON parsing error in Supabase fetch:', error);
-        
-        const xmlError = formatError(formatError(error, 'json_response'), 'json_response');
-        
-        throw {
-          ...error,
-          xml: xmlError
-        };
-      }
-      throw error;
+// Helper function to handle API responses
+const handleApiResponse = async (promise) => {
+  try {
+    const { data, error } = await promise;
+    if (error) {
+      console.error('API Error:', error);
+      return { data: null, error };
     }
-  };
-}
-
-// Custom error handler for JSON parsing issues in API responses
-const handleJsonParseError = (error) => {
-  if (error.message && error.message.includes('JSON')) {
-    console.error('JSON parsing error:', error);
-    
-    const errorMessage = `JSON Parse error: ${error.message}`;
-    const errorXml = formatError(formatError(new Error(errorMessage), 'json'), 'json');
-    
-    // Create a custom error object with XML formatting for the error
-    return {
-      message: errorMessage,
-      code: 'INVALID_JSON',
-      xml: errorXml
+    return { data, error: null };
+  } catch (err) {
+    console.error('Exception:', err);
+    return { 
+      data: null, 
+      error: {
+        message: err.message || 'An unexpected error occurred',
+        code: err.code || 'unknown_error'
+      }
     };
   }
-  return error;
 };
 
 // Auth helper functions
@@ -125,7 +98,7 @@ export const signUp = async (email, password, name) => {
     return { data, error };
   } catch (err) {
     console.error('Exception during sign up:', err);
-    const formattedError = handleJsonParseError(err);
+    const formattedError = formatError(err);
     return { data: null, error: formattedError };
   }
 };
@@ -220,7 +193,7 @@ export const fetchLearningPaths = async ({ category = null, level = null, search
     return { data, error };
   } catch (err) {
     console.error('Exception during fetching learning paths:', err);
-    const formattedError = handleJsonParseError(err);
+    const formattedError = formatError(err);
     return { data: null, error: formattedError };
   }
 };
@@ -528,38 +501,27 @@ export const sendCourseToStudent = async (pathId, studentEmail) => {
 
 // Helper function to get instructor by user_id
 export const getInstructorByUserId = async (userId) => {
-  try {
-    const { data, error } = await supabase
+  return handleApiResponse(
+    supabase
       .from('instructors')
       .select('*')
       .eq('user_id', userId)
-      .maybeSingle();
-    
-    if (error) {
-      console.error('Error fetching instructor:', error);
-      return { data: null, error };
-    }
-    
-    return { data, error: null };
-  } catch (err) {
-    console.error('Exception during instructor fetch:', err);
-    return { data: null, error: handleJsonParseError(err) };
-  }
+      .maybeSingle()
+  );
 };
 
-// Update getInstructorProfile to use the new helper
+// Get instructor profile for current user
 export const getInstructorProfile = async () => {
-  try {
-    const { user, error: userError } = await getCurrentUser();
-    if (userError || !user) {
-      return { data: null, error: userError || new Error('No user found') };
-    }
-
-    return await getInstructorByUserId(user.id);
-  } catch (err) {
-    console.error('Exception during get instructor profile:', err);
-    return { data: null, error: handleJsonParseError(err) };
-  }
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) return { data: null, error: userError };
+  
+  return handleApiResponse(
+    supabase
+      .from('instructors')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle()
+  );
 };
 
 export const updateInstructorProfile = async (profileData) => {
