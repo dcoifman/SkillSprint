@@ -22,10 +22,12 @@ import {
   Divider,
   Container,
 } from '@chakra-ui/react';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import { AddIcon } from '@chakra-ui/icons';
+import { useAuth } from '../contexts/AuthContext';
 
 function DashboardPage() {
+  const { user } = useAuth();
   // Mock data - in a real app, this would come from an API
   const userStats = {
     streakDays: 7,
