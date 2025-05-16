@@ -32,7 +32,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 function ProfilePage() {
   const { user } = useAuth();
-  
+
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
@@ -137,7 +137,7 @@ function ProfilePage() {
                       <Button colorScheme="purple" as="a" href="/explore">
                         Explore Skills
                       </Button>
-                    </Box>
+                          </Box>
                   </CardBody>
                 </Card>
                 
@@ -159,7 +159,7 @@ function ProfilePage() {
                       <Button colorScheme="purple" as="a" href="/dashboard">
                         Go to Dashboard
                       </Button>
-                    </Box>
+                      </Box>
                   </CardBody>
                 </Card>
               </Box>

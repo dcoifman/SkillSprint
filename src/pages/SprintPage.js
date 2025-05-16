@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
@@ -24,9 +24,13 @@ import {
   AccordionPanel,
   AccordionIcon,
   Image,
+  AspectRatio,
+  useToast,
 } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import ReactMarkdown from 'react-markdown';
 import InteractiveAnatomyModel from '../components/InteractiveAnatomyModel';
+import ThreeDAnatomyModel from '../components/ThreeDAnatomyModel';
 
 function SprintPage() {
   const { sprintId } = useParams();
@@ -109,17 +113,25 @@ Continue to the next sprint to learn about training neural networks and backprop
       id: "201",
       title: 'Introduction to Functional Anatomy',
       path: 'Functional Anatomy Fundamentals',
-      totalSteps: 5,
+      totalSteps: 6,
       estimatedTime: '10 min',
       progress: 0,
       steps: [
         {
           type: 'content',
           title: 'What is Functional Anatomy?',
-          content: `Functional anatomy is the study of the body's structures as they relate to movement and physical function. Unlike traditional anatomy that focuses solely on identifying structures, functional anatomy examines how these structures work together during movement.
+          content: `# Functional Anatomy
+          
+Functional anatomy is the study of the body's structures as they relate to movement and physical performance. Unlike traditional anatomy that focuses solely on identifying structures, functional anatomy examines **how these structures work together during movement**.
 
-This approach helps us understand not just what the body is made of, but how it performs in real-world activities, making it essential for professionals in physical therapy, sports performance, and fitness training.`,
+This approach helps us understand not just what the body is made of, but how it performs in real-world activities, making it essential for professionals in:
+- Physical therapy
+- Sports performance
+- Fitness training
+- Rehabilitation`,
           image: 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YW5hdG9teXxlbnwwfHwwfHx8MA%3D%3D',
+          useThreeDModel: true,
+          modelType: 'skeletal'
         },
         {
           type: 'quiz',
@@ -136,19 +148,40 @@ This approach helps us understand not just what the body is made of, but how it 
         {
           type: 'content',
           title: 'Anatomical Terminology',
-          content: `To effectively study functional anatomy, we must understand basic anatomical terminology:
+          content: `# Anatomical Terminology
 
-1. **Directional Terms**: Anterior (front), posterior (back), superior (above), inferior (below), medial (toward midline), lateral (away from midline)
+To effectively study functional anatomy, we must understand basic anatomical terminology:
 
-2. **Movement Terms**: Flexion (decrease angle), extension (increase angle), abduction (away from midline), adduction (toward midline), rotation
+## 1. Directional Terms
+- **Anterior** (front)
+- **Posterior** (back)
+- **Superior** (above)
+- **Inferior** (below)
+- **Medial** (toward midline)
+- **Lateral** (away from midline)
 
-3. **Planes of Motion**: 
-   - Sagittal plane: divides body into left/right
-   - Frontal plane: divides body into front/back
-   - Transverse plane: divides body into top/bottom
+## 2. Movement Terms
+- **Flexion** (decrease angle)
+- **Extension** (increase angle)
+- **Abduction** (away from midline)
+- **Adduction** (toward midline)
+- **Rotation** (circular movement)
 
-Understanding these terms is essential for precise movement analysis and communication.`,
-          image: 'https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGFuYXRvbXl8ZW58MHx8MHx8fDA%3D',
+## 3. Planes of Motion
+- **Sagittal plane**: divides body into left/right
+- **Frontal plane**: divides body into front/back
+- **Transverse plane**: divides body into top/bottom
+
+Understanding these terms is essential for precise movement analysis and professional communication.`,
+          useThreeDModel: true,
+          modelType: 'skeletal'
+        },
+        {
+          type: 'interactive',
+          title: 'Explore the Skeletal System',
+          content: 'Use the 3D model to explore the skeletal system. Click on different bones to learn about their function and structure.',
+          componentType: 'anatomy',
+          systemType: 'skeletal'
         },
         {
           type: 'quiz',
@@ -163,11 +196,20 @@ Understanding these terms is essential for precise movement analysis and communi
           correctAnswer: 1,
         },
         {
+          type: 'interactive',
+          title: 'Explore the Muscular System',
+          content: 'Use the 3D model to explore the muscular system. Click on different muscles to learn about their function and attachments.',
+          componentType: 'anatomy',
+          systemType: 'muscular'
+        },
+        {
           type: 'completion',
           title: 'Congratulations!',
-          content: `You've completed the introduction to Functional Anatomy sprint!
+          content: `# Well Done!
 
-Key takeaways:
+You've completed the introduction to Functional Anatomy sprint!
+
+## Key takeaways:
 - Functional anatomy focuses on how structures work together during movement
 - Directional terms help precisely locate body parts and describe relationships
 - Understanding planes of motion is critical for analyzing movement patterns
@@ -189,18 +231,29 @@ Continue to the next sprint to learn about the skeletal system and its role in f
         {
           type: 'content',
           title: 'Functions of the Skeletal System',
-          content: `The skeletal system serves multiple crucial functions in the human body:
+          content: `# Functions of the Skeletal System
 
-1. **Structural Support**: Provides the framework that supports the body and maintains its shape
+The skeletal system serves multiple crucial functions in the human body:
 
-2. **Movement**: Works with the muscular system to create leverage for movement
+## 1. Structural Support
+Provides the framework that supports the body and maintains its shape
 
-3. **Protection**: Shields vital organs from injury (e.g., skull protects the brain, ribcage protects the heart and lungs)
+## 2. Movement
+Works with the muscular system to create leverage for movement
 
-4. **Blood Cell Production**: Red and white blood cells are produced in the bone marrow
+## 3. Protection
+Shields vital organs from injury:
+- **Skull** protects the brain
+- **Ribcage** protects the heart and lungs
+- **Vertebrae** protect the spinal cord
 
-5. **Mineral Storage**: Stores calcium, phosphorus, and other minerals that can be released into the bloodstream when needed`,
-          image: 'https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c2tlbGV0b258ZW58MHx8MHx8fDA%3D',
+## 4. Blood Cell Production
+Red and white blood cells are produced in the bone marrow
+
+## 5. Mineral Storage
+Stores calcium, phosphorus, and other minerals that can be released into the bloodstream when needed`,
+          useThreeDModel: true,
+          modelType: 'skeletal'
         },
         {
           type: 'quiz',
@@ -215,57 +268,70 @@ Continue to the next sprint to learn about the skeletal system and its role in f
           correctAnswer: 1,
         },
         {
-          type: 'content',
-          title: 'Joint Classifications',
-          content: `Joints are classified according to their structure and function:
-
-1. **Fibrous Joints**: Minimal movement, connected by fibrous tissue
-   - Example: Sutures between skull bones
-
-2. **Cartilaginous Joints**: Limited movement, connected by cartilage
-   - Example: Vertebrae in the spine
-
-3. **Synovial Joints**: Freely movable, contain synovial fluid
-   - Examples: Hip, knee, shoulder, elbow
-
-Synovial joints are further classified by motion type:
-- Ball and socket: Multiaxial movement (hip, shoulder)
-- Hinge: Uniaxial movement (knee, elbow)
-- Pivot: Rotational movement (forearm, neck)
-- Gliding: Sliding movements (wrist, ankle)`,
-          image: 'https://images.unsplash.com/photo-1617854818583-09e7f077a156?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8am9pbnRzfGVufDB8fDB8fHww',
+          type: 'interactive',
+          title: 'Skeletal Structure Exploration',
+          content: 'Explore the key structures of the skeletal system and understand their relationships to each other.',
+          componentType: 'anatomy',
+          systemType: 'skeletal'
         },
         {
-          type: 'interactive',
-          title: 'Explore the Skeletal System',
-          description: 'Use this interactive model to explore the skeletal system. Rotate the view between anterior and posterior, zoom in/out, and click on highlighted structures to learn more about them.',
-          modelType: 'skeletal',
-          bodyRegion: 'full',
+          type: 'content',
+          title: 'Types of Bones',
+          content: `# Types of Bones
+
+Bones are classified into five types based on their shape and function:
+
+## 1. Long Bones
+- Examples: femur, humerus, tibia
+- Function: provide leverage for movement
+- Structure: shaft (diaphysis) with expanded ends (epiphyses)
+
+## 2. Short Bones
+- Examples: carpals (wrist), tarsals (ankle)
+- Function: provide stability and some movement
+- Structure: roughly cube-shaped, spongy bone with thin compact bone layer
+
+## 3. Flat Bones
+- Examples: skull bones, sternum, scapula
+- Function: protection and broad muscle attachment
+- Structure: two thin layers of compact bone with spongy bone between
+
+## 4. Irregular Bones
+- Examples: vertebrae, hip bones
+- Function: varied, protection and complex movements
+- Structure: complex shapes with varying proportions of compact and spongy bone
+
+## 5. Sesamoid Bones
+- Examples: patella (kneecap)
+- Function: protect tendons and modify mechanical force
+- Structure: embedded within tendons`,
+          image: 'https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c2tlbGV0b258ZW58MHx8MHx8fDA%3D',
         },
         {
           type: 'quiz',
-          title: 'Joint Types',
-          question: 'Which type of joint allows for the greatest range of motion?',
+          title: 'Bone Types',
+          question: 'Which type of bone provides the most leverage for movement?',
           options: [
-            'Fibrous joint',
-            'Cartilaginous joint',
-            'Ball and socket joint',
-            'Hinge joint',
+            'Short bones',
+            'Long bones',
+            'Flat bones',
+            'Irregular bones',
           ],
-          correctAnswer: 2,
+          correctAnswer: 1,
         },
         {
           type: 'completion',
           title: 'Congratulations!',
-          content: `You've completed the Skeletal System Basics sprint!
+          content: `# Excellent Work!
 
-Key takeaways:
-- The skeletal system provides structure, protection, and enables movement
-- Bones serve as mineral storage and blood cell production sites
-- Joints vary in structure and function, from fixed to highly mobile
-- Different joint types allow for specific movement patterns
+You've completed the Skeletal System Basics sprint!
 
-Continue to the next sprint to learn about the muscular system and how it interacts with the skeleton to create movement.`,
+## Key takeaways:
+- The skeletal system provides structure, protection, and storage
+- Bones come in five distinct types based on shape and function
+- The skeletal system works closely with muscles to create movement
+
+Continue to the next sprint to learn about the muscular system and how it interacts with the skeleton to produce functional movement.`,
           nextSprintTitle: 'Muscular System Overview',
         },
       ],
@@ -422,34 +488,69 @@ Continue to the next sprint to learn about upper body musculature and its role i
     switch (currentStep.type) {
       case 'content':
         return (
-          <VStack spacing={4} align="flex-start" width="full">
-            <Heading size="md">{currentStep.title}</Heading>
-            <Text whiteSpace="pre-line">{currentStep.content}</Text>
-            {currentStep.image && (
-              <Image 
-                src={currentStep.image} 
-                alt={currentStep.title}
-                borderRadius="md"
-                maxH="300px"
-                mx="auto"
-                mt={4}
-              />
-            )}
+          <VStack spacing={6} align="stretch">
+            {currentStep.title && <Heading size="lg">{currentStep.title}</Heading>}
+            
+            {currentStep.useThreeDModel ? (
+              <Box borderRadius="md" overflow="hidden" my={4}>
+                <ThreeDAnatomyModel 
+                  systemType={currentStep.modelType || 'skeletal'} 
+                  initialView="anterior"
+                  onSelectStructure={(structure) => toast({
+                    title: structure,
+                    description: `You selected the ${structure}`,
+                    status: 'info',
+                    duration: 2000,
+                  })}
+                />
+              </Box>
+            ) : currentStep.image ? (
+              <AspectRatio ratio={16/9} maxH="400px" my={4}>
+                <Image
+                  src={currentStep.image}
+                  alt={currentStep.title}
+                  objectFit="cover"
+                  borderRadius="md"
+                />
+              </AspectRatio>
+            ) : null}
+            
+            <Box className="markdown-content">
+              <ReactMarkdown>
+                {currentStep.content}
+              </ReactMarkdown>
+            </Box>
+            
+            {renderNextButton(currentStep)}
           </VStack>
         );
       case 'interactive':
-        return (
-          <VStack spacing={4} align="flex-start" width="full">
-            <Heading size="md">{currentStep.title}</Heading>
-            <Text>{currentStep.description || 'Explore this interactive model to learn more.'}</Text>
-            <Box width="full" mt={2}>
-              <InteractiveAnatomyModel
-                systemType={currentStep.modelType || 'skeletal'}
-                bodyRegion={currentStep.bodyRegion || 'full'}
-              />
-            </Box>
-          </VStack>
-        );
+        if (currentStep.componentType === 'anatomy') {
+          return (
+            <VStack spacing={6} align="stretch">
+              {currentStep.title && <Heading size="lg">{currentStep.title}</Heading>}
+              <Text>{currentStep.content}</Text>
+              
+              <Card variant="outline" p={4} my={4}>
+                <CardBody>
+                  <ThreeDAnatomyModel 
+                    systemType={currentStep.systemType || 'skeletal'}
+                    initialView="anterior"
+                    onSelectStructure={(structure) => toast({
+                      title: structure,
+                      description: `You selected the ${structure}`,
+                      status: 'info',
+                      duration: 2000,
+                    })}
+                  />
+                </CardBody>
+              </Card>
+              
+              {renderNextButton(currentStep)}
+            </VStack>
+          );
+        }
+        return null;
       case 'quiz':
         return (
           <VStack spacing={6} align="flex-start" width="full">
@@ -553,7 +654,68 @@ Continue to the next sprint to learn about upper body musculature and its role i
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   return (
-    <Container maxW="4xl" py={8}>
+    <Container maxW="6xl" py={8}>
+      <style jsx global>{`
+        .markdown-content h1 {
+          font-size: 1.8rem;
+          font-weight: 700;
+          margin-top: 1rem;
+          margin-bottom: 1rem;
+        }
+        .markdown-content h2 {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin-top: 1rem;
+          margin-bottom: 0.5rem;
+        }
+        .markdown-content h3 {
+          font-size: 1.2rem;
+          font-weight: 600;
+          margin-top: 0.75rem;
+          margin-bottom: 0.5rem;
+        }
+        .markdown-content p {
+          margin-bottom: 1rem;
+        }
+        .markdown-content ul, .markdown-content ol {
+          margin-left: 1.5rem;
+          margin-bottom: 1rem;
+        }
+        .markdown-content li {
+          margin-bottom: 0.25rem;
+        }
+        .markdown-content strong {
+          font-weight: 600;
+        }
+        .markdown-content em {
+          font-style: italic;
+        }
+        .markdown-content blockquote {
+          border-left: 4px solid #e2e8f0;
+          padding-left: 1rem;
+          margin-left: 0;
+          margin-right: 0;
+          font-style: italic;
+        }
+        .markdown-content code {
+          background-color: #f7fafc;
+          padding: 0.2rem 0.4rem;
+          border-radius: 0.25rem;
+          font-family: monospace;
+        }
+        .markdown-content pre {
+          background-color: #f7fafc;
+          padding: 1rem;
+          border-radius: 0.25rem;
+          overflow-x: auto;
+          margin-bottom: 1rem;
+        }
+        .markdown-content a {
+          color: #3182ce;
+          text-decoration: underline;
+        }
+      `}</style>
+      
       {/* Header */}
       <VStack spacing={5} align="stretch" mb={8}>
         <Flex justify="space-between" align="center">
