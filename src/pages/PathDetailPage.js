@@ -54,6 +54,7 @@ function PathDetailPage() {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const highlightColor = useColorModeValue('gray.50', 'gray.700');
   const heroBg = useColorModeValue('gray.50', 'gray.900');
+  const infoBoxBg = useColorModeValue('gray.50', 'gray.700');
 
   // Fetch path details from Supabase
   useEffect(() => {
@@ -540,4 +541,4 @@ function PathDetailPage() {
   );
 }
 
-export default PathDetailPage; 
+export default PathDetailPage;

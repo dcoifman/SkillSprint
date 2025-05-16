@@ -12,8 +12,8 @@ import {
   Tooltip,
   useColorModeValue,
   IconButton,
-  Icon,
 } from '@chakra-ui/react';
+import { AddIcon, MinusIcon, CheckCircleIcon, LockIcon } from '@chakra-ui/icons';
 
 /**
  * Interactive Anatomy Model Component
@@ -37,32 +37,10 @@ function InteractiveAnatomyModel({
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   
   // In a real implementation, these would be dynamic based on the selected view and system
-  // For this prototype, we're using static images for different views
+  // For this prototype, we're using placeholder images
   const getAnatomyImage = () => {
-    if (systemType === 'skeletal') {
-      if (bodyRegion === 'upper') {
-        return currentView === 'anterior' 
-          ? 'https://images.unsplash.com/photo-1578593195483-4cc38067d2a2?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTl8fHNrZWxldG9ufGVufDB8fDB8fHww'
-          : 'https://images.unsplash.com/photo-1576086135878-bd7e7c2d6dfd?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzZ8fHNrZWxldG9ufGVufDB8fDB8fHww';
-      } else {
-        return currentView === 'anterior' 
-          ? 'https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c2tlbGV0b258ZW58MHx8MHx8fDA%3D'
-          : 'https://images.unsplash.com/photo-1576086213369-97a306d36557?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NTl8fHNrZWxldG9ufGVufDB8fDB8fHww';
-      }
-    } else if (systemType === 'muscular') {
-      if (bodyRegion === 'upper') {
-        return currentView === 'anterior' 
-          ? 'https://images.unsplash.com/photo-1550345332-09e3ac987658?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8bXVzY2xlc3xlbnwwfHwwfHx8MA%3D%3D'
-          : 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8YmFjayUyMG11c2NsZXN8ZW58MHx8MHx8fDA%3D';
-      } else {
-        return currentView === 'anterior' 
-          ? 'https://images.unsplash.com/photo-1581595219315-a187dd40c322?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8bXVzY2xlc3xlbnwwfHwwfHx8MA%3D%3D'
-          : 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8bXVzY2xlc3xlbnwwfHwwfHx8MA%3D%3D';
-      }
-    }
-    
-    // Default fallback image
-    return 'https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c2tlbGV0b258ZW58MHx8MHx8fDA%3D';
+    // Default placeholder image
+    return `https://via.placeholder.com/800x500?text=${systemType.toUpperCase()}+${currentView.toUpperCase()}+View`;
   };
   
   // In a real implementation, these would be dynamic based on what's clicked in the model
@@ -132,23 +110,13 @@ function InteractiveAnatomyModel({
           <ButtonGroup size="sm" isAttached variant="outline">
             <IconButton
               aria-label="Zoom out"
-              icon={<Icon viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM7 9h5v1H7z"
-                />
-              </Icon>}
+              icon={<MinusIcon />}
               onClick={() => handleZoom('out')}
               isDisabled={zoomLevel <= 0.5}
             />
             <IconButton
               aria-label="Zoom in"
-              icon={<Icon viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm2.5-4h-2v2H7V9h2V7h1v2h2v1z"
-                />
-              </Icon>}
+              icon={<AddIcon />}
               onClick={() => handleZoom('in')}
               isDisabled={zoomLevel >= 2}
             />

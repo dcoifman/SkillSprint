@@ -46,226 +46,188 @@ export const getCurrentUser = async () => {
   };
 };
 
-// For development, we'll use mock data for learning paths
-const mockLearningPaths = [
-  {
-    id: '1',
-    title: 'Machine Learning Fundamentals',
-    description: 'Learn the core concepts of machine learning, from basic algorithms to neural networks.',
-    category: 'Data Science',
-    level: 'Beginner',
-    image: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTZ8fG1hY2hpbmUlMjBsZWFybmluZ3xlbnwwfHwwfHx8MA%3D%3D',
-    total_sprints: 24,
-    estimated_time: '4 hours',
-    students_count: 1245,
-    tags: ['AI', 'Python', 'Neural Networks'],
-    instructor: {
-      name: 'Dr. Sarah Chen',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=387&q=80',
-    }
-  },
-  {
-    id: '2',
-    title: 'Web Development with React',
-    description: 'Master React.js and build modern, responsive web applications from scratch.',
-    category: 'Technology',
-    level: 'Intermediate',
-    image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cmVhY3QlMjBqc3xlbnwwfHwwfHx8MA%3D%3D',
-    total_sprints: 32,
-    estimated_time: '6 hours',
-    students_count: 2780,
-    tags: ['React', 'JavaScript', 'Frontend'],
-    instructor: {
-      name: 'Michael Taylor',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=387&q=80',
-    }
-  },
-  {
-    id: '3',
-    title: 'Business Communication',
-    description: 'Develop effective communication skills for professional environments and leadership.',
-    category: 'Business',
-    level: 'All Levels',
-    image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8YnVzaW5lc3MlMjBjb21tdW5pY2F0aW9ufGVufDB8fDB8fHww',
-    total_sprints: 18,
-    estimated_time: '3 hours',
-    students_count: 3150,
-    tags: ['Communication', 'Leadership', 'Presentations'],
-    instructor: {
-      name: 'Emma Rodriguez',
-      avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=387&q=80',
-    }
-  }
-];
-
-// Mock path details for development
-const mockPathDetail = {
-  id: '1',
-  title: 'Machine Learning Fundamentals',
-  description: 'A comprehensive introduction to machine learning concepts, algorithms, and practical applications. Learn how to build models that can make predictions and improve with experience.',
-  image: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTZ8fG1hY2hpbmUlMjBsZWFybmluZ3xlbnwwfHwwfHx8MA%3D%3D',
-  category: 'Data Science',
-  level: 'Beginner',
-  rating: 4.8,
-  review_count: 324,
-  students_count: 1245,
-  total_sprints: 24,
-  completedSprints: 0,
-  estimated_time: '4 hours',
-  tags: ['AI', 'Python', 'Neural Networks', 'Data Science'],
-  prerequisites: [
-    'Basic understanding of programming concepts', 
-    'Familiarity with Python (recommended but not required)',
-    'High school level mathematics'
-  ],
-  objectives: [
-    'Understand machine learning foundations and key concepts',
-    'Implement basic supervised and unsupervised learning algorithms',
-    'Build neural network models for classification and regression tasks',
-    'Apply machine learning to solve real-world problems',
-    'Understand model evaluation and validation techniques'
-  ],
-  instructor: {
-    name: 'Dr. Sarah Chen',
-    title: 'AI Research Scientist & Educator',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=387&q=80',
-    bio: 'Dr. Sarah Chen is an AI researcher with over 10 years of experience at leading tech companies. She specializes in making complex machine learning concepts accessible to beginners.',
-  },
-  modules: [
-    {
-      title: 'Introduction to Machine Learning',
-      description: 'Understand the core concepts and types of machine learning',
-      sprints: [
-        {
-          id: 1,
-          title: 'What is Machine Learning?',
-          time: '8 min',
-          isCompleted: false,
-          isUnlocked: true,
-        },
-        {
-          id: 2,
-          title: 'Supervised vs Unsupervised Learning',
-          time: '12 min',
-          isCompleted: false,
-          isUnlocked: true,
-        },
-        {
-          id: 3,
-          title: 'Key Machine Learning Applications',
-          time: '10 min',
-          isCompleted: false,
-          isUnlocked: true,
-        },
-      ]
-    },
-    {
-      title: 'Data Preparation for Machine Learning',
-      description: 'Learn how to prepare and preprocess data for ML algorithms',
-      sprints: [
-        {
-          id: 4,
-          title: 'Data Cleaning Techniques',
-          time: '15 min',
-          isCompleted: false,
-          isUnlocked: false,
-        },
-        {
-          id: 5,
-          title: 'Feature Scaling and Normalization',
-          time: '12 min',
-          isCompleted: false,
-          isUnlocked: false,
-        }
-      ]
-    }
-  ],
-  relatedPaths: [
-    {
-      id: 101,
-      title: 'Data Science with Python',
-      level: 'Intermediate',
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8ZGF0YSUyMGFuYWx5dGljc3xlbnwwfHwwfHx8MA%3D%3D',
-      total_sprints: 28,
-      estimated_time: '5 hours',
-    },
-    {
-      id: 102,
-      title: 'Deep Learning Specialization',
-      level: 'Advanced',
-      image: 'https://images.unsplash.com/photo-1677442135136-760302227f2a?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZGVlcCUyMGxlYXJuaW5nfGVufDB8fDB8fHww',
-      total_sprints: 36,
-      estimated_time: '7 hours',
-    }
-  ]
-};
-
-// Database helper functions for paths - using mock data for development
+// Database helper functions for learning paths
 export const fetchLearningPaths = async ({ category = null, level = null, search = null }) => {
-  // In a real app, this would query Supabase
-  console.log('Fetching learning paths with filters:', { category, level, search });
+  let query = supabase
+    .from('learning_paths')
+    .select(`
+      *,
+      instructor:instructor_id (name, avatar)
+    `);
   
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  // Filter mock data based on parameters
-  let filteredPaths = [...mockLearningPaths];
-  
+  // Apply filters if provided
   if (category) {
-    filteredPaths = filteredPaths.filter(path => path.category === category);
+    query = query.eq('category', category);
   }
   
   if (level) {
-    filteredPaths = filteredPaths.filter(path => path.level === level);
+    query = query.eq('level', level);
   }
   
   if (search) {
-    const searchLower = search.toLowerCase();
-    filteredPaths = filteredPaths.filter(path => 
-      path.title.toLowerCase().includes(searchLower) || 
-      path.description.toLowerCase().includes(searchLower) ||
-      (path.tags && path.tags.some(tag => tag.toLowerCase().includes(searchLower)))
-    );
+    query = query.or(`title.ilike.%${search}%, description.ilike.%${search}%`);
   }
   
-  return { data: filteredPaths, error: null };
+  const { data, error } = await query;
+  return { data, error };
 };
 
 export const fetchPathDetail = async (pathId) => {
-  // In a real app, this would query Supabase
-  console.log('Fetching path details for ID:', pathId);
+  // First get the learning path with instructor
+  const { data: pathData, error: pathError } = await supabase
+    .from('learning_paths')
+    .select(`
+      *,
+      instructor:instructor_id (id, name, title, bio, avatar)
+    `)
+    .eq('id', pathId)
+    .single();
   
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 400));
-  
-  // Return mock data for development
-  if (pathId === '1' || pathId === 1) {
-    return { data: mockPathDetail, error: null };
+  if (pathError) {
+    return { error: pathError };
   }
   
-  // Return a different path for other IDs
-  const mockData = { ...mockPathDetail, id: pathId, title: `Learning Path ${pathId}` };
-  return { data: mockData, error: null };
+  // Get all modules for this path
+  const { data: modulesData, error: modulesError } = await supabase
+    .from('modules')
+    .select('*')
+    .eq('path_id', pathId)
+    .order('order_index');
+  
+  if (modulesError) {
+    return { error: modulesError };
+  }
+  
+  // Get all sprints for these modules
+  const moduleIds = modulesData.map(module => module.id);
+  
+  const { data: sprintsData, error: sprintsError } = await supabase
+    .from('sprints')
+    .select('*')
+    .in('module_id', moduleIds)
+    .order('order_index');
+  
+  if (sprintsError) {
+    return { error: sprintsError };
+  }
+  
+  // Get user progress if user is authenticated
+  const { user } = await getCurrentUser();
+  let userProgress = [];
+  
+  if (user) {
+    const { data: progressData } = await supabase
+      .from('user_progress')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('path_id', pathId);
+    
+    userProgress = progressData || [];
+  }
+  
+  // Check enrollment status
+  let isEnrolled = false;
+  
+  if (user) {
+    const { data: enrollmentData } = await supabase
+      .from('user_paths')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('path_id', pathId)
+      .single();
+    
+    isEnrolled = !!enrollmentData;
+  }
+  
+  // Structure the data
+  const modules = modulesData.map(module => {
+    const moduleSprintData = sprintsData.filter(sprint => sprint.module_id === module.id);
+    
+    const sprints = moduleSprintData.map(sprint => {
+      const progress = userProgress.find(p => p.sprint_id === sprint.id);
+      
+      return {
+        ...sprint,
+        isCompleted: progress ? progress.is_completed : false,
+        isUnlocked: isEnrolled, // In a real app, you might have more complex unlock logic
+      };
+    });
+    
+    return {
+      ...module,
+      sprints
+    };
+  });
+  
+  // Get related paths (based on same category)
+  const { data: relatedPathsData } = await supabase
+    .from('learning_paths')
+    .select('id, title, level, image, total_sprints, estimated_time')
+    .eq('category', pathData.category)
+    .neq('id', pathId)
+    .limit(3);
+  
+  // Count completed sprints
+  const completedSprints = userProgress.filter(p => p.is_completed).length;
+  
+  // Combine all data
+  const pathDetail = {
+    ...pathData,
+    modules,
+    relatedPaths: relatedPathsData || [],
+    completedSprints,
+    isEnrolled
+  };
+  
+  return { data: pathDetail, error: null };
 };
 
 export const enrollUserInPath = async (pathId) => {
-  // In a real app, this would insert into Supabase
-  console.log('Enrolling user in path:', pathId);
+  const { user } = await getCurrentUser();
   
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
+  if (!user) {
+    return { error: { message: 'User not authenticated' } };
+  }
   
-  // Always return success for development
-  return { data: { enrolled: true, path_id: pathId }, error: null };
+  const { data, error } = await supabase
+    .from('user_paths')
+    .insert([
+      { user_id: user.id, path_id: pathId }
+    ]);
+  
+  return { data, error };
 };
 
 export const updateSprintProgress = async (sprintId, isCompleted) => {
-  // In a real app, this would upsert into Supabase
-  console.log('Updating sprint progress:', { sprintId, isCompleted });
+  const { user } = await getCurrentUser();
   
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300));
+  if (!user) {
+    return { error: { message: 'User not authenticated' } };
+  }
   
-  // Always return success for development
-  return { data: { updated: true, sprint_id: sprintId, is_completed: isCompleted }, error: null };
-}; 
+  // Get the path_id and module_id for this sprint
+  const { data: sprintData, error: sprintError } = await supabase
+    .from('sprints')
+    .select('*, module:module_id (path_id)')
+    .eq('id', sprintId)
+    .single();
+  
+  if (sprintError) {
+    return { error: sprintError };
+  }
+  
+  // Update or insert progress
+  const { data, error } = await supabase
+    .from('user_progress')
+    .upsert([
+      {
+        user_id: user.id,
+        path_id: sprintData.module.path_id,
+        module_id: sprintData.module_id,
+        sprint_id: sprintId,
+        is_completed: isCompleted
+      }
+    ]);
+  
+  return { data, error };
+};

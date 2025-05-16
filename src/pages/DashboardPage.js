@@ -20,7 +20,10 @@ import {
   useColorModeValue,
   HStack,
   Divider,
+  Container,
 } from '@chakra-ui/react';
+import { Link } from 'react-router-dom';
+import { AddIcon } from '@chakra-ui/icons';
 
 function DashboardPage() {
   // Mock data - in a real app, this would come from an API
@@ -113,26 +116,26 @@ function DashboardPage() {
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
 
   return (
-    <Box maxW="7xl" mx="auto" px={{ base: 4, md: 8, lg: 12 }} py={8}>
-      {/* Welcome Header */}
-      <Flex
-        direction={{ base: 'column', md: 'row' }}
-        justify="space-between"
-        align={{ base: 'flex-start', md: 'center' }}
-        mb={8}
-      >
-        <Box mb={{ base: 4, md: 0 }}>
-          <Heading size="lg">Welcome back, Jane!</Heading>
-          <Text color="gray.600">Ready for your learning sprint today?</Text>
+    <Container maxW="7xl" py={8}>
+      {/* User welcome section */}
+      <Flex justify="space-between" align="center" mb={8}>
+        <Box>
+          <Heading as="h1" size="xl" mb={2}>
+            Welcome, {user?.user_metadata?.full_name || 'Learner'}!
+          </Heading>
+          <Text color="gray.600">
+            Continue your learning journey or explore new skills
+          </Text>
         </Box>
-        <HStack spacing={4}>
-          <Button colorScheme="purple" variant="solid" bg="primary.600">
-            Start Sprint
+        
+        <Link as={RouterLink} to="/build-course">
+          <Button 
+            colorScheme="purple" 
+            leftIcon={<AddIcon />}
+          >
+            Create Course
           </Button>
-          <Button colorScheme="purple" variant="outline">
-            View All Paths
-          </Button>
-        </HStack>
+        </Link>
       </Flex>
 
       {/* Stats Section */}
@@ -327,7 +330,7 @@ function DashboardPage() {
           </Card>
         </Box>
       </SimpleGrid>
-    </Box>
+    </Container>
   );
 }
 

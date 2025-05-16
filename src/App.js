@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Box } from '@chakra-ui/react';
+import { ChakraProvider } from '@chakra-ui/react';
 
 // Import page components
 import HomePage from './pages/HomePage';
@@ -11,6 +12,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import ExplorePathsPage from './pages/ExplorePathsPage';
 import { LoginPage, SignupPage } from './pages/AuthPages';
 import PathDetailPage from './pages/PathDetailPage';
+import CourseBuilderPage from './pages/CourseBuilderPage';
 
 // Import layout components
 import Header from './components/layout/Header';
@@ -60,6 +62,7 @@ function AppRoutes() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/paths/:pathId" element={<PathDetailPage />} />
+          <Route path="/build-course" element={<CourseBuilderPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Box>
@@ -70,11 +73,13 @@ function AppRoutes() {
 
 function App() {
   return (
-    <Router>
+    <ChakraProvider theme={theme}>
       <AuthProvider>
-        <AppRoutes />
+        <Router>
+          <AppRoutes />
+        </Router>
       </AuthProvider>
-    </Router>
+    </ChakraProvider>
   );
 }
 
