@@ -180,23 +180,23 @@ function ExplorePathsPage() {
 
         {/* Category Tags */}
         {categories.length > 0 && (
-          <Box mb={10}>
-            <HStack spacing={3} flexWrap="wrap">
-              {categories.map(category => (
-                <Tag 
-                  key={category} 
-                  size="lg" 
-                  variant={selectedCategory === category ? "solid" : "subtle"}
-                  colorScheme="purple"
-                  cursor="pointer"
-                  onClick={() => setSelectedCategory(selectedCategory === category ? '' : category)}
-                  mb={2}
-                >
-                  {category}
-                </Tag>
-              ))}
-            </HStack>
-          </Box>
+        <Box mb={10}>
+          <HStack spacing={3} flexWrap="wrap">
+            {categories.map(category => (
+              <Tag 
+                key={category} 
+                size="lg" 
+                variant={selectedCategory === category ? "solid" : "subtle"}
+                colorScheme="purple"
+                cursor="pointer"
+                onClick={() => setSelectedCategory(selectedCategory === category ? '' : category)}
+                mb={2}
+              >
+                {category}
+              </Tag>
+            ))}
+          </HStack>
+        </Box>
         )}
 
         {/* Loading State */}
@@ -227,33 +227,33 @@ function ExplorePathsPage() {
 
         {/* Results Count */}
         {!isLoading && !error && (
-          <Flex justify="space-between" align="center" mb={6}>
-            <Text fontWeight="medium">
+        <Flex justify="space-between" align="center" mb={6}>
+          <Text fontWeight="medium">
               {learningPaths.length} {learningPaths.length === 1 ? 'path' : 'paths'} found
-            </Text>
-            <Select 
-              placeholder="Sort by" 
-              size="sm" 
-              maxW="200px"
-              bg={cardBg}
-              borderColor={borderColor}
-              defaultValue="popularity"
-            >
-              <option value="popularity">Most Popular</option>
-              <option value="newest">Newest First</option>
-              <option value="shortest">Shortest First</option>
-              <option value="longest">Longest First</option>
-            </Select>
-          </Flex>
+          </Text>
+          <Select 
+            placeholder="Sort by" 
+            size="sm" 
+            maxW="200px"
+            bg={cardBg}
+            borderColor={borderColor}
+            defaultValue="popularity"
+          >
+            <option value="popularity">Most Popular</option>
+            <option value="newest">Newest First</option>
+            <option value="shortest">Shortest First</option>
+            <option value="longest">Longest First</option>
+          </Select>
+        </Flex>
         )}
 
         {/* Learning Paths Grid */}
         {!isLoading && !error && (
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
             {learningPaths.map((path) => (
               <PathCard key={path.id} path={path} />
-            ))}
-          </SimpleGrid>
+          ))}
+        </SimpleGrid>
         )}
 
         {/* No Results */}
@@ -358,4 +358,4 @@ function PathCard({ path }) {
   );
 }
 
-export default ExplorePathsPage;
+export default ExplorePathsPage; 

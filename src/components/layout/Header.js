@@ -114,8 +114,8 @@ function Header() {
             align="center"
           >
             {isAuthenticated ? (
-              <Menu>
-                <MenuButton
+                <Menu>
+                  <MenuButton 
                   as={Button}
                   rounded={'full'}
                   variant={'link'}
@@ -146,12 +146,12 @@ function Header() {
                     </Box>
                   </HStack>
                 </MenuButton>
-                <MenuList>
-                  <MenuItem as={RouterLink} to="/profile">Profile</MenuItem>
-                  <MenuItem as={RouterLink} to="/settings">Settings</MenuItem>
+                  <MenuList>
+                    <MenuItem as={RouterLink} to="/profile">Profile</MenuItem>
+                    <MenuItem as={RouterLink} to="/settings">Settings</MenuItem>
                   <MenuItem onClick={handleSignOut}>Sign Out</MenuItem>
-                </MenuList>
-              </Menu>
+                  </MenuList>
+                </Menu>
             ) : (
               <>
                 <Button
