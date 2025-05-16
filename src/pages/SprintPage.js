@@ -37,6 +37,7 @@ function SprintPage() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState({});
   const [showFeedback, setShowFeedback] = useState(false);
+  const toast = useToast();
   
   // Mock data - in a real app, this would be fetched from API
   const sprintData = {
@@ -484,6 +485,31 @@ Continue to the next sprint to learn about upper body musculature and its role i
     return step.type === 'quiz' && userAnswers[stepIndex] === step.correctAnswer;
   };
 
+  // Helper to render the Next and Previous buttons
+  const renderNextButton = (currentStep) => (
+    <Flex justify="space-between">
+      <Button
+        onClick={handlePrevStep}
+        leftIcon={<ChevronLeftIcon />}
+        isDisabled={currentStepIndex === 0}
+        variant="ghost"
+      >
+        Previous
+      </Button>
+      <Button
+        onClick={handleNextStep}
+        colorScheme="purple"
+        isDisabled={
+          currentStep.type === 'quiz' &&
+          !showFeedback &&
+          userAnswers[currentStepIndex] === undefined
+        }
+      >
+        {currentStep.type === 'quiz' && !showFeedback ? 'Check Answer' : 'Next'}
+      </Button>
+    </Flex>
+  );
+
   const renderStepContent = () => {
     switch (currentStep.type) {
       case 'content':
@@ -767,32 +793,6 @@ Continue to the next sprint to learn about upper body musculature and its role i
       >
         <CardBody p={6}>{renderStepContent()}</CardBody>
       </Card>
-      
-      {/* Navigation Buttons */}
-      {currentStep.type !== 'completion' && (
-        <Flex justify="space-between">
-          <Button
-            onClick={handlePrevStep}
-            leftIcon={<ChevronLeftIcon />}
-            isDisabled={currentStepIndex === 0}
-            variant="ghost"
-          >
-            Previous
-          </Button>
-          <Button
-            onClick={handleNextStep}
-            rightIcon={<ChevronRightIcon />}
-            colorScheme="purple"
-            isDisabled={
-              currentStep.type === 'quiz' &&
-              !showFeedback &&
-              userAnswers[currentStepIndex] === undefined
-            }
-          >
-            {currentStep.type === 'quiz' && !showFeedback ? 'Check Answer' : 'Next'}
-          </Button>
-        </Flex>
-      )}
       
       {/* AI Tutor */}
       <Box mt={10}>
