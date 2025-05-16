@@ -130,14 +130,14 @@ function DashboardPage() {
           </Text>
         </Box>
         
-        <Link as={RouterLink} to="/build-course">
+        <RouterLink to="/build-course">
           <Button 
             colorScheme="purple" 
             leftIcon={<AddIcon />}
           >
             Create Course
           </Button>
-        </Link>
+        </RouterLink>
       </Flex>
 
       {/* Stats Section */}
