@@ -14,98 +14,265 @@ import {
   SimpleGrid,
   Image,
   VStack,
+  HStack,
+  Badge,
+  keyframes,
+  Divider,
+  chakra,
 } from '@chakra-ui/react';
 
+const pulse = keyframes`
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(98, 0, 234, 0.4);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(98, 0, 234, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(98, 0, 234, 0);
+  }
+`;
+
+const bounceAnimation = keyframes`
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-15px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+`;
+
 function HomePage() {
+  const pulseAnimation = `${pulse} 2s infinite`;
   return (
     <Box>
       {/* Hero Section */}
-      <Container maxW={'3xl'} minH="80vh" display="flex" alignItems="center">
+      <Container maxW={'7xl'} minH={{base: "90vh", md: "80vh"}} display="flex" alignItems="center" pt={{ base: 20, md: 0 }}>
         <Stack
-          as={Box}
-          textAlign={'center'}
-          spacing={{ base: 8, md: 14 }}
-          py={{ base: 20, md: 36 }}
+          direction={{ base: 'column', lg: 'row' }}
+          spacing={{ base: 10, lg: 20 }}
+          align="center"
+          w="full"
         >
-          <Heading
-            fontWeight={600}
-            fontSize={{ base: '2xl', sm: '4xl', md: '6xl' }}
-            lineHeight={'110%'}
-          >
-            Short bursts. <br />
-            <Text as={'span'} color={'primary.600'}>
-              Big skills.
-            </Text>
-          </Heading>
-          <Text color={'gray.500'} fontSize={{ base: 'lg', sm: 'xl', md: '2xl' }}>
-            Master any skill with personalized, AI-powered adaptive micro-learning.
-            SkillSprint delivers concise sessions tailored to your learning style and goals.
-          </Text>
           <Stack
-            direction={'column'}
-            spacing={3}
-            align={'center'}
-            alignSelf={'center'}
-            position={'relative'}
+            flex={1}
+            spacing={{ base: 5, md: 10 }}
+            py={{ base: 10, md: 20 }}
           >
-            <Button
-              colorScheme={'purple'}
-              bg={'primary.600'}
-              rounded={'full'}
-              px={6}
-              _hover={{
-                bg: 'primary.500',
-              }}
-              as={RouterLink}
-              to="/signup"
-              size="lg"
+            <Heading
+              lineHeight={1.1}
+              fontWeight={600}
+              fontSize={{ base: '3xl', sm: '4xl', md: '5xl', lg: '6xl' }}
             >
-              Get Started
-            </Button>
-            <Button
-              variant={'link'}
-              colorScheme={'blue'}
-              size={'sm'}
-              as={RouterLink}
-              to="/how-it-works"
-            >
-              Learn more
-            </Button>
-            <Box>
-              <Icon
-                as={Arrow}
-                color={useColorModeValue('gray.800', 'gray.300')}
-                w={71}
-                position={'absolute'}
-                right={-71}
-                top={'10px'}
-              />
               <Text
-                fontSize={'lg'}
-                fontFamily={'Caveat'}
-                position={'absolute'}
-                right={'-125px'}
-                top={'-15px'}
-                transform={'rotate(10deg)'}
-              >
-                Start for free
+                as={'span'}
+                position={'relative'}
+                _after={{
+                  content: "''",
+                  width: 'full',
+                  height: '20%',
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  bg: useColorModeValue('secondary.100', 'secondary.700'),
+                  zIndex: -1,
+                }}>
+                Short bursts.
               </Text>
-            </Box>
+              <br />
+              <Text as={'span'} color={'primary.600'}>
+                Big skills.
+              </Text>
+            </Heading>
+            <Text color={'gray.500'} fontSize={{ base: 'md', sm: 'lg', md: 'xl' }} maxW="600px">
+              Master any skill with personalized, AI-powered adaptive micro-learning.
+              SkillSprint delivers concise sessions tailored to your learning style and goals.
+            </Text>
+            <Stack
+              spacing={{ base: 4, sm: 6 }}
+              direction={{ base: 'column', sm: 'row' }}
+            >
+              <Button
+                size={'lg'}
+                fontWeight={'bold'}
+                px={6}
+                colorScheme={'primary'}
+                as={RouterLink}
+                to="/signup"
+                position="relative"
+                _after={{
+                  content: "''",
+                  width: '100%',
+                  height: '100%',
+                  position: 'absolute',
+                  borderRadius: '50px',
+                  zIndex: -1,
+                  animation: pulseAnimation,
+                }}
+              >
+                Start Learning Free
+              </Button>
+              <Button
+                as={RouterLink}
+                to="/how-it-works"
+                size={'lg'}
+                fontWeight={'bold'}
+                variant={'outline'}
+                colorScheme={'primary'}
+                leftIcon={<Icon boxSize={5} viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"
+                  />
+                </Icon>}
+              >
+                Learn More
+              </Button>
+            </Stack>
+            
+            <HStack spacing={3}>
+              <Text fontSize="sm" fontWeight="medium" color="gray.500">Used by:</Text>
+              <Image
+                src="https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?q=80&w=2069"
+                boxSize="30px"
+                borderRadius="full"
+                objectFit="cover"
+                alt="Company A"
+              />
+              <Image
+                src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?q=80&w=2073"
+                boxSize="30px"
+                borderRadius="full"
+                objectFit="cover"
+                alt="Company B"
+              />
+              <Image
+                src="https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0?q=80&w=2673"
+                boxSize="30px"
+                borderRadius="full"
+                objectFit="cover"
+                alt="Company C"
+              />
+              <Text fontSize="sm" color="gray.500">+ 10,000 professionals</Text>
+            </HStack>
           </Stack>
+          <Flex
+            flex={1}
+            justify={'center'}
+            align={'center'}
+            position={'relative'}
+            w={'full'}
+            display={{ base: 'none', lg: 'flex' }}
+          >
+            <Box
+              position={'relative'}
+              height={'550px'}
+              width={'full'}
+              overflow={'hidden'}
+              borderRadius={'2xl'}
+              boxShadow={'2xl'}
+            >
+              <Image
+                alt={'Hero Image'}
+                fit={'cover'}
+                align={'center'}
+                w={'100%'}
+                h={'100%'}
+                src={'https://images.unsplash.com/photo-1522881193457-37ae97c905bf?q=80&w=2070'}
+                fallbackSrc="https://via.placeholder.com/800x600?text=SkillSprint"
+              />
+              <Box
+                position="absolute"
+                bottom="20px"
+                left="20px"
+                bg="white"
+                p={4}
+                borderRadius="lg"
+                boxShadow="lg"
+                width="60%"
+                backdropFilter="blur(10px)"
+                border="1px solid"
+                borderColor="gray.100"
+              >
+                <Text fontWeight="bold" mb={2}>
+                  Machine Learning Fundamentals
+                </Text>
+                <HStack mb={2}>
+                  <Badge colorScheme="purple">12 min</Badge>
+                  <Badge colorScheme="green">Beginner</Badge>
+                </HStack>
+                <Box height="6px" bg="gray.100" borderRadius="full" mb={2}>
+                  <Box height="6px" width="60%" bg="primary.500" borderRadius="full" />
+                </Box>
+                <Text fontSize="sm" color="gray.500">
+                  60% Complete
+                </Text>
+              </Box>
+            </Box>
+          </Flex>
         </Stack>
       </Container>
 
-      {/* Features Section */}
+      {/* Stats Section */}
       <Box bg={useColorModeValue('gray.50', 'gray.900')} py={12}>
-        <Container maxW={'6xl'}>
-          <Heading
-            textAlign={'center'}
-            fontSize={'4xl'}
-            py={10}
-            fontWeight={'bold'}
-          >
-            Features
-          </Heading>
+        <Container maxW={'7xl'}>
+          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={5}>
+            <VStack bg="white" p={6} borderRadius="lg" boxShadow="md" spacing={2}>
+              <Text fontSize="3xl" fontWeight="bold" color="primary.600">
+                1M+
+              </Text>
+              <Text fontWeight="medium">Active Learners</Text>
+            </VStack>
+            <VStack bg="white" p={6} borderRadius="lg" boxShadow="md" spacing={2}>
+              <Text fontSize="3xl" fontWeight="bold" color="primary.600">
+                5K+
+              </Text>
+              <Text fontWeight="medium">Learning Paths</Text>
+            </VStack>
+            <VStack bg="white" p={6} borderRadius="lg" boxShadow="md" spacing={2}>
+              <Text fontSize="3xl" fontWeight="bold" color="primary.600">
+                15M+
+              </Text>
+              <Text fontWeight="medium">Sprints Completed</Text>
+            </VStack>
+            <VStack bg="white" p={6} borderRadius="lg" boxShadow="md" spacing={2}>
+              <Text fontSize="3xl" fontWeight="bold" color="primary.600">
+                93%
+              </Text>
+              <Text fontWeight="medium">Completion Rate</Text>
+            </VStack>
+          </SimpleGrid>
+        </Container>
+      </Box>
+
+      {/* Features Section */}
+      <Box bg={useColorModeValue('white', 'gray.800')} py={20}>
+        <Container maxW={'7xl'}>
+          <Box mb={20} textAlign="center">
+            <chakra.h2
+              fontSize={{ base: '2xl', sm: '3xl' }}
+              fontWeight="bold"
+              mb={5}
+            >
+              Everything you need to master new skills
+            </chakra.h2>
+            <Text 
+              color={'gray.500'} 
+              maxW={'3xl'} 
+              mx={'auto'}
+            >
+              Our AI-powered platform adapts to your learning style, delivering personalized micro-lessons 
+              that fit perfectly into your busy schedule.
+            </Text>
+          </Box>
 
           <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10} mb={20}>
             <Feature
@@ -146,79 +313,153 @@ function HomePage() {
       </Box>
 
       {/* How it Works Section */}
-      <Container maxW={'5xl'} py={12}>
-        <Heading textAlign={'center'} fontSize={'4xl'} py={10} fontWeight={'bold'}>
-          How It Works
-        </Heading>
+      <Box bg={useColorModeValue('gray.50', 'gray.900')} py={20}>
+        <Container maxW={'7xl'}>
+          <VStack spacing={12}>
+            <Box textAlign="center">
+              <chakra.h2 
+                fontSize={{ base: '2xl', sm: '3xl' }}
+                fontWeight="bold"
+                mb={5}
+              >
+                How It Works
+              </chakra.h2>
+              <Text 
+                color={'gray.500'} 
+                maxW={'3xl'} 
+                mx={'auto'}
+              >
+                Learning with SkillSprint is simple, effective, and tailored to your needs
+              </Text>
+            </Box>
 
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={10}>
-          <Flex>
-            <Image
-              rounded={'md'}
-              alt={'feature image'}
-              src={
-                'https://images.unsplash.com/photo-1554200876-56c2f25224fa?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'
-              }
-              objectFit={'cover'}
-            />
-          </Flex>
-          <Stack spacing={4}>
-            <Text
-              textTransform={'uppercase'}
-              color={'primary.600'}
-              fontWeight={600}
-              fontSize={'sm'}
-              bg={useColorModeValue('primary.50', 'primary.900')}
-              p={2}
-              alignSelf={'flex-start'}
-              rounded={'md'}
+            <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={10} w="full">
+              <Flex>
+                <Image
+                  rounded={'xl'}
+                  alt={'feature image'}
+                  src={'https://images.unsplash.com/photo-1554200876-56c2f25224fa?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'}
+                  objectFit={'cover'}
+                  boxShadow="2xl"
+                />
+              </Flex>
+              <VStack align="stretch" spacing={8} justify="center">
+                <HowItWorksStep 
+                  number="1"
+                  title="Define Your Goals"
+                  description="Tell us what skills you want to learn and how much time you have available."
+                />
+                <HowItWorksStep 
+                  number="2"
+                  title="Get Your Personalized Plan"
+                  description="Our AI generates a tailored learning pathway optimized for your goals and schedule."
+                />
+                <HowItWorksStep 
+                  number="3"
+                  title="Learn in Short Sprints"
+                  description="Complete daily micro-sprints that adapt to your performance and learning style."
+                />
+                <HowItWorksStep 
+                  number="4"
+                  title="Review & Apply"
+                  description="Reinforce your knowledge with spaced repetition and practical challenges."
+                />
+                <HowItWorksStep 
+                  number="5"
+                  title="Track & Achieve"
+                  description="Monitor your progress, earn badges, and build valuable skills efficiently."
+                />
+              </VStack>
+            </SimpleGrid>
+          </VStack>
+        </Container>
+      </Box>
+
+      {/* Testimonials */}
+      <Box py={20}>
+        <Container maxW={'5xl'}>
+          <Box textAlign="center" mb={12}>
+            <chakra.h2
+              fontSize={{ base: '2xl', sm: '3xl' }}
+              fontWeight="bold"
+              mb={5}
             >
-              Our Process
+              Loved by learners worldwide
+            </chakra.h2>
+            <Text color={'gray.500'} maxW={'3xl'} mx={'auto'}>
+              See what our community has to say about their SkillSprint experience
             </Text>
-            <Heading>A personalized learning experience</Heading>
-            <Text color={'gray.500'} fontSize={'lg'}>
-              1. Input your learning goals and available time
-            </Text>
-            <Text color={'gray.500'} fontSize={'lg'}>
-              2. Our AI generates a tailored learning pathway
-            </Text>
-            <Text color={'gray.500'} fontSize={'lg'}>
-              3. Complete daily micro-sprints that adapt to your performance
-            </Text>
-            <Text color={'gray.500'} fontSize={'lg'}>
-              4. Review concepts at optimal intervals for maximum retention
-            </Text>
-            <Text color={'gray.500'} fontSize={'lg'}>
-              5. Track your progress and earn verified skill badges
-            </Text>
-          </Stack>
-        </SimpleGrid>
-      </Container>
+          </Box>
+          
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10}>
+            <Testimonial
+              name="Sarah Johnson"
+              role="Software Developer"
+              content="I've tried many learning platforms, but SkillSprint's approach actually fits into my busy schedule. I learned Python in just 15 minutes a day!"
+              avatar="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=387&q=80"
+            />
+            <Testimonial
+              name="Michael Chen"
+              role="Marketing Manager"
+              content="The AI tutor feels like having a personal coach. It's incredibly responsive and adapts perfectly to my learning style and pace."
+              avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=387&q=80"
+            />
+            <Testimonial
+              name="Emily Patel"
+              role="UX Designer"
+              content="SkillSprint's micro-learning approach helped me gain practical design skills quickly. The gamification keeps me motivated to learn daily."
+              avatar="https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=387&q=80"
+            />
+          </SimpleGrid>
+        </Container>
+      </Box>
 
       {/* CTA Section */}
       <Box bg={'primary.600'} color={'white'}>
-        <Container maxW={'3xl'} py={16} textAlign={'center'}>
-          <Heading fontSize={'4xl'} mb={6}>
+        <Container maxW={'7xl'} py={20} textAlign={'center'}>
+          <Heading fontSize={{ base: '3xl', sm: '4xl' }} mb={6}>
             Ready to start your learning journey?
           </Heading>
-          <Text fontSize={'xl'} mb={6}>
+          <Text fontSize={{ base: 'lg', sm: 'xl' }} mb={10} maxW="2xl" mx="auto">
             Join thousands of learners who are building valuable skills in just minutes a day.
+            Start for free and see the results yourself.
           </Text>
-          <Button
-            as={RouterLink}
-            to="/signup"
-            rounded={'full'}
-            px={6}
-            py={3}
-            bg={'white'}
-            color={'primary.600'}
-            _hover={{ bg: 'gray.100' }}
-            size="lg"
-            fontSize="md"
-            fontWeight="bold"
+          <Stack 
+            direction={{ base: 'column', sm: 'row' }}
+            spacing={4}
+            justify="center"
           >
-            Sign Up Free
-          </Button>
+            <Button
+              as={RouterLink}
+              to="/signup"
+              rounded={'full'}
+              px={6}
+              py={6}
+              bg={'white'}
+              color={'primary.600'}
+              _hover={{ bg: 'gray.100' }}
+              size="lg"
+              fontSize="md"
+              fontWeight="bold"
+            >
+              Sign Up Free
+            </Button>
+            <Button
+              as={RouterLink}
+              to="/explore"
+              rounded={'full'}
+              px={6}
+              py={6}
+              fontSize="md"
+              fontWeight="bold"
+              colorScheme="whiteAlpha"
+              variant="outline"
+              size="lg"
+              _hover={{ bg: 'whiteAlpha.200' }}
+            >
+              Explore Learning Paths
+            </Button>
+          </Stack>
         </Container>
       </Box>
     </Box>
@@ -229,13 +470,18 @@ const Feature = ({ title, text, icon }) => {
   return (
     <VStack
       align={'center'}
-      p={5}
+      p={8}
       borderWidth="1px"
-      borderRadius="lg"
+      borderRadius="xl"
       bg={useColorModeValue('white', 'gray.800')}
       borderColor={useColorModeValue('gray.200', 'gray.700')}
       boxShadow="base"
-      _hover={{ boxShadow: 'md', transform: 'translateY(-5px)', transition: 'all 0.3s ease' }}
+      transition="all 0.3s"
+      _hover={{ 
+        boxShadow: 'xl', 
+        transform: 'translateY(-5px)', 
+        borderColor: 'primary.300' 
+      }}
     >
       <Flex
         w={16}
@@ -245,17 +491,86 @@ const Feature = ({ title, text, icon }) => {
         color={'white'}
         rounded={'full'}
         bg={'primary.500'}
-        mb={1}
+        mb={4}
       >
-        <Text fontSize="2xl">{icon}</Text>
+        <Text fontSize="3xl">{icon}</Text>
       </Flex>
-      <Heading fontSize={'xl'} fontWeight={700}>
+      <Heading fontSize={'xl'} fontWeight={700} mb={2}>
         {title}
       </Heading>
       <Text textAlign={'center'} color={'gray.600'}>
         {text}
       </Text>
     </VStack>
+  );
+};
+
+const HowItWorksStep = ({ number, title, description }) => {
+  return (
+    <HStack spacing={6} align="start">
+      <Flex
+        align="center"
+        justify="center"
+        w={10}
+        h={10}
+        rounded="full"
+        bg="primary.600"
+        color="white"
+        flexShrink={0}
+      >
+        <Text fontWeight="bold">{number}</Text>
+      </Flex>
+      <VStack align="start" spacing={1}>
+        <Text fontWeight="bold" fontSize="lg">{title}</Text>
+        <Text color="gray.600">{description}</Text>
+      </VStack>
+    </HStack>
+  );
+};
+
+const Testimonial = ({ name, role, content, avatar }) => {
+  return (
+    <Box
+      bg={useColorModeValue('white', 'gray.800')}
+      p={8}
+      borderRadius="lg"
+      borderWidth="1px"
+      borderColor={useColorModeValue('gray.200', 'gray.700')}
+      boxShadow="base"
+      position="relative"
+    >
+      <Icon
+        viewBox="0 0 40 40"
+        color={useColorModeValue('primary.100', 'primary.800')}
+        position="absolute"
+        right={3}
+        top={3}
+        fontSize="3xl"
+      >
+        <path
+          fill="currentColor"
+          d="M10 11c-2.667 0-5 1-7 3s-3 4.667-3 8c0 2 0.5 3.667 1.5 5s2.5 2.5 4.5 3 4 0.667 6 0c0-2.667-0.333-5-1-7s-1.5-3.667-2.5-5-2.167-2.333-3.5-3zM30 11c-2.667 0-5 1-7 3s-3 4.667-3 8c0 2 0.5 3.667 1.5 5s2.5 2.5 4.5 3 4 0.667 6 0c0-2.667-0.333-5-1-7s-1.5-3.667-2.5-5-2.167-2.333-3.5-3z"
+        ></path>
+      </Icon>
+      <Text color="gray.600" mb={6} fontSize="md">
+        {content}
+      </Text>
+      <HStack spacing={4} align="center">
+        <Image
+          src={avatar}
+          alt={name}
+          boxSize="40px"
+          borderRadius="full"
+          objectFit="cover"
+        />
+        <VStack spacing={0} align="start">
+          <Text fontWeight="bold">{name}</Text>
+          <Text fontSize="sm" color="gray.500">
+            {role}
+          </Text>
+        </VStack>
+      </HStack>
+    </Box>
   );
 };
 

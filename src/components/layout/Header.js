@@ -16,94 +16,162 @@ import {
   useColorModeValue,
   useBreakpointValue,
   useDisclosure,
+  Container,
+  HStack,
+  Avatar,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
 } from '@chakra-ui/react';
 import {
   HamburgerIcon,
   CloseIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  BellIcon,
 } from '@chakra-ui/icons';
 
 function Header() {
   const { isOpen, onToggle } = useDisclosure();
+  const isLoggedIn = false; // This would be determined by auth context in a real app
 
   return (
-    <Box>
-      <Flex
-        bg={useColorModeValue('white', 'gray.800')}
-        color={useColorModeValue('gray.600', 'white')}
-        minH={'60px'}
-        py={{ base: 2 }}
-        px={{ base: 4 }}
-        borderBottom={1}
-        borderStyle={'solid'}
-        borderColor={useColorModeValue('gray.200', 'gray.900')}
-        align={'center'}
-        boxShadow="sm"
-      >
+    <Box position="sticky" top={0} zIndex="sticky" bg={useColorModeValue('white', 'gray.800')} shadow="sm">
+      <Container maxW="7xl">
         <Flex
-          flex={{ base: 1, md: 'auto' }}
-          ml={{ base: -2 }}
-          display={{ base: 'flex', md: 'none' }}
+          color={useColorModeValue('gray.600', 'white')}
+          minH={'60px'}
+          py={{ base: 2 }}
+          px={{ base: 0 }}
+          align={'center'}
+          justify="space-between"
         >
-          <IconButton
-            onClick={onToggle}
-            icon={
-              isOpen ? <CloseIcon w={3} h={3} /> : <HamburgerIcon w={5} h={5} />
-            }
-            variant={'ghost'}
-            aria-label={'Toggle Navigation'}
-          />
-        </Flex>
-        <Flex flex={{ base: 1 }} justify={{ base: 'center', md: 'start' }}>
-          <Text
-            textAlign={useBreakpointValue({ base: 'center', md: 'left' })}
-            fontFamily={'heading'}
-            color={useColorModeValue('gray.800', 'white')}
-            fontWeight={600}
-            as={RouterLink}
-            to="/"
-            _hover={{ textDecoration: 'none' }}
+          <Flex
+            flex={{ base: 1, md: 'auto' }}
+            ml={{ base: -2 }}
+            display={{ base: 'flex', md: 'none' }}
           >
-            SkillSprint
-          </Text>
-
-          <Flex display={{ base: 'none', md: 'flex' }} ml={10}>
-            <DesktopNav />
+            <IconButton
+              onClick={onToggle}
+              icon={
+                isOpen ? <CloseIcon w={3} h={3} /> : <HamburgerIcon w={5} h={5} />
+              }
+              variant={'ghost'}
+              aria-label={'Toggle Navigation'}
+            />
           </Flex>
-        </Flex>
+          
+          <Flex flex={{ base: 1 }} justify={{ base: 'center', md: 'start' }} align="center">
+            <Text
+              textAlign={useBreakpointValue({ base: 'center', md: 'left' })}
+              fontFamily={'heading'}
+              fontSize="xl"
+              color={useColorModeValue('primary.600', 'primary.300')}
+              fontWeight={700}
+              as={RouterLink}
+              to="/"
+              _hover={{ textDecoration: 'none' }}
+              display="flex"
+              alignItems="center"
+            >
+              <Icon 
+                viewBox="0 0 24 24" 
+                boxSize={6} 
+                mr={2} 
+                fill="currentColor"
+              >
+                <path d="M4.5 2C3.12 2 2 3.12 2 4.5v15C2 20.88 3.12 22 4.5 22h15c1.38 0 2.5-1.12 2.5-2.5v-15C22 3.12 20.88 2 19.5 2h-15zM12 5.5l6 3.5v2.5l-6-3.5-6 3.5V9l6-3.5zm0 5.5l6 3.5v2.5l-6-3.5-6 3.5V14.5L12 11zm0 5.5l6 3.5V22h-2l-4-2-4 2H6v-2l6-3.5z" />
+              </Icon>
+              SkillSprint
+            </Text>
 
-        <Stack
-          flex={{ base: 1, md: 0 }}
-          justify={'flex-end'}
-          direction={'row'}
-          spacing={6}
-        >
-          <Button
-            as={RouterLink}
-            fontSize={'sm'}
-            fontWeight={400}
-            variant={'link'}
-            to={'/login'}
+            <Flex display={{ base: 'none', md: 'flex' }} ml={10}>
+              <DesktopNav />
+            </Flex>
+          </Flex>
+
+          <Stack
+            flex={{ base: 1, md: 0 }}
+            justify={'flex-end'}
+            direction={'row'}
+            spacing={{ base: 2, md: 4 }}
+            align="center"
           >
-            Sign In
-          </Button>
-          <Button
-            as={RouterLink}
-            display={{ base: 'none', md: 'inline-flex' }}
-            fontSize={'sm'}
-            fontWeight={600}
-            color={'white'}
-            bg={'primary.600'}
-            to={'/signup'}
-            _hover={{
-              bg: 'primary.500',
-            }}
-          >
-            Sign Up
-          </Button>
-        </Stack>
-      </Flex>
+            {isLoggedIn ? (
+              <HStack spacing={3}>
+                <Box position="relative">
+                  <IconButton
+                    icon={<BellIcon />}
+                    variant="ghost"
+                    aria-label="Notifications"
+                    fontSize="lg"
+                  />
+                  <Box
+                    position="absolute"
+                    top="0"
+                    right="0"
+                    width="8px"
+                    height="8px"
+                    borderRadius="full"
+                    bg="accent.500"
+                  />
+                </Box>
+                
+                <Menu>
+                  <MenuButton 
+                    as={Avatar}
+                    size="sm"
+                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=387&q=80" 
+                    cursor="pointer"
+                    _hover={{ shadow: 'md' }}
+                  />
+                  <MenuList>
+                    <MenuItem as={RouterLink} to="/profile">Profile</MenuItem>
+                    <MenuItem as={RouterLink} to="/dashboard">Dashboard</MenuItem>
+                    <MenuItem as={RouterLink} to="/settings">Settings</MenuItem>
+                    <MenuDivider />
+                    <MenuItem>Sign Out</MenuItem>
+                  </MenuList>
+                </Menu>
+              </HStack>
+            ) : (
+              <>
+                <Button
+                  as={RouterLink}
+                  fontSize={'sm'}
+                  fontWeight={500}
+                  variant={'link'}
+                  color={'gray.600'}
+                  to={'/login'}
+                  display={{ base: 'none', md: 'inline-flex' }}
+                >
+                  Sign In
+                </Button>
+                <Button
+                  as={RouterLink}
+                  size={{ base: 'sm', md: 'md' }}
+                  fontSize={{ base: 'xs', md: 'sm' }}
+                  fontWeight={600}
+                  colorScheme="primary"
+                  to={'/signup'}
+                  leftIcon={
+                    <Icon viewBox="0 0 24 24" boxSize={4}>
+                      <path
+                        fill="currentColor"
+                        d="M19 12.998h-6v6h-2v-6H5v-2h6v-6h2v6h6z"
+                      />
+                    </Icon>
+                  }
+                >
+                  Sign Up Free
+                </Button>
+              </>
+            )}
+          </Stack>
+        </Flex>
+      </Container>
 
       <Collapse in={isOpen} animateOpacity>
         <MobileNav />
@@ -114,11 +182,11 @@ function Header() {
 
 const DesktopNav = () => {
   const linkColor = useColorModeValue('gray.600', 'gray.200');
-  const linkHoverColor = useColorModeValue('primary.600', 'white');
+  const linkHoverColor = useColorModeValue('primary.600', 'primary.300');
   const popoverContentBgColor = useColorModeValue('white', 'gray.800');
 
   return (
-    <Stack direction={'row'} spacing={4}>
+    <HStack spacing={6}>
       {NAV_ITEMS.map((navItem) => (
         <Box key={navItem.label}>
           <Popover trigger={'hover'} placement={'bottom-start'}>
@@ -130,9 +198,22 @@ const DesktopNav = () => {
                 fontSize={'sm'}
                 fontWeight={500}
                 color={linkColor}
+                position="relative"
+                _before={{
+                  content: "''",
+                  position: 'absolute',
+                  width: '0%',
+                  height: '2px',
+                  bottom: '0',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  backgroundColor: 'primary.600',
+                  transition: 'all 0.3s ease-in-out',
+                }}
                 _hover={{
                   textDecoration: 'none',
                   color: linkHoverColor,
+                  _before: { width: '100%' },
                 }}
               >
                 {navItem.label}
@@ -157,7 +238,7 @@ const DesktopNav = () => {
           </Popover>
         </Box>
       ))}
-    </Stack>
+    </HStack>
   );
 };
 
@@ -201,10 +282,35 @@ const MobileNav = () => {
     <Stack
       bg={useColorModeValue('white', 'gray.800')}
       p={4}
-      display={{ md: 'none' }}>
+      display={{ md: 'none' }}
+      borderBottomWidth={1}
+      borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
+    >
       {NAV_ITEMS.map((navItem) => (
         <MobileNavItem key={navItem.label} {...navItem} />
       ))}
+      <Box pt={2}>
+        <Button
+          as={RouterLink}
+          to="/login"
+          w="full"
+          variant="outline"
+          colorScheme="primary"
+          size="sm"
+          mb={3}
+        >
+          Sign In
+        </Button>
+        <Button
+          as={RouterLink}
+          to="/signup"
+          w="full"
+          colorScheme="primary"
+          size="sm"
+        >
+          Sign Up Free
+        </Button>
+      </Box>
     </Stack>
   );
 };
