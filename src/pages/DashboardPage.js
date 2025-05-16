@@ -101,6 +101,10 @@ function DashboardPage() {
     },
   ];
 
+  // Define color mode values ONCE at the top
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const cardBorder = useColorModeValue('gray.200', 'gray.700');
+
   return (
     <Box maxW="7xl" mx="auto" px={{ base: 4, md: 8, lg: 12 }} py={8}>
       {/* Welcome Header */}
@@ -131,9 +135,9 @@ function DashboardPage() {
           py="5"
           shadow="md"
           border="1px"
-          borderColor={useColorModeValue('gray.200', 'gray.700')}
+          borderColor={cardBorder}
           rounded="lg"
-          bg={useColorModeValue('white', 'gray.800')}
+          bg={cardBg}
         >
           <StatLabel fontWeight="medium">Daily Streak</StatLabel>
           <StatNumber fontSize="3xl" fontWeight="bold">
@@ -147,9 +151,9 @@ function DashboardPage() {
           py="5"
           shadow="md"
           border="1px"
-          borderColor={useColorModeValue('gray.200', 'gray.700')}
+          borderColor={cardBorder}
           rounded="lg"
-          bg={useColorModeValue('white', 'gray.800')}
+          bg={cardBg}
         >
           <StatLabel fontWeight="medium">Completed Sprints</StatLabel>
           <StatNumber fontSize="3xl" fontWeight="bold">
@@ -163,9 +167,9 @@ function DashboardPage() {
           py="5"
           shadow="md"
           border="1px"
-          borderColor={useColorModeValue('gray.200', 'gray.700')}
+          borderColor={cardBorder}
           rounded="lg"
-          bg={useColorModeValue('white', 'gray.800')}
+          bg={cardBg}
         >
           <StatLabel fontWeight="medium">XP Points</StatLabel>
           <StatNumber fontSize="3xl" fontWeight="bold">
@@ -182,9 +186,9 @@ function DashboardPage() {
           py="5"
           shadow="md"
           border="1px"
-          borderColor={useColorModeValue('gray.200', 'gray.700')}
+          borderColor={cardBorder}
           rounded="lg"
-          bg={useColorModeValue('white', 'gray.800')}
+          bg={cardBg}
         >
           <StatLabel fontWeight="medium">Active Paths</StatLabel>
           <StatNumber fontSize="3xl" fontWeight="bold">
@@ -203,10 +207,10 @@ function DashboardPage() {
           {learningPaths.map((path) => (
             <Card
               key={path.id}
-              bg={useColorModeValue('white', 'gray.800')}
+              bg={cardBg}
               shadow="md"
               border="1px"
-              borderColor={useColorModeValue('gray.200', 'gray.700')}
+              borderColor={cardBorder}
             >
               <CardHeader pb={0}>
                 <Heading size="sm">{path.title}</Heading>
@@ -246,10 +250,10 @@ function DashboardPage() {
             Recent Sprints
           </Heading>
           <Card
-            bg={useColorModeValue('white', 'gray.800')}
+            bg={cardBg}
             shadow="md"
             border="1px"
-            borderColor={useColorModeValue('gray.200', 'gray.700')}
+            borderColor={cardBorder}
           >
             {recentSprints.map((sprint, index) => (
               <React.Fragment key={sprint.id}>
@@ -290,10 +294,10 @@ function DashboardPage() {
             Recommended for You
           </Heading>
           <Card
-            bg={useColorModeValue('white', 'gray.800')}
+            bg={cardBg}
             shadow="md"
             border="1px"
-            borderColor={useColorModeValue('gray.200', 'gray.700')}
+            borderColor={cardBorder}
           >
             {recommendedSprints.map((sprint, index) => (
               <React.Fragment key={sprint.id}>
