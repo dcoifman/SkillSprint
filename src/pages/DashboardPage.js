@@ -29,7 +29,7 @@ function DashboardPage() {
     completedSprints: 42,
     totalPoints: 2150,
     nextLevel: 3000,
-    skillsInProgress: 3,
+    skillsInProgress: 4,
   };
 
   const learningPaths = [
@@ -54,6 +54,13 @@ function DashboardPage() {
       nextSession: 'Persuasive Presentations',
       estimatedTime: 15,
     },
+    {
+      id: 4,
+      title: 'Functional Anatomy Fundamentals',
+      progress: 15,
+      nextSession: 'Skeletal System Basics',
+      estimatedTime: 10,
+    },
   ];
 
   const recentSprints = [
@@ -72,9 +79,9 @@ function DashboardPage() {
       time: '8 min',
     },
     {
-      id: 3,
-      title: 'Effective Email Communication',
-      date: '2 days ago',
+      id: 201,
+      title: 'Introduction to Functional Anatomy',
+      date: 'Today',
       score: 100,
       time: '10 min',
     },
@@ -94,10 +101,10 @@ function DashboardPage() {
       time: '12 min',
     },
     {
-      id: 3,
-      title: 'Data Visualization Principles',
-      path: 'Data Analytics',
-      time: '8 min',
+      id: 202,
+      title: 'Skeletal System Basics',
+      path: 'Functional Anatomy Fundamentals',
+      time: '10 min',
     },
   ];
 
@@ -203,7 +210,7 @@ function DashboardPage() {
         <Heading size="md" mb={4}>
           Your Learning Paths
         </Heading>
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+        <SimpleGrid columns={{ base: 1, md: 4 }} spacing={6}>
           {learningPaths.map((path) => (
             <Card
               key={path.id}

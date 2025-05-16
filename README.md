@@ -28,6 +28,61 @@ SkillSprint delivers concise, adaptive, and personalized mini-lessons ("sprints"
 - **AI/ML**: Custom GPT integration, TensorFlow/PyTorch
 - **Database**: PostgreSQL or MongoDB (Cloud hosted)
 
+## Supabase Integration Setup
+
+This application uses Supabase for authentication and database functionality. Follow these steps to set up your Supabase integration:
+
+### 1. Create a Supabase Project
+
+1. Sign up or log in at [Supabase](https://supabase.com)
+2. Create a new project
+3. Note your project URL and anon/public key from the API settings
+
+### 2. Set Up Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```
+REACT_APP_SUPABASE_URL=your_supabase_url_here
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+```
+
+For Vite-based projects, use:
+
+```
+VITE_SUPABASE_URL=your_supabase_url_here
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+```
+
+### 3. Set Up Database Schema
+
+1. Go to the SQL Editor in your Supabase dashboard
+2. Copy the contents of `supabase-schema.sql` from this project
+3. Run the SQL queries to create all necessary tables and policies
+
+### 4. Configure Authentication
+
+1. In your Supabase dashboard, go to Authentication > Settings
+2. Configure Email Auth:
+   - Enable Email confirmations (recommended)
+   - Customize email templates if desired
+3. Set up OAuth providers (optional):
+   - Google
+   - GitHub
+   - Facebook
+   - Add redirect URLs to your application (e.g., `http://localhost:3000/dashboard` for development)
+
+### 5. Seed Initial Data
+
+To populate your database with sample data:
+
+1. Create instructors first
+2. Create learning paths and link them to instructors
+3. Create modules for each learning path
+4. Create sprints for each module
+
+You can use the Supabase dashboard interface or SQL queries to add this data.
+
 ## Getting Started
 
 ### Prerequisites
@@ -77,3 +132,43 @@ skill-sprint/
 ## License
 
 MIT 
+
+## Running the Application
+
+1. Install dependencies:
+   ```
+   npm install
+   ```
+
+2. Start the development server:
+   ```
+   npm start
+   ```
+
+3. Open [http://localhost:3000](http://localhost:3000) to view the application
+
+## Database Structure
+
+- **instructors**: Information about course instructors
+- **learning_paths**: Main learning paths/courses
+- **modules**: Sections within learning paths
+- **sprints**: Individual micro-lessons within modules
+- **user_paths**: User enrollments in learning paths
+- **user_progress**: User progress through individual sprints
+
+## Authentication Flow
+
+The application uses Supabase Auth for:
+- Email/password authentication
+- Social login (Google, GitHub, Facebook)
+- Session management
+- Protected routes
+
+## API Functions
+
+Key functions for interacting with Supabase:
+- `signUp`, `signIn`, `signOut`: User authentication
+- `fetchLearningPaths`: Get learning paths with filtering options
+- `fetchPathDetail`: Get detailed information about a specific path
+- `enrollUserInPath`: Enroll a user in a learning path
+- `updateSprintProgress`: Track user progress through sprints 

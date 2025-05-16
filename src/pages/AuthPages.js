@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -22,8 +22,11 @@ import {
   InputRightElement,
   Icon,
   Checkbox,
+  useToast,
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
+import { signIn, signUp, supabase } from '../services/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -33,6 +36,15 @@ export function LoginPage() {
   const [errors, setErrors] = useState({});
   
   const navigate = useNavigate();
+  const toast = useToast();
+  const { isAuthenticated } = useAuth();
+  
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
   
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -56,13 +68,66 @@ export function LoginPage() {
     
     setIsLoading(true);
     
-    // In a real app, this would be an API call
-    setTimeout(() => {
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        toast({
+          title: 'Error signing in',
+          description: error.message,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: 'Login successful',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      toast({
+        title: 'Unexpected error',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
       setIsLoading(false);
-      // Mock successful login for demo
-      localStorage.setItem('isLoggedIn', 'true');
-      navigate('/dashboard');
-    }, 1500);
+    }
+  };
+
+  const handleSocialLogin = async (provider) => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({ 
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      
+      if (error) {
+        toast({
+          title: 'Error signing in',
+          description: error.message,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Unexpected error',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
   
   return (
@@ -151,7 +216,7 @@ export function LoginPage() {
               Or continue with
             </Text>
             <HStack>
-              <Button flex="1" variant="outline">
+              <Button flex="1" variant="outline" onClick={() => handleSocialLogin('google')}>
                 <Icon viewBox="0 0 24 24" width="20px" height="20px">
                   <path
                     fill="currentColor"
@@ -171,7 +236,7 @@ export function LoginPage() {
                   />
                 </Icon>
               </Button>
-              <Button flex="1" variant="outline">
+              <Button flex="1" variant="outline" onClick={() => handleSocialLogin('facebook')}>
                 <Icon viewBox="0 0 24 24" width="20px" height="20px">
                   <path
                     fill="currentColor"
@@ -179,7 +244,7 @@ export function LoginPage() {
                   />
                 </Icon>
               </Button>
-              <Button flex="1" variant="outline">
+              <Button flex="1" variant="outline" onClick={() => handleSocialLogin('github')}>
                 <Icon viewBox="0 0 24 24" width="20px" height="20px">
                   <path
                     fill="currentColor"
@@ -212,8 +277,18 @@ export function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [termsAccepted, setTermsAccepted] = useState(false);
   
   const navigate = useNavigate();
+  const toast = useToast();
+  const { isAuthenticated } = useAuth();
+  
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
   
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -238,6 +313,10 @@ export function SignupPage() {
       newErrors.confirmPassword = 'Passwords do not match';
     }
     
+    if (!termsAccepted) {
+      newErrors.terms = 'You must accept the Terms of Service and Privacy Policy';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -249,12 +328,71 @@ export function SignupPage() {
     
     setIsLoading(true);
     
-    // In a real app, this would be an API call
-    setTimeout(() => {
+    try {
+      const { data, error } = await signUp(
+        formData.email,
+        formData.password,
+        formData.name
+      );
+      
+      if (error) {
+        toast({
+          title: 'Error creating account',
+          description: error.message,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      } else {
+        // Account created successfully, user is automatically logged in
+        navigate('/dashboard');
+        toast({
+          title: 'Account created successfully',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Unexpected error',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
       setIsLoading(false);
-      // Mock successful signup for demo
-      navigate('/dashboard');
-    }, 1500);
+    }
+  };
+
+  const handleSocialSignup = async (provider) => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({ 
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      
+      if (error) {
+        toast({
+          title: 'Error signing up',
+          description: error.message,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Unexpected error',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
   
   return (
@@ -373,16 +511,22 @@ export function SignupPage() {
               <FormErrorMessage>{errors.confirmPassword}</FormErrorMessage>
             </FormControl>
             
-            <Checkbox>
-              I agree to the{' '}
-              <Link as={RouterLink} to="/terms" color="primary.600">
-                Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link as={RouterLink} to="/privacy" color="primary.600">
-                Privacy Policy
-              </Link>
-            </Checkbox>
+            <FormControl isInvalid={errors.terms}>
+              <Checkbox 
+                isChecked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+              >
+                I agree to the{' '}
+                <Link as={RouterLink} to="/terms" color="primary.600">
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link as={RouterLink} to="/privacy" color="primary.600">
+                  Privacy Policy
+                </Link>
+              </Checkbox>
+              <FormErrorMessage>{errors.terms}</FormErrorMessage>
+            </FormControl>
             
             <Button
               type="submit"
@@ -401,7 +545,7 @@ export function SignupPage() {
               Or sign up with
             </Text>
             <HStack>
-              <Button flex="1" variant="outline">
+              <Button flex="1" variant="outline" onClick={() => handleSocialSignup('google')}>
                 <Icon viewBox="0 0 24 24" width="20px" height="20px">
                   <path
                     fill="currentColor"
@@ -421,7 +565,7 @@ export function SignupPage() {
                   />
                 </Icon>
               </Button>
-              <Button flex="1" variant="outline">
+              <Button flex="1" variant="outline" onClick={() => handleSocialSignup('facebook')}>
                 <Icon viewBox="0 0 24 24" width="20px" height="20px">
                   <path
                     fill="currentColor"
@@ -429,7 +573,7 @@ export function SignupPage() {
                   />
                 </Icon>
               </Button>
-              <Button flex="1" variant="outline">
+              <Button flex="1" variant="outline" onClick={() => handleSocialSignup('github')}>
                 <Icon viewBox="0 0 24 24" width="20px" height="20px">
                   <path
                     fill="currentColor"

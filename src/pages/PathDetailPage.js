@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams, Link as RouterLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -28,235 +28,204 @@ import {
   useColorModeValue,
   Card,
   CardBody,
+  Spinner,
+  Center,
+  useToast,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
 import { ChevronLeftIcon, StarIcon, CheckCircleIcon, TimeIcon, LockIcon } from '@chakra-ui/icons';
+import { fetchPathDetail, enrollUserInPath } from '../services/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 
 function PathDetailPage() {
   const { pathId } = useParams();
   const [enrolling, setEnrolling] = useState(false);
+  const [pathDetail, setPathDetail] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { isAuthenticated } = useAuth();
 
-  // In a real app, this would be fetched based on pathId
-  const pathDetail = {
-    id: pathId,
-    title: 'Machine Learning Fundamentals',
-    description: 'A comprehensive introduction to machine learning concepts, algorithms, and practical applications. Learn how to build models that can make predictions and improve with experience.',
-    image: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTZ8fG1hY2hpbmUlMjBsZWFybmluZ3xlbnwwfHwwfHx8MA%3D%3D',
-    category: 'Data Science',
-    level: 'Beginner',
-    rating: 4.8,
-    reviewCount: 324,
-    studentsCount: 1245,
-    totalSprints: 24,
-    completedSprints: 0,
-    estimatedTime: '4 hours',
-    tags: ['AI', 'Python', 'Neural Networks', 'Data Science'],
-    prerequisites: [
-      'Basic understanding of programming concepts', 
-      'Familiarity with Python (recommended but not required)',
-      'High school level mathematics'
-    ],
-    objectives: [
-      'Understand machine learning foundations and key concepts',
-      'Implement basic supervised and unsupervised learning algorithms',
-      'Build neural network models for classification and regression tasks',
-      'Apply machine learning to solve real-world problems',
-      'Understand model evaluation and validation techniques'
-    ],
-    instructor: {
-      name: 'Dr. Sarah Chen',
-      title: 'AI Research Scientist & Educator',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=387&q=80',
-      bio: 'Dr. Sarah Chen is an AI researcher with over 10 years of experience at leading tech companies. She specializes in making complex machine learning concepts accessible to beginners.',
-    },
-    modules: [
-      {
-        title: 'Introduction to Machine Learning',
-        description: 'Understand the core concepts and types of machine learning',
-        sprints: [
-          {
-            id: 1,
-            title: 'What is Machine Learning?',
-            time: '8 min',
-            isCompleted: false,
-            isUnlocked: true,
-          },
-          {
-            id: 2,
-            title: 'Supervised vs Unsupervised Learning',
-            time: '12 min',
-            isCompleted: false,
-            isUnlocked: true,
-          },
-          {
-            id: 3,
-            title: 'Key Machine Learning Applications',
-            time: '10 min',
-            isCompleted: false,
-            isUnlocked: true,
-          },
-        ]
-      },
-      {
-        title: 'Data Preparation for Machine Learning',
-        description: 'Learn how to prepare and preprocess data for ML algorithms',
-        sprints: [
-          {
-            id: 4,
-            title: 'Data Cleaning Techniques',
-            time: '15 min',
-            isCompleted: false,
-            isUnlocked: false,
-          },
-          {
-            id: 5,
-            title: 'Feature Scaling and Normalization',
-            time: '12 min',
-            isCompleted: false,
-            isUnlocked: false,
-          },
-          {
-            id: 6,
-            title: 'Handling Missing Data',
-            time: '10 min',
-            isCompleted: false,
-            isUnlocked: false,
-          },
-          {
-            id: 7,
-            title: 'Feature Engineering Fundamentals',
-            time: '12 min',
-            isCompleted: false,
-            isUnlocked: false,
-          },
-        ]
-      },
-      {
-        title: 'Supervised Learning Algorithms',
-        description: 'Explore key supervised learning algorithms and their applications',
-        sprints: [
-          {
-            id: 8,
-            title: 'Linear Regression',
-            time: '12 min',
-            isCompleted: false,
-            isUnlocked: false,
-          },
-          {
-            id: 9,
-            title: 'Logistic Regression',
-            time: '10 min',
-            isCompleted: false,
-            isUnlocked: false,
-          },
-          {
-            id: 10,
-            title: 'Decision Trees',
-            time: '15 min',
-            isCompleted: false,
-            isUnlocked: false,
-          },
-          {
-            id: 11,
-            title: 'Support Vector Machines',
-            time: '12 min',
-            isCompleted: false,
-            isUnlocked: false,
-          },
-        ]
-      },
-      {
-        title: 'Neural Networks Fundamentals',
-        description: 'Understand the basics of neural networks and deep learning',
-        sprints: [
-          {
-            id: 12,
-            title: 'Introduction to Neural Networks',
-            time: '10 min',
-            isCompleted: false,
-            isUnlocked: false,
-          },
-          {
-            id: 13,
-            title: 'Activation Functions',
-            time: '8 min',
-            isCompleted: false,
-            isUnlocked: false,
-          },
-          {
-            id: 14,
-            title: 'Backpropagation Explained',
-            time: '15 min',
-            isCompleted: false,
-            isUnlocked: false,
-          },
-          {
-            id: 15,
-            title: 'Building Your First Neural Network',
-            time: '18 min',
-            isCompleted: false,
-            isUnlocked: false,
-          },
-        ]
-      },
-    ],
-    relatedPaths: [
-      {
-        id: 101,
-        title: 'Data Science with Python',
-        level: 'Intermediate',
-        image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8ZGF0YSUyMGFuYWx5dGljc3xlbnwwfHwwfHx8MA%3D%3D',
-        totalSprints: 28,
-        estimatedTime: '5 hours',
-      },
-      {
-        id: 102,
-        title: 'Deep Learning Specialization',
-        level: 'Advanced',
-        image: 'https://images.unsplash.com/photo-1677442135136-760302227f2a?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZGVlcCUyMGxlYXJuaW5nfGVufDB8fDB8fHww',
-        totalSprints: 36,
-        estimatedTime: '7 hours',
-      },
-      {
-        id: 103,
-        title: 'Practical Data Visualization',
-        level: 'Beginner',
-        image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTR8fGRhdGElMjB2aXN1YWxpemF0aW9ufGVufDB8fDB8fHww',
-        totalSprints: 20,
-        estimatedTime: '3.5 hours',
-      },
-    ],
-  };
-
-  const handleEnroll = () => {
-    setEnrolling(true);
-    
-    // In a real app, this would be an API call to enroll the user
-    setTimeout(() => {
-      setEnrolling(false);
-      // Navigate or show success message
-    }, 1500);
-  };
-
-  // Calculate progress
-  const progress = pathDetail.completedSprints > 0
-    ? Math.round((pathDetail.completedSprints / pathDetail.totalSprints) * 100)
-    : 0;
-
-  // Count total time
-  const totalMinutes = pathDetail.modules.reduce((total, module) => {
-    return total + module.sprints.reduce((moduleTotal, sprint) => {
-      return moduleTotal + parseInt(sprint.time);
-    }, 0);
-  }, 0);
-
+  // Define color mode values at the top level
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const highlightColor = useColorModeValue('gray.50', 'gray.700');
+  const heroBg = useColorModeValue('gray.50', 'gray.900');
+
+  // Fetch path details from Supabase
+  useEffect(() => {
+    async function loadPathDetail() {
+      try {
+        setIsLoading(true);
+        
+        const { data, error } = await fetchPathDetail(pathId);
+        
+        if (error) {
+          console.error('Error fetching path details:', error);
+          setError(error.message);
+          toast({
+            title: 'Error loading path details',
+            description: error.message,
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+          return;
+        }
+        
+        setPathDetail(data);
+      } catch (error) {
+        console.error('Unexpected error:', error);
+        setError('An unexpected error occurred');
+        toast({
+          title: 'An unexpected error occurred',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadPathDetail();
+  }, [pathId, toast]);
+
+  const handleEnroll = async () => {
+    if (!isAuthenticated) {
+      // If user is not logged in, redirect to login page
+      toast({
+        title: 'Login required',
+        description: 'Please login to enroll in this path',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      });
+      navigate(`/login?redirect=/paths/${pathId}`);
+      return;
+    }
+    
+    setEnrolling(true);
+    
+    try {
+      const { error } = await enrollUserInPath(pathId);
+      
+      if (error) {
+        toast({
+          title: 'Error enrolling in path',
+          description: error.message,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: 'Successfully enrolled',
+          description: 'You are now enrolled in this learning path',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+        
+        // Refresh path details to show progress UI
+        const { data: refreshedData } = await fetchPathDetail(pathId);
+        setPathDetail(refreshedData);
+      }
+    } catch (error) {
+      toast({
+        title: 'Unexpected error',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setEnrolling(false);
+    }
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Container maxW="7xl" py={20}>
+        <Center>
+          <VStack spacing={4}>
+            <Spinner size="xl" color="purple.500" thickness="4px" />
+            <Text>Loading path details...</Text>
+          </VStack>
+        </Center>
+      </Container>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Container maxW="7xl" py={20}>
+        <Center>
+          <VStack spacing={4} maxW="md" textAlign="center">
+            <Alert status="error" borderRadius="md">
+              <AlertIcon />
+              Failed to load path details
+            </Alert>
+            <Text>{error}</Text>
+            <Button
+              leftIcon={<ChevronLeftIcon />}
+              onClick={() => navigate('/explore')}
+              colorScheme="purple"
+              mt={4}
+            >
+              Back to Explore
+            </Button>
+          </VStack>
+        </Center>
+      </Container>
+    );
+  }
+
+  // Not found state
+  if (!pathDetail) {
+    return (
+      <Container maxW="7xl" py={20}>
+        <Center>
+          <VStack spacing={4} maxW="md" textAlign="center">
+            <Heading>Path Not Found</Heading>
+            <Text>The learning path you're looking for doesn't exist or has been removed.</Text>
+            <Button
+              leftIcon={<ChevronLeftIcon />}
+              as={RouterLink}
+              to="/explore"
+              colorScheme="purple"
+              mt={4}
+            >
+              Browse Learning Paths
+            </Button>
+          </VStack>
+        </Center>
+      </Container>
+    );
+  }
+
+  // Calculate progress
+  const progress = pathDetail.completedSprints > 0
+    ? Math.round((pathDetail.completedSprints / pathDetail.total_sprints) * 100)
+    : 0;
+
+  // Count total time for all sprints
+  const totalMinutes = pathDetail.modules?.reduce((total, module) => {
+    return total + module.sprints.reduce((moduleTotal, sprint) => {
+      const sprintTime = sprint.time ? parseInt(sprint.time, 10) : 0;
+      return moduleTotal + sprintTime;
+    }, 0);
+  }, 0) || 0;
 
   return (
     <Box>
       {/* Hero Section */}
-      <Box bg={useColorModeValue('gray.50', 'gray.900')} py={8}>
+      <Box bg={heroBg} py={8}>
         <Container maxW="7xl">
           <Button
             as={RouterLink}
@@ -288,20 +257,20 @@ function PathDetailPage() {
                 <HStack spacing={6} mt={2}>
                   <HStack>
                     <StarIcon color="yellow.400" />
-                    <Text fontWeight="medium">{pathDetail.rating}</Text>
-                    <Text color="gray.500">({pathDetail.reviewCount} reviews)</Text>
+                    <Text fontWeight="medium">{pathDetail.rating || 'N/A'}</Text>
+                    <Text color="gray.500">({pathDetail.review_count || 0} reviews)</Text>
                   </HStack>
                   
                   <HStack>
                     <TimeIcon />
-                    <Text>{pathDetail.estimatedTime}</Text>
+                    <Text>{pathDetail.estimated_time || 'N/A'}</Text>
                   </HStack>
                   
-                  <Text>{pathDetail.totalSprints} sprints</Text>
+                  <Text>{pathDetail.total_sprints || 0} sprints</Text>
                 </HStack>
                 
                 <HStack flexWrap="wrap" mt={2}>
-                  {pathDetail.tags.map(tag => (
+                  {pathDetail.tags && pathDetail.tags.map(tag => (
                     <Tag key={tag} size="md" colorScheme="blue" m={1}>
                       {tag}
                     </Tag>
@@ -318,6 +287,7 @@ function PathDetailPage() {
                 width="100%"
                 height="250px"
                 objectFit="cover"
+                fallbackSrc="https://via.placeholder.com/500x300?text=No+Image"
               />
             </Box>
           </Flex>
@@ -329,127 +299,135 @@ function PathDetailPage() {
           {/* Main Content */}
           <Box gridColumn={{ lg: 'span 2' }}>
             {/* Instructor Section */}
-            <Box mb={8}>
-              <Heading size="md" mb={4}>About the Instructor</Heading>
-              <HStack spacing={4} align="start">
-                <Avatar size="xl" src={pathDetail.instructor.avatar} />
-                <Box>
-                  <Heading size="sm">{pathDetail.instructor.name}</Heading>
-                  <Text color="gray.500">{pathDetail.instructor.title}</Text>
-                  <Text mt={2}>{pathDetail.instructor.bio}</Text>
-                </Box>
-              </HStack>
-            </Box>
+            {pathDetail.instructor && (
+              <Box mb={8}>
+                <Heading size="md" mb={4}>About the Instructor</Heading>
+                <HStack spacing={4} align="start">
+                  <Avatar size="xl" src={pathDetail.instructor.avatar} />
+                  <Box>
+                    <Heading size="sm">{pathDetail.instructor.name}</Heading>
+                    <Text color="gray.500">{pathDetail.instructor.title}</Text>
+                    <Text mt={2}>{pathDetail.instructor.bio}</Text>
+                  </Box>
+                </HStack>
+              </Box>
+            )}
             
             <Divider my={6} />
             
             {/* Learning Objectives */}
-            <Box mb={8}>
-              <Heading size="md" mb={4}>What You'll Learn</Heading>
-              <List spacing={3}>
-                {pathDetail.objectives.map((objective, index) => (
-                  <ListItem key={index} display="flex">
-                    <ListIcon as={CheckCircleIcon} color="green.500" mt={1} />
-                    <Text>{objective}</Text>
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
+            {pathDetail.objectives && (
+              <Box mb={8}>
+                <Heading size="md" mb={4}>What You'll Learn</Heading>
+                <List spacing={3}>
+                  {pathDetail.objectives.map((objective, index) => (
+                    <ListItem key={index} display="flex">
+                      <ListIcon as={CheckCircleIcon} color="green.500" mt={1} />
+                      <Text>{objective}</Text>
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+            )}
             
             <Divider my={6} />
             
             {/* Prerequisites */}
-            <Box mb={8}>
-              <Heading size="md" mb={4}>Prerequisites</Heading>
-              <List spacing={3}>
-                {pathDetail.prerequisites.map((req, index) => (
-                  <ListItem key={index} display="flex">
-                    <ListIcon as={CheckCircleIcon} color="purple.500" mt={1} />
-                    <Text>{req}</Text>
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
+            {pathDetail.prerequisites && (
+              <Box mb={8}>
+                <Heading size="md" mb={4}>Prerequisites</Heading>
+                <List spacing={3}>
+                  {pathDetail.prerequisites.map((req, index) => (
+                    <ListItem key={index} display="flex">
+                      <ListIcon as={CheckCircleIcon} color="purple.500" mt={1} />
+                      <Text>{req}</Text>
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+            )}
             
             <Divider my={6} />
             
             {/* Course Content */}
-            <Box>
-              <Heading size="md" mb={4}>Path Content</Heading>
-              <Text mb={4}>
-                {pathDetail.modules.length} modules • {pathDetail.totalSprints} sprints • Total {totalMinutes} minutes
-              </Text>
-              
-              <Accordion allowMultiple defaultIndex={[0]}>
-                {pathDetail.modules.map((module, moduleIndex) => (
-                  <AccordionItem key={moduleIndex} borderWidth="1px" borderRadius="md" mb={4} bg={cardBg} borderColor={borderColor}>
-                    <AccordionButton py={4}>
-                      <Box flex="1" textAlign="left">
-                        <Heading size="sm">{module.title}</Heading>
-                        <Text color="gray.500" fontSize="sm" mt={1}>
-                          {module.sprints.length} sprints
+            {pathDetail.modules && pathDetail.modules.length > 0 && (
+              <Box>
+                <Heading size="md" mb={4}>Path Content</Heading>
+                <Text mb={4}>
+                  {pathDetail.modules.length} modules • {pathDetail.total_sprints} sprints • Total {totalMinutes} minutes
+                </Text>
+                
+                <Accordion allowMultiple defaultIndex={[0]}>
+                  {pathDetail.modules.map((module, moduleIndex) => (
+                    <AccordionItem key={moduleIndex} borderWidth="1px" borderRadius="md" mb={4} bg={cardBg} borderColor={borderColor}>
+                      <AccordionButton py={4}>
+                        <Box flex="1" textAlign="left">
+                          <Heading size="sm">{module.title}</Heading>
+                          <Text color="gray.500" fontSize="sm" mt={1}>
+                            {module.sprints.length} sprints
+                          </Text>
+                        </Box>
+                        <AccordionIcon />
+                      </AccordionButton>
+                      <AccordionPanel pb={4}>
+                        <Text mb={4} color="gray.600">
+                          {module.description}
                         </Text>
-                      </Box>
-                      <AccordionIcon />
-                    </AccordionButton>
-                    <AccordionPanel pb={4}>
-                      <Text mb={4} color="gray.600">
-                        {module.description}
-                      </Text>
-                      
-                      <VStack spacing={3} align="stretch">
-                        {module.sprints.map((sprint) => (
-                          <Flex 
-                            key={sprint.id} 
-                            p={3} 
-                            borderRadius="md" 
-                            justify="space-between"
-                            align="center"
-                            bg={sprint.isUnlocked ? highlightColor : 'transparent'}
-                            opacity={sprint.isUnlocked ? 1 : 0.7}
-                          >
-                            <HStack>
-                              {sprint.isCompleted ? (
-                                <Icon as={CheckCircleIcon} color="green.500" boxSize={5} />
-                              ) : sprint.isUnlocked ? (
-                                <Icon viewBox="0 0 24 24" boxSize={5} color="purple.500">
-                                  <path
-                                    fill="currentColor"
-                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"
-                                  />
-                                </Icon>
-                              ) : (
-                                <LockIcon color="gray.500" />
-                              )}
-                              <Text fontWeight={sprint.isUnlocked ? "medium" : "normal"}>
-                                {sprint.title}
-                              </Text>
-                            </HStack>
-                            
-                            <HStack spacing={4}>
-                              <Text fontSize="sm" color="gray.500">
-                                {sprint.time}
-                              </Text>
-                              {sprint.isUnlocked && (
-                                <Button 
-                                  size="sm" 
-                                  colorScheme="purple" 
-                                  variant={sprint.isCompleted ? "outline" : "solid"}
-                                  as={RouterLink}
-                                  to={`/sprint/${sprint.id}`}
-                                >
-                                  {sprint.isCompleted ? "Review" : "Start"}
-                                </Button>
-                              )}
-                            </HStack>
-                          </Flex>
-                        ))}
-                      </VStack>
-                    </AccordionPanel>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </Box>
+                        
+                        <VStack spacing={3} align="stretch">
+                          {module.sprints.map((sprint) => (
+                            <Flex 
+                              key={sprint.id} 
+                              p={3} 
+                              borderRadius="md" 
+                              justify="space-between"
+                              align="center"
+                              bg={sprint.isUnlocked ? highlightColor : 'transparent'}
+                              opacity={sprint.isUnlocked ? 1 : 0.7}
+                            >
+                              <HStack>
+                                {sprint.isCompleted ? (
+                                  <Icon as={CheckCircleIcon} color="green.500" boxSize={5} />
+                                ) : sprint.isUnlocked ? (
+                                  <Icon viewBox="0 0 24 24" boxSize={5} color="purple.500">
+                                    <path
+                                      fill="currentColor"
+                                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"
+                                    />
+                                  </Icon>
+                                ) : (
+                                  <LockIcon color="gray.500" />
+                                )}
+                                <Text fontWeight={sprint.isUnlocked ? "medium" : "normal"}>
+                                  {sprint.title}
+                                </Text>
+                              </HStack>
+                              
+                              <HStack spacing={4}>
+                                <Text fontSize="sm" color="gray.500">
+                                  {sprint.time}
+                                </Text>
+                                {sprint.isUnlocked && (
+                                  <Button 
+                                    size="sm" 
+                                    colorScheme="purple" 
+                                    variant={sprint.isCompleted ? "outline" : "solid"}
+                                    as={RouterLink}
+                                    to={`/sprint/${sprint.id}`}
+                                  >
+                                    {sprint.isCompleted ? "Review" : "Start"}
+                                  </Button>
+                                )}
+                              </HStack>
+                            </Flex>
+                          ))}
+                        </VStack>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </Box>
+            )}
           </Box>
           
           {/* Sidebar */}
@@ -473,7 +451,7 @@ function PathDetailPage() {
                         <Box>
                           <Flex justify="space-between">
                             <Text fontWeight="medium">{progress}% complete</Text>
-                            <Text>{pathDetail.completedSprints}/{pathDetail.totalSprints} sprints</Text>
+                            <Text>{pathDetail.completedSprints}/{pathDetail.total_sprints} sprints</Text>
                           </Flex>
                           <Progress value={progress} colorScheme="purple" size="sm" mt={2} borderRadius="full" />
                         </Box>
@@ -493,11 +471,11 @@ function PathDetailPage() {
                         <Heading size="md">Join This Learning Path</Heading>
                         <HStack>
                           <Icon as={TimeIcon} />
-                          <Text>{pathDetail.estimatedTime}</Text>
+                          <Text>{pathDetail.estimated_time || 'N/A'}</Text>
                         </HStack>
                         
                         <Text>
-                          {pathDetail.studentsCount.toLocaleString()} learners enrolled
+                          {pathDetail.students_count ? `${pathDetail.students_count.toLocaleString()} learners enrolled` : 'Be the first to enroll!'}
                         </Text>
                         
                         <Button 
@@ -516,41 +494,44 @@ function PathDetailPage() {
               </Card>
               
               {/* Related Paths */}
-              <Box width="100%">
-                <Heading size="md" mb={4}>Related Learning Paths</Heading>
-                <VStack spacing={4} align="stretch">
-                  {pathDetail.relatedPaths.map(path => (
-                    <Card 
-                      key={path.id} 
-                      direction="row"
-                      overflow="hidden"
-                      variant="outline"
-                      size="sm"
-                      as={RouterLink}
-                      to={`/paths/${path.id}`}
-                      _hover={{ shadow: 'md', transform: 'translateY(-2px)' }}
-                      transition="all 0.2s"
-                    >
-                      <Image
-                        objectFit="cover"
-                        maxW="80px"
-                        src={path.image}
-                        alt={path.title}
-                      />
-                      <CardBody py={2}>
-                        <Heading size="xs">{path.title}</Heading>
-                        <HStack mt={1} fontSize="xs" color="gray.500" spacing={2}>
-                          <Text>{path.level}</Text>
-                          <Text>•</Text>
-                          <Text>{path.totalSprints} sprints</Text>
-                          <Text>•</Text>
-                          <Text>{path.estimatedTime}</Text>
-                        </HStack>
-                      </CardBody>
-                    </Card>
-                  ))}
-                </VStack>
-              </Box>
+              {pathDetail.relatedPaths && pathDetail.relatedPaths.length > 0 && (
+                <Box width="100%">
+                  <Heading size="md" mb={4}>Related Learning Paths</Heading>
+                  <VStack spacing={4} align="stretch">
+                    {pathDetail.relatedPaths.map(path => (
+                      <Card 
+                        key={path.id} 
+                        direction="row"
+                        overflow="hidden"
+                        variant="outline"
+                        size="sm"
+                        as={RouterLink}
+                        to={`/paths/${path.id}`}
+                        _hover={{ shadow: 'md', transform: 'translateY(-2px)' }}
+                        transition="all 0.2s"
+                      >
+                        <Image
+                          objectFit="cover"
+                          maxW="80px"
+                          src={path.image}
+                          alt={path.title}
+                          fallbackSrc="https://via.placeholder.com/80x80?text=Path"
+                        />
+                        <CardBody py={2}>
+                          <Heading size="xs">{path.title}</Heading>
+                          <HStack mt={1} fontSize="xs" color="gray.500" spacing={2}>
+                            <Text>{path.level}</Text>
+                            <Text>•</Text>
+                            <Text>{path.total_sprints} sprints</Text>
+                            <Text>•</Text>
+                            <Text>{path.estimated_time}</Text>
+                          </HStack>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </VStack>
+                </Box>
+              )}
             </VStack>
           </Box>
         </SimpleGrid>
