@@ -172,35 +172,56 @@ const STRUCTURE_DATA = {
 // Helper to load 3D models with caching and fallback for performance
 function useAnatomyModel(systemType) {
   const [modelError, setModelError] = useState(false);
+  const [loadAttempted, setLoadAttempted] = useState(false);
+  
+  // Try to get model from cache first
+  useEffect(() => {
+    if (modelCache.has(systemType)) {
+      setLoadAttempted(true);
+      return;
+    }
+  }, [systemType]);
   
   // Try to load the model with fallback
-  const { scene, nodes, materials, animations } = useGLTF(MODELS[systemType].path, undefined, 
-    (error) => {
-      console.error(`Error loading ${systemType} model:`, error);
-      setModelError(true);
-    }
-  );
+  let modelData = { scene: null, nodes: {}, materials: {}, animations: [] };
   
-  // If primary model fails, try to load a fallback
-  useEffect(() => {
-    if (modelError) {
-      console.log(`Attempting to load fallback model for ${systemType}`);
-      // You could implement additional fallback logic here
-      // For example, loading a simpler version of the model
-      // or showing a placeholder geometry
+  try {
+    if (!modelError && !loadAttempted) {
+      modelData = useGLTF(MODELS[systemType].path, undefined, 
+        (error) => {
+          console.error(`Error loading ${systemType} model:`, error);
+          setModelError(true);
+          setLoadAttempted(true);
+        }
+      );
+      
+      // Cache successful loads
+      if (modelData.scene) {
+        modelCache.set(systemType, modelData);
+        console.log(`Preloaded ${systemType} model`);
+      }
     }
-  }, [modelError, systemType]);
+  } catch (error) {
+    console.error(`Error loading ${systemType} model:`, error);
+    setModelError(true);
+    setLoadAttempted(true);
+  }
+  
+  // Get cached model if available
+  if (modelCache.has(systemType)) {
+    modelData = modelCache.get(systemType);
+  }
   
   // Apply model-specific transformations
   useEffect(() => {
-    if (scene) {
+    if (modelData.scene) {
       const config = MODELS[systemType];
-      scene.scale.set(config.scale, config.scale, config.scale);
-      scene.position.set(...config.position);
-      scene.rotation.set(...config.rotation);
+      modelData.scene.scale.set(config.scale, config.scale, config.scale);
+      modelData.scene.position.set(...config.position);
+      modelData.scene.rotation.set(...config.rotation);
       
       // Traverse the scene to enable shadows on all meshes
-      scene.traverse(object => {
+      modelData.scene.traverse(object => {
         if (object.isMesh) {
           object.castShadow = true;
           object.receiveShadow = true;
@@ -221,10 +242,10 @@ function useAnatomyModel(systemType) {
         }
       });
     }
-  }, [scene, systemType]);
+  }, [modelData.scene, systemType]);
   
   // If model failed to load, return a simple placeholder
-  if (modelError) {
+  if (modelError || !modelData.scene) {
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.MeshStandardMaterial({ 
       color: systemType === 'skeletal' ? '#f0e6d2' : '#a83232',
@@ -243,7 +264,12 @@ function useAnatomyModel(systemType) {
     };
   }
   
-  return { scene: scene.clone(), nodes, materials, animations };
+  return { 
+    scene: modelData.scene.clone(), 
+    nodes: modelData.nodes, 
+    materials: modelData.materials, 
+    animations: modelData.animations 
+  };
 }
 
 // Component to handle model selection and highlighting

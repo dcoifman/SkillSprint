@@ -18,10 +18,78 @@ npm install @chakra-ui/icons
 
 echo "Creating anatomical model repository structure..."
 
-# Create directories for models if they don't exist
-mkdir -p public/models/anatomy/{skeletal,muscular,nervous,circulatory,respiratory}
+# Create base directories for models
+mkdir -p public/models/anatomy/{skeletal,muscular,nervous,circulatory,respiratory,brain,heart,digestive,reproductive,lymphatic,body_parts,full_body,organs}
+
+# Function to download and extract models
+download_model() {
+  local system=$1
+  local url=$2
+  local output_dir="public/models/anatomy/$system"
+  
+  echo "Downloading $system models..."
+  curl -L "$url" -o "$output_dir/models.zip"
+  unzip -o "$output_dir/models.zip" -d "$output_dir"
+  rm "$output_dir/models.zip"
+}
+
+# Download models from reliable sources (replace with actual URLs)
+echo "Downloading anatomical models..."
+
+# Basic skeletal system models
+download_model "skeletal" "https://example.com/models/skeletal-system.zip"
+
+# Muscular system models
+download_model "muscular" "https://example.com/models/muscular-system.zip"
+
+# Nervous system models
+download_model "nervous" "https://example.com/models/nervous-system.zip"
+
+# Create placeholder models for missing files
+create_placeholder() {
+  local system=$1
+  local output_dir="public/models/anatomy/$system"
+  
+  if [ ! -f "$output_dir/placeholder.glb" ]; then
+    echo "Creating placeholder for $system..."
+    # Create a simple cube placeholder using Three.js
+    echo '{
+      "asset": {
+        "version": "2.0",
+        "generator": "Three.js GLB Placeholder"
+      },
+      "scene": 0,
+      "scenes": [{
+        "nodes": [0]
+      }],
+      "nodes": [{
+        "mesh": 0,
+        "name": "Placeholder"
+      }],
+      "meshes": [{
+        "primitives": [{
+          "attributes": {
+            "POSITION": 0
+          },
+          "mode": 4
+        }]
+      }],
+      "buffers": [{
+        "byteLength": 36,
+        "uri": "data:application/octet-stream;base64,AAAAAAAAAAAAAIA/AACAPwAAAAAAAAAAAACAPwAAgD8="
+      }]
+    }' > "$output_dir/placeholder.glb"
+  fi
+}
+
+# Create placeholders for all systems
+for system in skeletal muscular nervous circulatory respiratory brain heart digestive reproductive lymphatic body_parts full_body organs; do
+  create_placeholder "$system"
+done
 
 echo "Setup complete! You can now run your application with the enhanced 3D Anatomy Model."
+echo "Note: Some models are using placeholders. Replace them with actual models when available."
+echo ""
 echo "To publish the project to GitHub, you'll need to:"
 echo "1. Create a GitHub repository"
 echo "2. Initialize Git in this project: git init"
