@@ -32,6 +32,7 @@ import ReactMarkdown from 'react-markdown';
 import InteractiveAnatomyModel from '../components/InteractiveAnatomyModel';
 import ThreeDAnatomyModel from '../components/ThreeDAnatomyModel';
 import ErrorBoundary from '../components/ErrorBoundary';
+import MarkdownWithMath from '../components/MarkdownWithMath';
 
 function SprintPage() {
   const { sprintId } = useParams();
@@ -543,9 +544,9 @@ Continue to the next sprint to learn about upper body musculature and its role i
             ) : null}
             
             <Box className="markdown-content">
-              <ReactMarkdown>
+              <MarkdownWithMath>
                 {currentStep.content}
-              </ReactMarkdown>
+              </MarkdownWithMath>
             </Box>
             
             {renderNextButton(currentStep)}

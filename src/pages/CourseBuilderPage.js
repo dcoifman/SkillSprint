@@ -57,6 +57,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import geminiClient, { PROMPT_TEMPLATES, generateContent, stripCodeFences } from '../services/geminiClient';
 import { createLearningPath } from '../services/supabaseClient';
+import MarkdownWithMath from '../components/MarkdownWithMath';
+import MathEditor from '../components/MathEditor';
 
 // Default course structure
 const defaultCourseForm = {
@@ -84,6 +86,13 @@ function CourseBuilderPage() {
   const sprintRef = useRef(null);
   const [suggestedObjectives, setSuggestedObjectives] = useState([]);
   const [isGeneratingObjectives, setIsGeneratingObjectives] = useState(false);
+  
+  // New state for math editor
+  const [mathEditorOpen, setMathEditorOpen] = useState(false);
+  const [currentMathContent, setCurrentMathContent] = useState('');
+  const [mathEditorMode, setMathEditorMode] = useState('create');
+  const [mathAssignmentTitle, setMathAssignmentTitle] = useState('');
+  const [editingContentIndex, setEditingContentIndex] = useState(-1);
   
   // Rate limit warning threshold (8 out of 10 free requests)
   const RATE_LIMIT_WARNING = 8;
@@ -514,6 +523,45 @@ function CourseBuilderPage() {
             <Text>{item.value}</Text>
           </Box>
         );
+      case 'math':
+        return (
+          <Box key={index} p={4} borderWidth={1} borderRadius="md" bg="blue.50">
+            <Badge colorScheme="blue" mb={2}>math</Badge>
+            <MarkdownWithMath>
+              {item.value}
+            </MarkdownWithMath>
+          </Box>
+        );
+      case 'math_assignment':
+        return (
+          <Box key={index} p={4} borderWidth={1} borderRadius="md" bg="purple.50">
+            <Badge colorScheme="purple" mb={2}>math assignment</Badge>
+            <Heading size="sm" mb={2}>{item.title || "Math Assignment"}</Heading>
+            <MarkdownWithMath>
+              {item.content}
+            </MarkdownWithMath>
+            {item.problems && (
+              <VStack align="stretch" mt={3} spacing={3}>
+                <Text fontWeight="bold">Problems:</Text>
+                {item.problems.map((problem, i) => (
+                  <Box key={i} bg="white" p={3} borderRadius="md" borderWidth={1}>
+                    <MarkdownWithMath>
+                      {problem.question}
+                    </MarkdownWithMath>
+                    {problem.solution && (
+                      <Box mt={2} p={2} bg="gray.50" borderRadius="md">
+                        <Text fontWeight="bold" mb={1}>Solution:</Text>
+                        <MarkdownWithMath>
+                          {problem.solution}
+                        </MarkdownWithMath>
+                      </Box>
+                    )}
+                  </Box>
+                ))}
+              </VStack>
+            )}
+          </Box>
+        );
       case 'key_point':
         return (
           <Box key={index} p={4} borderWidth={1} borderRadius="md" bg="purple.50">
@@ -631,6 +679,80 @@ function CourseBuilderPage() {
         </Box>
       </VStack>
     );
+  };
+
+  // Add a math assignment to sprint content
+  const addMathAssignment = () => {
+    if (!activeModule && !activeSprint) return;
+    
+    // Open math editor in create mode
+    setMathEditorMode('create');
+    setCurrentMathContent('');
+    setMathAssignmentTitle('Math Assignment');
+    setEditingContentIndex(-1);
+    setMathEditorOpen(true);
+  };
+  
+  // Edit an existing math content
+  const editMathContent = (index, type) => {
+    if (!activeModule && !activeSprint) return;
+    
+    const content = sprintContent[`${activeModule}-${activeSprint}`].content[index];
+    setMathEditorMode(type === 'math' ? 'edit-math' : 'edit-assignment');
+    setCurrentMathContent(type === 'math' ? content.value : content.content);
+    if (type === 'math_assignment') {
+      setMathAssignmentTitle(content.title || 'Math Assignment');
+    }
+    setEditingContentIndex(index);
+    setMathEditorOpen(true);
+  };
+  
+  // Save math content from editor
+  const saveMathContent = () => {
+    if (!activeModule && !activeSprint) return;
+    
+    const currentSprintKey = `${activeModule}-${activeSprint}`;
+    const updatedSprintContent = {...sprintContent};
+    
+    if (mathEditorMode === 'create') {
+      // Add new math assignment
+      const newAssignment = {
+        type: 'math_assignment',
+        title: mathAssignmentTitle,
+        content: currentMathContent,
+        problems: []
+      };
+      
+      updatedSprintContent[currentSprintKey] = {
+        ...updatedSprintContent[currentSprintKey],
+        content: [
+          ...updatedSprintContent[currentSprintKey].content,
+          newAssignment
+        ]
+      };
+    } else if (mathEditorMode === 'edit-math') {
+      // Update existing math content
+      updatedSprintContent[currentSprintKey].content[editingContentIndex] = {
+        ...updatedSprintContent[currentSprintKey].content[editingContentIndex],
+        value: currentMathContent
+      };
+    } else if (mathEditorMode === 'edit-assignment') {
+      // Update existing math assignment
+      updatedSprintContent[currentSprintKey].content[editingContentIndex] = {
+        ...updatedSprintContent[currentSprintKey].content[editingContentIndex],
+        title: mathAssignmentTitle,
+        content: currentMathContent
+      };
+    }
+    
+    setSprintContent(updatedSprintContent);
+    setMathEditorOpen(false);
+    
+    toast({
+      title: "Math content saved",
+      status: "success",
+      duration: 2000,
+    });
   };
 
   return (
@@ -1052,6 +1174,18 @@ function CourseBuilderPage() {
                                     {sprintContent[`${activeModule}-${activeSprint}`].content.map((item, i) => 
                                       renderContentItem(item, i)
                                     )}
+                                    
+                                    {/* Add content buttons */}
+                                    <HStack mt={4} spacing={4} justify="center">
+                                      <Button
+                                        leftIcon={<AddIcon />}
+                                        onClick={addMathAssignment}
+                                        colorScheme="purple"
+                                        variant="outline"
+                                      >
+                                        Add Math Assignment
+                                      </Button>
+                                    </HStack>
                                   </VStack>
                                 </CardBody>
                               </Card>
@@ -1253,6 +1387,50 @@ function CourseBuilderPage() {
           </TabPanel>
         </TabPanels>
       </Tabs>
+
+      {/* Math Editor Modal */}
+      <Modal isOpen={mathEditorOpen} onClose={() => setMathEditorOpen(false)} size="xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            {mathEditorMode === 'create' ? 'Create Math Assignment' : 
+             mathEditorMode === 'edit-math' ? 'Edit Math Content' : 
+             'Edit Math Assignment'}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {(mathEditorMode === 'create' || mathEditorMode === 'edit-assignment') && (
+              <FormControl mb={4}>
+                <FormLabel>Assignment Title</FormLabel>
+                <Input 
+                  value={mathAssignmentTitle} 
+                  onChange={(e) => setMathAssignmentTitle(e.target.value)}
+                  placeholder="Enter a title for this math assignment"
+                />
+              </FormControl>
+            )}
+            
+            <MathEditor
+              initialContent={currentMathContent}
+              onChange={setCurrentMathContent}
+              placeholder={
+                mathEditorMode === 'create' ? 
+                  'Create your math assignment with $...$ for inline and $$...$$ for display math' : 
+                  'Edit math content'
+              }
+              height="400px"
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={() => setMathEditorOpen(false)}>
+              Cancel
+            </Button>
+            <Button colorScheme="purple" onClick={saveMathContent}>
+              Save
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Rate limit warning modal */}
       <Modal isOpen={isOpen} onClose={onClose}>

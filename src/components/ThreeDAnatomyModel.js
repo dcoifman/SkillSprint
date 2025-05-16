@@ -23,7 +23,7 @@ import {
   useFBX,
 } from '@react-three/drei';
 import { Box, VStack, Button, ButtonGroup, Badge, Text, Spinner, useColorModeValue, Flex, Tooltip, IconButton, Menu, MenuButton, MenuList, MenuItem } from '@chakra-ui/react';
-import { EffectComposer, Bloom, SSAO, Outline, Selection, DepthOfField, Noise, Vignette, ChromaticAberration } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, SSAO, Outline, Selection, DepthOfField, Noise, Vignette, ChromaticAberration, ToneMapping } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import { useSpring, animated, a } from '@react-spring/three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -34,6 +34,10 @@ import * as THREE from 'three';
 import { ChevronDownIcon, DownloadIcon, ViewIcon } from '@chakra-ui/icons';
 import ErrorBoundary from './ErrorBoundary';
 import JSONErrorHandler from './JSONErrorHandler';
+import { SRGBColorSpace, LinearSRGBColorSpace } from 'three';
+
+// Enable color management
+THREE.ColorManagement.enabled = true;
 
 // Cache for loaded models to improve performance
 const modelCache = new Map();
@@ -41,31 +45,97 @@ const modelCache = new Map();
 // Model source configurations
 const MODELS = {
   skeletal: {
-    path: 'https://models.readyplayer.me/64da0df2fcecc1cc28f78c3a.glb',
+    path: '/models/anatomy/skeletal/skeleton-better.glb',
     scale: 1.8,
     position: [0, -1.7, 0],
     rotation: [0, 0, 0],
   },
+  skeletal_alt: {
+    path: '/models/anatomy/skeletal/skeletal-system-gyozocz.glb',
+    scale: 1.5,
+    position: [0, -1.7, 0],
+    rotation: [0, 0, 0],
+  },
+  skull: {
+    path: '/models/anatomy/skeletal/skull.glb',
+    scale: 1.2,
+    position: [0, -0.5, 0],
+    rotation: [0, 0, 0],
+  },
   muscular: {
-    path: 'https://d1a370nemizbjq.cloudfront.net/test/body.glb',
+    path: '/models/anatomy/muscular/muscular-better.glb',
     scale: 1.8,
     position: [0, -1.7, 0],
     rotation: [0, Math.PI, 0],
   },
   nervous: {
-    path: 'https://raw.githubusercontent.com/anatomy-models/human-anatomy/main/nervous-system.glb',
+    path: '/models/anatomy/nervous/nervous-better.glb',
     scale: 1.5,
     position: [0, -1.7, 0],
     rotation: [0, 0, 0],
   },
+  brain: {
+    path: '/models/anatomy/brain/brain-detailed.glb',
+    scale: 1.0,
+    position: [0, 0, 0],
+    rotation: [0, 0, 0],
+  },
   circulatory: {
-    path: 'https://raw.githubusercontent.com/anatomy-models/human-anatomy/main/circulatory-system.glb',
+    path: '/models/anatomy/circulatory/vascular-system-gyozocz.glb',
     scale: 1.5, 
     position: [0, -1.7, 0],
     rotation: [0, 0, 0],
   },
+  heart: {
+    path: '/models/anatomy/heart/heart-detailed.glb',
+    scale: 1.0,
+    position: [0, 0, 0],
+    rotation: [0, 0, 0],
+  },
   respiratory: {
-    path: 'https://raw.githubusercontent.com/anatomy-models/human-anatomy/main/respiratory-system.glb',
+    path: '/models/anatomy/respiratory/respiratory-better.glb',
+    scale: 1.5,
+    position: [0, -1.7, 0],
+    rotation: [0, 0, 0],
+  },
+  lungs: {
+    path: '/models/anatomy/respiratory/lungs-high-poly.glb',
+    scale: 1.2,
+    position: [0, -0.5, 0],
+    rotation: [0, 0, 0],
+  },
+  digestive: {
+    path: '/models/anatomy/digestive/abdominal-organs-gyozocz.glb',
+    scale: 1.5,
+    position: [0, -1.7, 0],
+    rotation: [0, 0, 0],
+  },
+  male_body: {
+    path: '/models/anatomy/body_parts/male_body.glb',
+    scale: 1.8,
+    position: [0, -1.7, 0],
+    rotation: [0, 0, 0],
+  },
+  full_skeleton: {
+    path: '/models/anatomy/full_body/human_skeleton.glb',
+    scale: 0.5,
+    position: [0, -1.7, 0], 
+    rotation: [0, 0, 0],
+  },
+  reproductive_male: {
+    path: '/models/anatomy/reproductive/reproductive-male.glb',
+    scale: 1.2,
+    position: [0, -0.5, 0],
+    rotation: [0, 0, 0],
+  },
+  reproductive_female: {
+    path: '/models/anatomy/reproductive/reproductive-female.glb',
+    scale: 1.2,
+    position: [0, -0.5, 0],
+    rotation: [0, 0, 0],
+  },
+  lymphatic: {
+    path: '/models/anatomy/lymphatic/lymphatic-system.glb',
     scale: 1.5,
     position: [0, -1.7, 0],
     rotation: [0, 0, 0],
@@ -99,9 +169,27 @@ const STRUCTURE_DATA = {
   'Abdominals': { description: 'Core muscles stabilizing the trunk', color: '#a83232' },
 };
 
-// Helper to load 3D models with caching for performance
+// Helper to load 3D models with caching and fallback for performance
 function useAnatomyModel(systemType) {
-  const { scene, nodes, materials, animations } = useGLTF(MODELS[systemType].path);
+  const [modelError, setModelError] = useState(false);
+  
+  // Try to load the model with fallback
+  const { scene, nodes, materials, animations } = useGLTF(MODELS[systemType].path, undefined, 
+    (error) => {
+      console.error(`Error loading ${systemType} model:`, error);
+      setModelError(true);
+    }
+  );
+  
+  // If primary model fails, try to load a fallback
+  useEffect(() => {
+    if (modelError) {
+      console.log(`Attempting to load fallback model for ${systemType}`);
+      // You could implement additional fallback logic here
+      // For example, loading a simpler version of the model
+      // or showing a placeholder geometry
+    }
+  }, [modelError, systemType]);
   
   // Apply model-specific transformations
   useEffect(() => {
@@ -121,17 +209,39 @@ function useAnatomyModel(systemType) {
           if (object.material) {
             object.material.roughness = 0.7;
             object.material.metalness = 0.2;
+            object.material.colorSpace = SRGBColorSpace;
             
+            // Convert colors to linear space for correct lighting
             if (systemType === 'skeletal') {
-              object.material.color = new THREE.Color('#f0e6d2');
+              object.material.color = new THREE.Color('#f0e6d2').convertSRGBToLinear();
             } else if (systemType === 'muscular') {
-              object.material.color = new THREE.Color('#a83232');
+              object.material.color = new THREE.Color('#a83232').convertSRGBToLinear();
             }
           }
         }
       });
     }
   }, [scene, systemType]);
+  
+  // If model failed to load, return a simple placeholder
+  if (modelError) {
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.MeshStandardMaterial({ 
+      color: systemType === 'skeletal' ? '#f0e6d2' : '#a83232',
+      roughness: 0.7,
+      metalness: 0.2
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    const placeholderScene = new THREE.Scene();
+    placeholderScene.add(mesh);
+    
+    return {
+      scene: placeholderScene,
+      nodes: {},
+      materials: { default: material },
+      animations: []
+    };
+  }
   
   return { scene: scene.clone(), nodes, materials, animations };
 }
@@ -141,11 +251,12 @@ function AnatomicalModel({ systemType, onSelectStructure, selectedStructure, hov
   const { scene } = useAnatomyModel(systemType);
   const groupRef = useRef();
   const highlightMaterial = useRef(new THREE.MeshStandardMaterial({ 
-    color: '#9f7aea',
-    emissive: '#9f7aea',
+    color: new THREE.Color('#9f7aea'),
+    emissive: new THREE.Color('#9f7aea'),
     emissiveIntensity: 0.5,
     roughness: 0.5,
-    metalness: 0.3
+    metalness: 0.3,
+    colorSpace: SRGBColorSpace
   }));
   
   // Store original materials for resetting
@@ -348,6 +459,7 @@ function EnhancedScene({
         castShadow 
         shadow-mapSize={1024}
         color="#ffffff"
+        colorSpace={SRGBColorSpace}
       />
       
       {/* Fill light */}
@@ -359,6 +471,7 @@ function EnhancedScene({
         distance={10}
         castShadow={false}
         color="#b3ccff"
+        colorSpace={SRGBColorSpace}
       />
       
       {/* Rim light for edge definition */}
@@ -370,6 +483,7 @@ function EnhancedScene({
         distance={10}
         castShadow={false}
         color="#ffcca3"
+        colorSpace={SRGBColorSpace}
       />
       
       {/* Camera setup */}
@@ -414,6 +528,7 @@ function EnhancedScene({
           color="#030303"
           metalness={0.8}
           mirror={0.5}
+          colorSpace={SRGBColorSpace}
         />
       </mesh>
       
@@ -425,13 +540,15 @@ function EnhancedScene({
         scale={12}
         position={[0, -1.99, 0]}
         opacity={0.8}
+        colorSpace={SRGBColorSpace}
       >
-        <RandomizedLight
-          amount={4}
+        <RandomizedLight 
+          amount={8}
           radius={10}
-          intensity={1}
-          ambient={0.2}
-          position={[5, 5, -5]}
+          intensity={0.8}
+          ambient={0.5}
+          position={[5, 5, -10]}
+          colorSpace={SRGBColorSpace}
         />
       </AccumulativeShadows>
       
@@ -452,6 +569,7 @@ function EnhancedScene({
             hiddenEdgeColor="#ffffff"
             blur={1}
             xRay={xRay}
+            colorSpace={SRGBColorSpace}
           />
           
           {/* Medical visualization effects */}
@@ -462,29 +580,26 @@ function EnhancedScene({
                 radius={0.5} 
                 intensity={xRay ? 30 : 20}
                 luminanceInfluence={0.6}
-                color={xRay ? "#ffffff" : "#000000"}
-              />
-              
-              <DepthOfField
-                focusDistance={0} 
-                focalLength={0.02}
-                bokehScale={2}
-                height={480}
+                colorSpace={SRGBColorSpace}
               />
               
               <Bloom
+                intensity={0.5}
                 luminanceThreshold={0.8}
-                luminanceSmoothing={0.8}
-                intensity={xRay ? 1.5 : 0.8}
+                luminanceSmoothing={0.3}
+                colorSpace={SRGBColorSpace}
               />
               
-              <ChromaticAberration
-                offset={xRay ? [0.002, 0.002] : [0.0005, 0.0005]}
-                radialModulation={true}
-                modulationOffset={0.5}
+              <ToneMapping
+                mode={3} // ACESFilmic
+                colorSpace={SRGBColorSpace}
               />
               
-              <Vignette darkness={0.5} offset={0.5} />
+              <Vignette
+                darkness={0.5}
+                offset={0.5}
+                colorSpace={SRGBColorSpace}
+              />
             </>
           )}
           
@@ -518,12 +633,49 @@ const ThreeDAnatomyModel = ({
   const [explodedView, setExplodedView] = useState(false);
   const [sliceView, setSliceView] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentSystem, setCurrentSystem] = useState(systemType);
   
   // UI styling
   const bgColor = useColorModeValue('gray.100', 'gray.900');
   const controlBg = useColorModeValue('white', 'gray.800');
   const controlText = useColorModeValue('gray.700', 'gray.200');
   
+  // Group models by system for the dropdown
+  const modelGroups = {
+    "Skeletal System": ["skeletal", "skeletal_alt", "skull", "full_skeleton"],
+    "Muscular System": ["muscular"],
+    "Nervous System": ["nervous", "brain"],
+    "Circulatory System": ["circulatory", "heart"],
+    "Respiratory System": ["respiratory", "lungs"],
+    "Digestive System": ["digestive"],
+    "Reproductive System": ["reproductive_male", "reproductive_female"],
+    "Lymphatic System": ["lymphatic"],
+    "Full Body": ["male_body"]
+  };
+  
+  // Convert model type to readable name
+  const getModelName = (modelType) => {
+    const names = {
+      skeletal: "Skeleton",
+      skeletal_alt: "Skeletal System (Detailed)",
+      skull: "Skull",
+      full_skeleton: "Complete Skeleton (High Detail)",
+      muscular: "Muscular System",
+      nervous: "Nervous System",
+      brain: "Brain",
+      circulatory: "Circulatory System",
+      heart: "Heart",
+      respiratory: "Respiratory System",
+      lungs: "Lungs",
+      digestive: "Digestive System",
+      male_body: "Male Body",
+      reproductive_male: "Male Reproductive System",
+      reproductive_female: "Female Reproductive System",
+      lymphatic: "Lymphatic System"
+    };
+    return names[modelType] || modelType;
+  };
+
   // Show structure information
   const structureInfo = selectedStructure && STRUCTURE_DATA[selectedStructure] 
     ? STRUCTURE_DATA[selectedStructure].description 
@@ -539,10 +691,10 @@ const ThreeDAnatomyModel = ({
     dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
     loader.setDRACOLoader(dracoLoader);
     
-    if (MODELS[systemType]) {
+    if (MODELS[currentSystem]) {
       setLoading(true);
       loader.load(
-        MODELS[systemType].path,
+        MODELS[currentSystem].path,
         () => setLoading(false),
         undefined,
         (error) => {
@@ -552,7 +704,7 @@ const ThreeDAnatomyModel = ({
         }
       );
     }
-  }, [systemType]);
+  }, [currentSystem]);
   
   // Handle WebGL context lost errors
   useEffect(() => {
@@ -574,10 +726,15 @@ const ThreeDAnatomyModel = ({
     const canvas = document.querySelector('canvas');
     if (canvas) {
       const link = document.createElement('a');
-      link.download = `anatomy-${systemType}-${Date.now()}.png`;
+      link.download = `anatomy-${currentSystem}-${Date.now()}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     }
+  };
+
+  // Handle model type change
+  const handleModelChange = (newModelType) => {
+    setCurrentSystem(newModelType);
   };
 
   if (hasError) {
@@ -612,7 +769,7 @@ const ThreeDAnatomyModel = ({
           flexDirection="column"
         >
           <Spinner size="xl" color="white" mb={4} />
-          <Text color="white" fontSize="lg">Loading {systemType} model...</Text>
+          <Text color="white" fontSize="lg">Loading {getModelName(currentSystem)} model...</Text>
         </Flex>
       )}
       
@@ -632,22 +789,32 @@ const ThreeDAnatomyModel = ({
             <Button onClick={() => setView('lateral')} isActive={view === 'lateral'}>Lateral</Button>
             <Button onClick={() => setView('posterior')} isActive={view === 'posterior'}>Posterior</Button>
             <Button onClick={() => setView('superior')} isActive={view === 'superior'}>Superior</Button>
-            <Button onClick={() => setView('inferior')} isActive={view === 'inferior'}>Inferior</Button>
           </ButtonGroup>
         </Box>
         
-        {/* System selector */}
+        {/* Model selector */}
         <Box bg={controlBg} borderRadius="md" p={2} boxShadow="md">
           <Menu>
-            <MenuButton as={Button} rightIcon={<ChevronDownIcon />} colorScheme="blue" size="sm">
-              {systemType.charAt(0).toUpperCase() + systemType.slice(1)} System
+            <MenuButton as={Button} size="sm" colorScheme="teal" rightIcon={<ChevronDownIcon />}>
+              {getModelName(currentSystem)}
             </MenuButton>
             <MenuList>
-              <MenuItem onClick={() => onSelectStructure('')}>Skeletal</MenuItem>
-              <MenuItem onClick={() => onSelectStructure('')}>Muscular</MenuItem>
-              <MenuItem onClick={() => onSelectStructure('')}>Nervous</MenuItem>
-              <MenuItem onClick={() => onSelectStructure('')}>Circulatory</MenuItem>
-              <MenuItem onClick={() => onSelectStructure('')}>Respiratory</MenuItem>
+              {Object.entries(modelGroups).map(([groupName, models]) => (
+                <div key={groupName}>
+                  <Text ml={3} mt={2} mb={1} fontWeight="bold" fontSize="sm">{groupName}</Text>
+                  {models.map(model => (
+                    <MenuItem 
+                      key={model} 
+                      value={model}
+                      onClick={() => handleModelChange(model)}
+                      fontWeight={currentSystem === model ? "bold" : "normal"}
+                    >
+                      {getModelName(model)}
+                    </MenuItem>
+                  ))}
+                  {groupName !== Object.keys(modelGroups).pop() && <hr />}
+                </div>
+              ))}
             </MenuList>
           </Menu>
         </Box>
@@ -705,13 +872,14 @@ const ThreeDAnatomyModel = ({
           gl={{ 
             antialias: quality !== "low",
             alpha: true,
-            powerPreference: "high-performance"
+            powerPreference: "high-performance",
+            outputColorSpace: SRGBColorSpace
           }}
           camera={{ position: [0, 0, 4], fov: 30 }}
         >
           <Suspense fallback={null}>
             <EnhancedScene 
-              systemType={systemType} 
+              systemType={currentSystem} 
               onSelectStructure={onSelectStructure} 
               selectedStructure={selectedStructure}
               hoveredStructure={hoveredStructure}
