@@ -21,6 +21,7 @@ import {
   Badge,
   Card,
   CardBody,
+  CardHeader,
   Spinner,
   Alert,
   AlertIcon,
@@ -80,6 +81,8 @@ function CourseBuilderPage() {
   const [selectedTab, setSelectedTab] = useState(0);
   const moduleRef = useRef(null);
   const sprintRef = useRef(null);
+  const [suggestedObjectives, setSuggestedObjectives] = useState([]);
+  const [isGeneratingObjectives, setIsGeneratingObjectives] = useState(false);
   
   // Rate limit warning threshold (8 out of 10 free requests)
   const RATE_LIMIT_WARNING = 8;
@@ -91,6 +94,110 @@ function CourseBuilderPage() {
       ...courseForm,
       [name]: value,
     });
+  };
+
+  // Generate course objectives suggestions
+  const generateObjectives = async () => {
+    if (!courseForm.topic || !courseForm.audience) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in at least the topic and target audience.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsGeneratingObjectives(true);
+    
+    try {
+      // Replace template placeholders with actual values
+      const filledPrompt = PROMPT_TEMPLATES.GENERATE_OBJECTIVES
+        .replace('{topic}', courseForm.topic)
+        .replace('{audience}', courseForm.audience)
+        .replace('{level}', courseForm.level);
+      
+      // Generate content
+      const response = await generateContent(filledPrompt, 0.7);
+      setRequestCount(prevCount => prevCount + 1);
+      
+      try {
+        // Parse the JSON response
+        const objectives = JSON.parse(stripCodeFences(response));
+        setSuggestedObjectives(objectives);
+        
+        // Success message
+        toast({
+          title: "Objectives generated",
+          description: "AI-suggested learning objectives are ready.",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+        
+        // Check rate limit
+        if (requestCount + 1 >= RATE_LIMIT_WARNING) {
+          toast({
+            title: "Approaching rate limit",
+            description: "You're nearing your free tier rate limit. Consider spacing out your requests.",
+            status: "warning",
+            duration: 5000,
+            isClosable: true,
+          });
+        }
+      } catch (parseError) {
+        console.error('Error parsing JSON response:', parseError);
+        toast({
+          title: "Error parsing response",
+          description: "The AI generated an invalid response. Please try again.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      console.error('Error generating objectives:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate learning objectives. Please try again later.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsGeneratingObjectives(false);
+    }
+  };
+
+  // Add objective to goals
+  const addObjectiveToGoals = (objective) => {
+    if (!courseForm.goals.includes(objective)) {
+      const updatedGoals = courseForm.goals 
+        ? courseForm.goals + "\n\n" + objective 
+        : objective;
+      
+      setCourseForm({
+        ...courseForm,
+        goals: updatedGoals
+      });
+      
+      toast({
+        title: "Objective added",
+        description: "The objective has been added to your course goals.",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+    } else {
+      toast({
+        title: "Already added",
+        description: "This objective is already in your course goals.",
+        status: "info",
+        duration: 2000,
+        isClosable: true,
+      });
+    }
   };
 
   // Generate course outline using Gemini API
@@ -327,6 +434,135 @@ function CourseBuilderPage() {
     navigate('/dashboard');
   };
 
+  // Helper to render content based on type
+  const renderContentItem = (item, index) => {
+    switch (item.type) {
+      case 'text':
+        return (
+          <Box key={index} p={4} borderWidth={1} borderRadius="md">
+            <Badge colorScheme="blue" mb={2}>text</Badge>
+            <Text>{item.value}</Text>
+          </Box>
+        );
+      case 'key_point':
+        return (
+          <Box key={index} p={4} borderWidth={1} borderRadius="md" bg="purple.50">
+            <Badge colorScheme="purple" mb={2}>key point</Badge>
+            <Text fontWeight="medium">{item.value}</Text>
+          </Box>
+        );
+      case 'example':
+        return (
+          <Box key={index} p={4} borderWidth={1} borderRadius="md" bg="green.50">
+            <Badge colorScheme="green" mb={2}>example</Badge>
+            <Text>{item.value}</Text>
+          </Box>
+        );
+      case 'visual_tree':
+        return (
+          <Box key={index} p={4} borderWidth={1} borderRadius="md" bg="blue.50">
+            <Badge colorScheme="blue" mb={2}>visual tree</Badge>
+            <VStack align="stretch" spacing={1}>
+              {item.value.split('\n').map((line, i) => {
+                const parts = line.split('->').map(part => part.trim());
+                return (
+                  <Box key={i} pl={parts.length > 1 ? (parts.length - 1) * 4 : 0}>
+                    <HStack align="center" spacing={2}>
+                      {parts.length > 1 && <ChevronRightIcon color="blue.500" />}
+                      <Text fontWeight={parts.length === 1 ? "bold" : "normal"}>
+                        {parts[parts.length - 1]}
+                      </Text>
+                    </HStack>
+                  </Box>
+                );
+              })}
+            </VStack>
+          </Box>
+        );
+      case 'activity':
+        return (
+          <Box key={index} p={4} borderWidth={1} borderRadius="md" bg="orange.50">
+            <Badge colorScheme="orange" mb={2}>activity</Badge>
+            <Text>{item.value}</Text>
+          </Box>
+        );
+      case 'reflection':
+        return (
+          <Box key={index} p={4} borderWidth={1} borderRadius="md" bg="teal.50">
+            <Badge colorScheme="teal" mb={2}>reflection</Badge>
+            <Text fontStyle="italic">{item.value}</Text>
+          </Box>
+        );
+      default:
+        return (
+          <Box key={index} p={4} borderWidth={1} borderRadius="md">
+            <Badge mb={2}>{item.type.replace('_', ' ')}</Badge>
+            <Text>{item.value}</Text>
+          </Box>
+        );
+    }
+  };
+
+  // Helper to render quiz question based on type
+  const renderQuizQuestion = (quiz, index) => {
+    const questionType = quiz.type || 'multiple_choice';
+    
+    return (
+      <VStack key={index} align="stretch" spacing={3} mb={6} p={4} borderWidth={1} borderRadius="md">
+        <HStack>
+          <Text fontWeight="bold">{index+1}. {quiz.question}</Text>
+          <Badge ml={2} colorScheme={
+            questionType === 'multiple_choice' ? 'blue' : 
+            questionType === 'fill_blank' ? 'green' : 
+            questionType === 'ordering' ? 'orange' : 'gray'
+          }>
+            {questionType.replace('_', ' ')}
+          </Badge>
+        </HStack>
+        
+        {questionType === 'multiple_choice' && (
+          <VStack align="stretch" spacing={2} pl={4}>
+            {quiz.options.map((option, j) => (
+              <HStack key={j}>
+                <Badge 
+                  colorScheme={j === quiz.correctAnswer ? "green" : "gray"}
+                  variant={j === quiz.correctAnswer ? "solid" : "outline"}
+                >
+                  {String.fromCharCode(65 + j)}
+                </Badge>
+                <Text>{option}</Text>
+              </HStack>
+            ))}
+          </VStack>
+        )}
+        
+        {questionType === 'fill_blank' && (
+          <VStack align="stretch" spacing={2} pl={4}>
+            <Box p={2} borderWidth={1} borderRadius="md" bg="green.50">
+              <Text fontWeight="medium">{quiz.correctAnswer}</Text>
+            </Box>
+          </VStack>
+        )}
+        
+        {questionType === 'ordering' && (
+          <VStack align="stretch" spacing={2} pl={4}>
+            {quiz.correctOrder.map((itemIndex, orderIndex) => (
+              <HStack key={orderIndex}>
+                <Badge colorScheme="orange">{orderIndex + 1}</Badge>
+                <Text>{quiz.options[itemIndex]}</Text>
+              </HStack>
+            ))}
+          </VStack>
+        )}
+        
+        <Box bgColor="gray.50" p={2} borderRadius="md">
+          <Text fontSize="sm" fontWeight="medium">Explanation:</Text>
+          <Text fontSize="sm">{quiz.explanation}</Text>
+        </Box>
+      </VStack>
+    );
+  };
+
   return (
     <Container maxW="7xl" py={8}>
       <Tabs index={selectedTab} onChange={setSelectedTab} variant="enclosed" colorScheme="purple">
@@ -405,7 +641,18 @@ function CourseBuilderPage() {
                     </FormControl>
                     
                     <FormControl isRequired>
-                      <FormLabel>Learning Goals</FormLabel>
+                      <FormLabel>
+                        Learning Goals
+                        <Button 
+                          ml={2} 
+                          size="xs" 
+                          colorScheme="blue" 
+                          isLoading={isGeneratingObjectives}
+                          onClick={generateObjectives}
+                        >
+                          Get AI Suggestions
+                        </Button>
+                      </FormLabel>
                       <Textarea
                         name="goals"
                         value={courseForm.goals}
@@ -414,6 +661,30 @@ function CourseBuilderPage() {
                         rows={4}
                       />
                     </FormControl>
+                    
+                    {suggestedObjectives.length > 0 && (
+                      <Card variant="outline" p={2} mt={2}>
+                        <CardHeader pb={1}>
+                          <Heading size="xs">AI-Suggested Learning Objectives</Heading>
+                        </CardHeader>
+                        <CardBody pt={0}>
+                          <VStack align="stretch" spacing={2}>
+                            {suggestedObjectives.map((objective, index) => (
+                              <HStack key={index} p={2} borderWidth="1px" borderRadius="md" justify="space-between">
+                                <Text fontSize="sm">{objective}</Text>
+                                <IconButton
+                                  icon={<AddIcon />}
+                                  size="xs"
+                                  colorScheme="green"
+                                  aria-label="Add objective"
+                                  onClick={() => addObjectiveToGoals(objective)}
+                                />
+                              </HStack>
+                            ))}
+                          </VStack>
+                        </CardBody>
+                      </Card>
+                    )}
                     
                     <Button
                       colorScheme="purple"
@@ -708,20 +979,9 @@ function CourseBuilderPage() {
                                 <CardBody>
                                   <Heading size="md" mb={4}>Content</Heading>
                                   <VStack align="stretch" spacing={4}>
-                                    {sprintContent[`${activeModule}-${activeSprint}`].content.map((item, i) => (
-                                      <Box key={i} p={4} borderWidth={1} borderRadius="md">
-                                        <HStack mb={2}>
-                                          <Badge colorScheme={
-                                            item.type === 'text' ? 'blue' : 
-                                            item.type === 'key_point' ? 'purple' : 
-                                            item.type === 'example' ? 'green' : 'gray'
-                                          }>
-                                            {item.type.replace('_', ' ')}
-                                          </Badge>
-                                        </HStack>
-                                        <Text>{item.value}</Text>
-                                      </Box>
-                                    ))}
+                                    {sprintContent[`${activeModule}-${activeSprint}`].content.map((item, i) => 
+                                      renderContentItem(item, i)
+                                    )}
                                   </VStack>
                                 </CardBody>
                               </Card>
@@ -729,30 +989,9 @@ function CourseBuilderPage() {
                               <Card>
                                 <CardBody>
                                   <Heading size="md" mb={4}>Quiz Questions</Heading>
-                                  {sprintContent[`${activeModule}-${activeSprint}`].quiz.map((quiz, i) => (
-                                    <VStack key={i} align="stretch" spacing={3} mb={6} p={4} borderWidth={1} borderRadius="md">
-                                      <Text fontWeight="bold">{i+1}. {quiz.question}</Text>
-                                      
-                                      <VStack align="stretch" spacing={2} pl={4}>
-                                        {quiz.options.map((option, j) => (
-                                          <HStack key={j}>
-                                            <Badge 
-                                              colorScheme={j === quiz.correctAnswer ? "green" : "gray"}
-                                              variant={j === quiz.correctAnswer ? "solid" : "outline"}
-                                            >
-                                              {String.fromCharCode(65 + j)}
-                                            </Badge>
-                                            <Text>{option}</Text>
-                                          </HStack>
-                                        ))}
-                                      </VStack>
-                                      
-                                      <Box bgColor="gray.50" p={2} borderRadius="md">
-                                        <Text fontSize="sm" fontWeight="medium">Explanation:</Text>
-                                        <Text fontSize="sm">{quiz.explanation}</Text>
-                                      </Box>
-                                    </VStack>
-                                  ))}
+                                  {sprintContent[`${activeModule}-${activeSprint}`].quiz.map((quiz, i) => 
+                                    renderQuizQuestion(quiz, i)
+                                  )}
                                 </CardBody>
                               </Card>
                               

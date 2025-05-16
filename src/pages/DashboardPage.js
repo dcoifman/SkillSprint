@@ -65,6 +65,7 @@ function DashboardPage() {
       progress: 15,
       nextSession: 'Skeletal System Basics',
       estimatedTime: 10,
+      sprintId: "201" // Add the sprint ID for direct linking
     },
   ];
 
@@ -245,9 +246,11 @@ function DashboardPage() {
                 </Text>
               </CardBody>
               <CardFooter pt={0}>
-                <Button colorScheme="purple" size="sm" variant="outline">
-                  Continue
-                </Button>
+                <RouterLink to={path.sprintId ? `/sprint/${path.sprintId}` : "#"}>
+                  <Button colorScheme="purple" size="sm" variant="outline">
+                    Continue
+                  </Button>
+                </RouterLink>
               </CardFooter>
             </Card>
           ))}
@@ -321,9 +324,11 @@ function DashboardPage() {
                         {sprint.path} • {sprint.time}
                       </Text>
                     </Box>
-                    <Button size="sm" colorScheme="purple">
-                      Start
-                    </Button>
+                    <RouterLink to={`/sprint/${sprint.id}`}>
+                      <Button size="sm" colorScheme="purple">
+                        Start
+                      </Button>
+                    </RouterLink>
                   </Flex>
                 </Box>
                 {index < recommendedSprints.length - 1 && <Divider />}

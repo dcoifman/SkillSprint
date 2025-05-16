@@ -23,6 +23,10 @@ import {
   Icon,
   Checkbox,
   useToast,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { signIn, signUp, supabase } from '../services/supabaseClient';
@@ -34,10 +38,25 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [configError, setConfigError] = useState(false);
   
   const navigate = useNavigate();
   const toast = useToast();
   const { isAuthenticated } = useAuth();
+  
+  // Check if Supabase is configured
+  useEffect(() => {
+    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+    const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey || 
+        supabaseUrl === 'https://your-project-id.supabase.co' || 
+        supabaseAnonKey === 'your-anon-key') {
+      setConfigError(true);
+    } else {
+      setConfigError(false);
+    }
+  }, []);
   
   // Redirect if already logged in
   useEffect(() => {
@@ -63,6 +82,17 @@ export function LoginPage() {
   
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (configError) {
+      toast({
+        title: 'Configuration Error',
+        description: 'Supabase is not properly configured. Please set up your environment variables.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
     
     if (!validateForm()) return;
     
@@ -102,6 +132,17 @@ export function LoginPage() {
   };
 
   const handleSocialLogin = async (provider) => {
+    if (configError) {
+      toast({
+        title: 'Configuration Error',
+        description: 'Supabase is not properly configured. Please set up your environment variables.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+    
     try {
       const { error } = await supabase.auth.signInWithOAuth({ 
         provider,
@@ -135,7 +176,7 @@ export function LoginPage() {
       <Flex direction={{ base: 'column', md: 'row' }} align="center">
         <Box flex="1" display={{ base: 'none', md: 'block' }} mr={8}>
           <Image
-            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1171&q=80"
+            src="https://via.placeholder.com/1200x800?text=SkillSprint+Learning"
             alt="Learning together"
             borderRadius="lg"
             objectFit="cover"
@@ -156,6 +197,18 @@ export function LoginPage() {
           borderColor={borderColor}
           boxShadow="lg"
         >
+          {configError && (
+            <Alert status="warning" borderRadius="md">
+              <AlertIcon />
+              <Box>
+                <AlertTitle>Supabase Not Configured</AlertTitle>
+                <AlertDescription>
+                  For developers: Please set up your .env.local file with Supabase credentials.
+                </AlertDescription>
+              </Box>
+            </Alert>
+          )}
+          
           <VStack spacing={2} textAlign="center">
             <Heading as="h1" fontSize="3xl">Welcome back</Heading>
             <Text color="gray.500">Sign in to continue your learning journey</Text>
@@ -236,14 +289,6 @@ export function LoginPage() {
                   />
                 </Icon>
               </Button>
-              <Button flex="1" variant="outline" onClick={() => handleSocialLogin('facebook')}>
-                <Icon viewBox="0 0 24 24" width="20px" height="20px">
-                  <path
-                    fill="currentColor"
-                    d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"
-                  />
-                </Icon>
-              </Button>
               <Button flex="1" variant="outline" onClick={() => handleSocialLogin('github')}>
                 <Icon viewBox="0 0 24 24" width="20px" height="20px">
                   <path
@@ -278,10 +323,25 @@ export function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [configError, setConfigError] = useState(false);
   
   const navigate = useNavigate();
   const toast = useToast();
   const { isAuthenticated } = useAuth();
+  
+  // Check if Supabase is configured
+  useEffect(() => {
+    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+    const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey || 
+        supabaseUrl === 'https://your-project-id.supabase.co' || 
+        supabaseAnonKey === 'your-anon-key') {
+      setConfigError(true);
+    } else {
+      setConfigError(false);
+    }
+  }, []);
   
   // Redirect if already logged in
   useEffect(() => {
@@ -323,6 +383,17 @@ export function SignupPage() {
   
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (configError) {
+      toast({
+        title: 'Configuration Error',
+        description: 'Supabase is not properly configured. Please set up your environment variables.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
     
     if (!validateForm()) return;
     
@@ -367,6 +438,17 @@ export function SignupPage() {
   };
 
   const handleSocialSignup = async (provider) => {
+    if (configError) {
+      toast({
+        title: 'Configuration Error',
+        description: 'Supabase is not properly configured. Please set up your environment variables.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+    
     try {
       const { error } = await supabase.auth.signInWithOAuth({ 
         provider,
@@ -450,6 +532,18 @@ export function SignupPage() {
           borderColor={borderColor}
           boxShadow="lg"
         >
+          {configError && (
+            <Alert status="warning" borderRadius="md">
+              <AlertIcon />
+              <Box>
+                <AlertTitle>Supabase Not Configured</AlertTitle>
+                <AlertDescription>
+                  For developers: Please set up your .env.local file with Supabase credentials.
+                </AlertDescription>
+              </Box>
+            </Alert>
+          )}
+          
           <VStack spacing={2} textAlign="center">
             <Heading as="h1" fontSize="2xl">Create your account</Heading>
             <Text color="gray.500">Join SkillSprint to start learning</Text>

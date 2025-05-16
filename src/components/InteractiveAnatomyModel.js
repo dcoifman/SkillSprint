@@ -12,15 +12,32 @@ import {
   Tooltip,
   useColorModeValue,
   IconButton,
+  Grid,
+  GridItem,
+  Tag,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Radio,
+  RadioGroup,
+  Stack,
+  Divider,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverHeader,
+  PopoverBody,
+  PopoverArrow,
+  PopoverCloseButton,
 } from '@chakra-ui/react';
-import { AddIcon, MinusIcon, CheckCircleIcon, LockIcon } from '@chakra-ui/icons';
+import { AddIcon, MinusIcon, CheckCircleIcon, LockIcon, RepeatIcon, InfoIcon, ViewIcon } from '@chakra-ui/icons';
 
 /**
  * Interactive Anatomy Model Component
  * 
- * This component provides a simplified interactive interface for exploring anatomical structures.
- * In a production environment, this would integrate with a 3D anatomy visualization library 
- * like BioDigital Human API or similar solutions.
+ * This component provides an interactive interface for exploring anatomical structures.
  */
 function InteractiveAnatomyModel({ 
   bodyRegion = 'full', // 'full', 'upper', 'lower', 'core'
@@ -28,241 +45,419 @@ function InteractiveAnatomyModel({
   initialView = 'anterior', // 'anterior', 'posterior', 'lateral', 'medial'
 }) {
   const [currentView, setCurrentView] = useState(initialView);
+  const [currentSystem, setCurrentSystem] = useState(systemType);
   const [showLabels, setShowLabels] = useState(true);
   const [selectedStructure, setSelectedStructure] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [highlightMode, setHighlightMode] = useState('none');
   
   // Background and border colors based on color mode
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   
-  // In a real implementation, these would be dynamic based on the selected view and system
-  // For this prototype, we're using placeholder images
+  // Get appropriate anatomy image based on current settings
   const getAnatomyImage = () => {
-    // Default placeholder image
-    return `https://via.placeholder.com/800x500?text=${systemType.toUpperCase()}+${currentView.toUpperCase()}+View`;
+    // In a production app, these would be actual anatomical images for each view and system
+    
+    // For skeleton
+    if (currentSystem === 'skeletal') {
+      if (currentView === 'anterior') return '/img/skeleton_anterior.png';
+      if (currentView === 'posterior') return '/img/skeleton_posterior.png';
+      if (currentView === 'lateral') return '/img/skeleton_lateral.png';
+      return 'https://images.unsplash.com/photo-1594056113173-cc8e97693535?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHNrZWxldG9ufGVufDB8fDB8fHww';
+    }
+    
+    // For muscular system
+    if (currentSystem === 'muscular') {
+      if (currentView === 'anterior') return '/img/muscular_anterior.png';
+      if (currentView === 'posterior') return '/img/muscular_posterior.png';
+      if (currentView === 'lateral') return '/img/muscular_lateral.png';
+      return 'https://images.unsplash.com/photo-1576086135878-bd1e26324036?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8bXVzY2xlc3xlbnwwfHwwfHx8MA%3D%3D';
+    }
+    
+    // Default/fallback image
+    return 'https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YW5hdG9teXxlbnwwfHwwfHx8MA%3D%3D';
   };
   
-  // In a real implementation, these would be dynamic based on what's clicked in the model
-  const sampleStructures = {
+  // Structure data for each system
+  const structures = {
     skeletal: [
-      { id: 'sk1', name: 'Humerus', description: 'Long bone in the arm that runs from shoulder to elbow' },
-      { id: 'sk2', name: 'Femur', description: 'Longest bone in the body, located in the thigh' },
-      { id: 'sk3', name: 'Vertebrae', description: 'Bones that make up the spinal column' },
-      { id: 'sk4', name: 'Clavicle', description: 'Commonly known as the collarbone' },
+      { 
+        id: 'sk1', 
+        name: 'Humerus', 
+        description: 'Long bone in the arm that runs from shoulder to elbow',
+        region: 'upper',
+        location: { x: 30, y: 35 },
+        functions: ['Supports upper arm', 'Provides attachment for arm muscles', 'Forms shoulder and elbow joints'],
+        connections: ['Scapula (shoulder)', 'Radius and Ulna (elbow)'],
+        funFact: 'The humerus is the second largest bone in the human body after the femur.'
+      },
+      { 
+        id: 'sk2', 
+        name: 'Femur', 
+        description: 'Longest bone in the body, located in the thigh',
+        region: 'lower',
+        location: { x: 50, y: 60 },
+        functions: ['Supports body weight', 'Enables walking and running', 'Transfer forces between hip and knee'],
+        connections: ['Pelvis (hip joint)', 'Tibia and Patella (knee joint)'],
+        funFact: 'The femur is the strongest bone in the human body and can support up to 30 times the weight of an adult.'
+      },
+      { 
+        id: 'sk3', 
+        name: 'Vertebrae', 
+        description: 'Bones that make up the spinal column',
+        region: 'core',
+        location: { x: 50, y: 45 },
+        functions: ['Protect the spinal cord', 'Support the head and body', 'Allow flexibility of the trunk'],
+        connections: ['Adjacent vertebrae', 'Ribs', 'Skull'],
+        funFact: 'The human spine typically consists of 33 vertebrae at birth, which fuse into 24 movable vertebrae in adults.'
+      },
+      { 
+        id: 'sk4', 
+        name: 'Clavicle', 
+        description: 'Commonly known as the collarbone',
+        region: 'upper',
+        location: { x: 60, y: 25 },
+        functions: ['Connects arm to body', 'Stabilizes shoulder', 'Protects blood vessels and nerves'],
+        connections: ['Sternum', 'Scapula'],
+        funFact: 'The clavicle is the most frequently broken bone in the human body and is the only long bone that lies horizontally.'
+      },
     ],
     muscular: [
-      { id: 'm1', name: 'Biceps Brachii', description: 'Flexes the elbow and supinates the forearm' },
-      { id: 'm2', name: 'Quadriceps', description: 'Group of four muscles at the front of the thigh' },
-      { id: 'm3', name: 'Latissimus Dorsi', description: 'Large muscle of the back, involved in arm movements' },
-      { id: 'm4', name: 'Pectoralis Major', description: 'Fan-shaped chest muscle controlling arm movements' },
+      { 
+        id: 'm1', 
+        name: 'Biceps Brachii', 
+        description: 'Flexes the elbow and supinates the forearm',
+        region: 'upper',
+        location: { x: 30, y: 33 },
+        functions: ['Flexes the elbow', 'Supinates the forearm', 'Stabilizes the shoulder joint'],
+        connections: ['Scapula', 'Radius'],
+        funFact: 'The biceps is one of the most famous muscles due to its visibility when flexed, but it contributes relatively little to overall arm strength compared to deeper muscles.'
+      },
+      { 
+        id: 'm2', 
+        name: 'Quadriceps', 
+        description: 'Group of four muscles at the front of the thigh',
+        region: 'lower',
+        location: { x: 50, y: 55 },
+        functions: ['Extends the knee', 'Stabilizes the patella', 'Assists in hip flexion'],
+        connections: ['Femur', 'Patella', 'Tibia'],
+        funFact: 'The quadriceps muscle group is the largest and strongest in the human body and is crucial for walking, running, and jumping.'
+      },
+      { 
+        id: 'm3', 
+        name: 'Latissimus Dorsi', 
+        description: 'Large muscle of the back, involved in arm movements',
+        region: 'upper',
+        location: { x: 45, y: 40 },
+        functions: ['Adducts and extends the arm', 'Rotates the arm internally', 'Assists in breathing'],
+        connections: ['Humerus', 'Spine', 'Iliac crest'],
+        funFact: 'The "lats" are the widest muscles in the human body and play a crucial role in activities like swimming and climbing.'
+      },
+      { 
+        id: 'm4', 
+        name: 'Pectoralis Major', 
+        description: 'Fan-shaped chest muscle controlling arm movements',
+        region: 'upper',
+        location: { x: 35, y: 30 },
+        functions: ['Adducts and flexes the arm', 'Rotates the arm internally', 'Assists in deep breathing'],
+        connections: ['Humerus', 'Clavicle', 'Sternum', 'Ribs'],
+        funFact: 'The pectoralis major is one of the main muscles used in pushing movements and makes up the bulk of the chest muscles.'
+      },
     ],
   };
   
-  // Rotate model to different views
-  const handleViewChange = (view) => {
-    setCurrentView(view);
+  // Get structures for current system and filter by region if needed
+  const getVisibleStructures = () => {
+    const systemStructures = structures[currentSystem] || [];
+    if (bodyRegion === 'full') return systemStructures;
+    return systemStructures.filter(structure => structure.region === bodyRegion);
   };
   
-  // Simulated zoom functionality
+  // Handle view change
+  const handleViewChange = (view) => {
+    setCurrentView(view);
+    setSelectedStructure(null);
+  };
+  
+  // Handle system change
+  const handleSystemChange = (system) => {
+    setCurrentSystem(system);
+    setSelectedStructure(null);
+  };
+  
+  // Handle zoom
   const handleZoom = (direction) => {
     if (direction === 'in' && zoomLevel < 2) {
-      setZoomLevel(zoomLevel + 0.25);
+      setZoomLevel(prevLevel => prevLevel + 0.25);
     } else if (direction === 'out' && zoomLevel > 0.5) {
-      setZoomLevel(zoomLevel - 0.25);
+      setZoomLevel(prevLevel => prevLevel - 0.25);
     }
   };
   
-  // Select a structure to display information
+  // Handle structure selection
   const handleStructureSelect = (structure) => {
     setSelectedStructure(structure);
   };
   
+  // Reset all views
+  const handleReset = () => {
+    setCurrentView(initialView);
+    setCurrentSystem(systemType);
+    setZoomLevel(1);
+    setSelectedStructure(null);
+    setShowLabels(true);
+    setHighlightMode('none');
+  };
+  
+  // Get visible structures
+  const visibleStructures = getVisibleStructures();
+  
+  // Function to get highlight color by mode
+  const getHighlightColor = (structure) => {
+    if (highlightMode === 'none' || !structure) return 'transparent';
+    if (highlightMode === 'region') {
+      if (structure.region === 'upper') return 'red.100';
+      if (structure.region === 'lower') return 'blue.100';
+      if (structure.region === 'core') return 'green.100';
+    }
+    return 'purple.100';
+  };
+  
   return (
-    <Box
-      borderWidth="1px"
-      borderRadius="lg"
-      overflow="hidden"
-      bg={bgColor}
-      borderColor={borderColor}
-      p={4}
-    >
-      <VStack spacing={4} align="stretch">
-        <Heading size="md">Interactive {systemType.charAt(0).toUpperCase() + systemType.slice(1)} Model</Heading>
-        
-        {/* View Controls */}
-        <HStack justifyContent="space-between">
-          <ButtonGroup size="sm" isAttached variant="outline">
-            <Button
-              isActive={currentView === 'anterior'}
-              onClick={() => handleViewChange('anterior')}
-            >
-              Anterior
-            </Button>
-            <Button
-              isActive={currentView === 'posterior'}
-              onClick={() => handleViewChange('posterior')}
-            >
-              Posterior
-            </Button>
-          </ButtonGroup>
-          
-          <ButtonGroup size="sm" isAttached variant="outline">
-            <IconButton
-              aria-label="Zoom out"
-              icon={<MinusIcon />}
-              onClick={() => handleZoom('out')}
-              isDisabled={zoomLevel <= 0.5}
-            />
-            <IconButton
-              aria-label="Zoom in"
-              icon={<AddIcon />}
-              onClick={() => handleZoom('in')}
-              isDisabled={zoomLevel >= 2}
-            />
-          </ButtonGroup>
-          
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowLabels(!showLabels)}
-          >
-            {showLabels ? 'Hide Labels' : 'Show Labels'}
-          </Button>
-        </HStack>
-        
-        {/* Interactive Anatomy Visualization */}
-        <Box 
-          position="relative" 
-          height="400px"
-          border="1px"
-          borderColor={borderColor}
-          borderRadius="md"
-          overflow="hidden"
-        >
-          <Image
-            src={getAnatomyImage()}
-            alt={`${systemType} system ${currentView} view`}
-            objectFit="contain"
-            width="100%"
-            height="100%"
-            transform={`scale(${zoomLevel})`}
-            transition="transform 0.3s ease-in-out"
-          />
-          
-          {/* In a real implementation, these would be positioned dynamically on the 3D model */}
-          {showLabels && (
-            <>
-              {/* These positions would be mapped to the actual 3D coordinates in a real implementation */}
-              <Tooltip label="Humerus" placement="right">
-                <Box
-                  position="absolute"
-                  top="120px"
-                  left="150px"
-                  width="20px"
-                  height="20px"
-                  borderRadius="full"
-                  bg="purple.400"
-                  opacity="0.7"
-                  cursor="pointer"
-                  _hover={{ opacity: 1 }}
-                  onClick={() => handleStructureSelect(sampleStructures[systemType][0])}
-                />
-              </Tooltip>
+    <Box>
+      <Grid templateColumns="3fr 1fr" gap={4}>
+        {/* Main viewing area */}
+        <GridItem>
+          <VStack spacing={4} align="stretch">
+            {/* Top controls */}
+            <HStack justifyContent="space-between">
+              <ButtonGroup size="sm" isAttached variant="outline">
+                <Button 
+                  onClick={() => handleViewChange('anterior')}
+                  colorScheme={currentView === 'anterior' ? 'purple' : 'gray'}
+                >
+                  Anterior
+                </Button>
+                <Button 
+                  onClick={() => handleViewChange('lateral')}
+                  colorScheme={currentView === 'lateral' ? 'purple' : 'gray'}
+                >
+                  Lateral
+                </Button>
+                <Button 
+                  onClick={() => handleViewChange('posterior')}
+                  colorScheme={currentView === 'posterior' ? 'purple' : 'gray'}
+                >
+                  Posterior
+                </Button>
+              </ButtonGroup>
               
-              <Tooltip label="Femur" placement="right">
-                <Box
-                  position="absolute"
-                  top="250px"
-                  left="170px"
-                  width="20px"
-                  height="20px"
-                  borderRadius="full"
-                  bg="purple.400"
-                  opacity="0.7"
-                  cursor="pointer"
-                  _hover={{ opacity: 1 }}
-                  onClick={() => handleStructureSelect(sampleStructures[systemType][1])}
+              <ButtonGroup size="sm" isAttached variant="outline">
+                <IconButton
+                  icon={<MinusIcon />}
+                  onClick={() => handleZoom('out')}
+                  aria-label="Zoom out"
+                  isDisabled={zoomLevel <= 0.5}
                 />
-              </Tooltip>
+                <Button>{Math.round(zoomLevel * 100)}%</Button>
+                <IconButton
+                  icon={<AddIcon />}
+                  onClick={() => handleZoom('in')}
+                  aria-label="Zoom in"
+                  isDisabled={zoomLevel >= 2}
+                />
+              </ButtonGroup>
               
-              <Tooltip label={systemType === 'skeletal' ? 'Vertebrae' : 'Latissimus Dorsi'} placement="left">
-                <Box
-                  position="absolute"
-                  top="180px"
-                  left="230px"
-                  width="20px"
-                  height="20px"
-                  borderRadius="full"
-                  bg="purple.400"
-                  opacity="0.7"
-                  cursor="pointer"
-                  _hover={{ opacity: 1 }}
-                  onClick={() => handleStructureSelect(sampleStructures[systemType][2])}
+              <ButtonGroup size="sm">
+                <Button onClick={() => setShowLabels(!showLabels)} colorScheme={showLabels ? 'purple' : 'gray'}>
+                  {showLabels ? 'Hide Labels' : 'Show Labels'}
+                </Button>
+                <IconButton
+                  icon={<RepeatIcon />}
+                  onClick={handleReset}
+                  aria-label="Reset view"
                 />
-              </Tooltip>
+              </ButtonGroup>
+            </HStack>
+            
+            {/* System selector */}
+            <ButtonGroup size="sm" isAttached variant="outline" alignSelf="center">
+              <Button 
+                onClick={() => handleSystemChange('skeletal')}
+                colorScheme={currentSystem === 'skeletal' ? 'purple' : 'gray'}
+              >
+                Skeletal System
+              </Button>
+              <Button 
+                onClick={() => handleSystemChange('muscular')}
+                colorScheme={currentSystem === 'muscular' ? 'purple' : 'gray'}
+              >
+                Muscular System
+              </Button>
+            </ButtonGroup>
+            
+            {/* Image display */}
+            <Box 
+              position="relative" 
+              borderWidth={1} 
+              borderColor={borderColor} 
+              borderRadius="md" 
+              overflow="hidden"
+              bg={bgColor}
+              h="500px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Image 
+                src={getAnatomyImage()} 
+                alt={`${currentSystem} system ${currentView} view`}
+                objectFit="contain"
+                maxH="100%"
+                transform={`scale(${zoomLevel})`}
+                transition="transform 0.3s ease"
+              />
               
-              <Tooltip label={systemType === 'skeletal' ? 'Clavicle' : 'Pectoralis Major'} placement="top">
+              {/* Structure labels/hotspots */}
+              {showLabels && visibleStructures.map(structure => (
                 <Box
+                  key={structure.id}
                   position="absolute"
-                  top="100px"
-                  left="210px"
-                  width="20px"
-                  height="20px"
-                  borderRadius="full"
-                  bg="purple.400"
-                  opacity="0.7"
+                  left={`${structure.location.x}%`}
+                  top={`${structure.location.y}%`}
+                  transform="translate(-50%, -50%)"
+                  zIndex={1}
+                  onClick={() => handleStructureSelect(structure)}
                   cursor="pointer"
-                  _hover={{ opacity: 1 }}
-                  onClick={() => handleStructureSelect(sampleStructures[systemType][3])}
-                />
-              </Tooltip>
-            </>
-          )}
-        </Box>
+                >
+                  <Popover trigger="hover">
+                    <PopoverTrigger>
+                      <Box
+                        w="20px"
+                        h="20px"
+                        borderRadius="full"
+                        border="2px solid"
+                        borderColor={selectedStructure?.id === structure.id ? "purple.500" : "gray.400"}
+                        bg={selectedStructure?.id === structure.id ? "purple.100" : getHighlightColor(structure)}
+                        _hover={{ bg: "purple.100" }}
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <InfoIcon boxSize={3} color="gray.600" />
+                      </Box>
+                    </PopoverTrigger>
+                    <PopoverContent>
+                      <PopoverArrow />
+                      <PopoverCloseButton />
+                      <PopoverHeader fontWeight="bold">{structure.name}</PopoverHeader>
+                      <PopoverBody>
+                        <Text fontSize="sm">{structure.description}</Text>
+                      </PopoverBody>
+                    </PopoverContent>
+                  </Popover>
+                </Box>
+              ))}
+            </Box>
+            
+            {/* Highlight controls */}
+            <HStack justifyContent="center" spacing={4}>
+              <Text fontSize="sm" fontWeight="medium">Highlight:</Text>
+              <RadioGroup value={highlightMode} onChange={setHighlightMode} size="sm">
+                <HStack spacing={4}>
+                  <Radio value="none">None</Radio>
+                  <Radio value="region">By Region</Radio>
+                </HStack>
+              </RadioGroup>
+            </HStack>
+          </VStack>
+        </GridItem>
         
-        {/* Information Panel */}
-        <Box 
-          p={4} 
-          borderWidth="1px"
-          borderRadius="md"
-          borderColor={borderColor}
-          bg={useColorModeValue('gray.50', 'gray.700')}
-          minHeight="100px"
-        >
-          {selectedStructure ? (
-            <VStack align="start" spacing={2}>
-              <Heading size="sm">{selectedStructure.name}</Heading>
-              <Text>{selectedStructure.description}</Text>
-            </VStack>
-          ) : (
-            <Flex align="center" justify="center" height="100%">
-              <Text color="gray.500" fontSize="sm">
-                Select a structure in the model to view details
-              </Text>
-            </Flex>
-          )}
-        </Box>
-        
-        {/* System Switcher */}
-        <HStack mt={2}>
-          <Text fontSize="sm" fontWeight="medium">System:</Text>
-          <ButtonGroup size="sm" isAttached variant="outline">
-            <Button
-              isActive={systemType === 'skeletal'}
-              onClick={() => window.location.href = '?system=skeletal'}
-            >
-              Skeletal
-            </Button>
-            <Button
-              isActive={systemType === 'muscular'}
-              onClick={() => window.location.href = '?system=muscular'}
-            >
-              Muscular
-            </Button>
-          </ButtonGroup>
-        </HStack>
-      </VStack>
+        {/* Right sidebar - Information panel */}
+        <GridItem>
+          <VStack spacing={4} align="stretch">
+            <Heading size="md">
+              {currentSystem === 'skeletal' ? 'Skeletal System' : 'Muscular System'}
+            </Heading>
+            
+            <Box borderWidth={1} borderRadius="md" p={4} bg={bgColor}>
+              {selectedStructure ? (
+                <VStack align="start" spacing={3}>
+                  <Heading size="md">{selectedStructure.name}</Heading>
+                  <Text>{selectedStructure.description}</Text>
+                  
+                  <Divider />
+                  
+                  <Box width="100%">
+                    <Text fontWeight="medium" mb={1}>Functions:</Text>
+                    <VStack align="start" pl={2} spacing={1}>
+                      {selectedStructure.functions.map((func, i) => (
+                        <HStack key={i} spacing={2} align="start">
+                          <Text>•</Text>
+                          <Text fontSize="sm">{func}</Text>
+                        </HStack>
+                      ))}
+                    </VStack>
+                  </Box>
+                  
+                  <Box width="100%">
+                    <Text fontWeight="medium" mb={1}>Connections:</Text>
+                    <HStack flexWrap="wrap" spacing={2}>
+                      {selectedStructure.connections.map((conn, i) => (
+                        <Tag key={i} size="sm" colorScheme="blue" my={1}>{conn}</Tag>
+                      ))}
+                    </HStack>
+                  </Box>
+                  
+                  <Divider />
+                  
+                  <Box 
+                    width="100%" 
+                    bg="purple.50" 
+                    borderRadius="md" 
+                    p={2} 
+                    borderLeftWidth={4} 
+                    borderLeftColor="purple.300"
+                  >
+                    <HStack spacing={2}>
+                      <InfoIcon color="purple.500" />
+                      <Text fontWeight="medium" fontSize="sm">Did you know?</Text>
+                    </HStack>
+                    <Text fontSize="sm" mt={1}>{selectedStructure.funFact}</Text>
+                  </Box>
+                </VStack>
+              ) : (
+                <VStack spacing={4} py={6} align="center">
+                  <ViewIcon boxSize={8} color="purple.400" />
+                  <Text textAlign="center" color="gray.600">
+                    Select a structure on the model to view detailed information
+                  </Text>
+                </VStack>
+              )}
+            </Box>
+            
+            <Box>
+              <Heading size="sm" mb={2}>All Structures</Heading>
+              <VStack align="stretch" spacing={1} maxH="250px" overflowY="auto" pr={2}>
+                {visibleStructures.map(structure => (
+                  <Button
+                    key={structure.id}
+                    size="sm"
+                    justifyContent="flex-start"
+                    variant={selectedStructure?.id === structure.id ? "solid" : "ghost"}
+                    colorScheme={selectedStructure?.id === structure.id ? "purple" : "gray"}
+                    leftIcon={selectedStructure?.id === structure.id ? <CheckCircleIcon /> : undefined}
+                    onClick={() => handleStructureSelect(structure)}
+                  >
+                    {structure.name}
+                  </Button>
+                ))}
+              </VStack>
+            </Box>
+          </VStack>
+        </GridItem>
+      </Grid>
     </Box>
   );
 }

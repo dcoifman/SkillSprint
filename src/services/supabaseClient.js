@@ -1,49 +1,113 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize the Supabase client
-// For development, use these fallback values if environment variables aren't set
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://your-project-id.supabase.co';
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'your-anon-key';
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
-// Create a custom Supabase client for development
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Check if required environment variables are set
+if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'https://your-project-id.supabase.co' || supabaseAnonKey === 'your-anon-key') {
+  console.warn(`
+    Warning: Supabase environment variables may not be properly configured.
+    Make sure you have a .env.local file with:
+    
+    REACT_APP_SUPABASE_URL=your_supabase_url_here
+    REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+    
+    For development purposes, using fallback values.
+  `);
+}
+
+// Create a Supabase client with fallback values for development if needed
+export const supabase = createClient(
+  supabaseUrl || 'https://your-project-id.supabase.co', 
+  supabaseAnonKey || 'your-anon-key'
+);
 
 // Auth helper functions
 export const signUp = async (email, password, name) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: name,
-      },
-      emailRedirectTo: `${window.location.origin}/dashboard`
+  try {
+    console.log('Signing up user:', { email, name });
+    
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+        },
+        emailRedirectTo: `${window.location.origin}/dashboard`
+      }
+    });
+    
+    if (error) {
+      console.error('Sign up error:', error);
+    } else {
+      console.log('Sign up successful');
     }
-  });
-  
-  return { data, error };
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Exception during sign up:', err);
+    return { data: null, error: err };
+  }
 };
 
 export const signIn = async (email, password) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  
-  return { data, error };
+  try {
+    console.log('Signing in user:', { email });
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) {
+      console.error('Sign in error:', error);
+    } else {
+      console.log('Sign in successful');
+    }
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Exception during sign in:', err);
+    return { data: null, error: err };
+  }
 };
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  return { error };
+  try {
+    console.log('Signing out user');
+    
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      console.error('Sign out error:', error);
+    } else {
+      console.log('Sign out successful');
+    }
+    
+    return { error };
+  } catch (err) {
+    console.error('Exception during sign out:', err);
+    return { error: err };
+  }
 };
 
 export const getCurrentUser = async () => {
-  const { data, error } = await supabase.auth.getSession();
-  return { 
-    user: data?.session?.user || null,
-    error 
-  };
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('Get current user error:', error);
+      return { user: null, error };
+    }
+    
+    const user = data?.session?.user || null;
+    return { user, error: null };
+  } catch (err) {
+    console.error('Exception during get current user:', err);
+    return { user: null, error: err };
+  }
 };
 
 // Database helper functions for learning paths
