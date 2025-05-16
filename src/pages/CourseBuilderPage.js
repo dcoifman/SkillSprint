@@ -56,6 +56,7 @@ import {
 } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 import geminiClient, { PROMPT_TEMPLATES, generateContent, stripCodeFences } from '../services/geminiClient';
+import { createLearningPath } from '../services/supabaseClient';
 
 // Default course structure
 const defaultCourseForm = {
@@ -419,19 +420,88 @@ function CourseBuilderPage() {
   };
 
   // Save course to the database
-  const saveCourse = () => {
-    // Here you would normally save to Supabase
-    // For now, show a success message
-    toast({
-      title: "Course saved",
-      description: "Your course has been saved successfully.",
-      status: "success",
-      duration: 3000,
-      isClosable: true,
-    });
+  const saveCourse = async () => {
+    if (!generatedCourse) {
+      toast({
+        title: "Missing course data",
+        description: "Please generate a course outline first.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
     
-    // Navigate to dashboard or courses page
-    navigate('/dashboard');
+    // Set loading state
+    setIsGenerating(true);
+    
+    try {
+      // Prepare course data
+      const pathData = {
+        title: generatedCourse.title,
+        description: generatedCourse.description,
+        category: generatedCourse.category,
+        level: courseForm.level,
+        estimated_time: courseForm.duration,
+        objectives: generatedCourse.objectives || [],
+        prerequisites: generatedCourse.prerequisites || [],
+        tags: generatedCourse.tags || []
+      };
+      
+      // Prepare modules data
+      const moduleData = generatedCourse.modules.map((module, moduleIndex) => {
+        return {
+          title: module.title,
+          description: module.description,
+          order_index: moduleIndex,
+          sprints: module.sprints.map((sprint, sprintIndex) => {
+            return {
+              title: sprint.title,
+              description: sprint.description,
+              content: sprintContent[`${moduleIndex}-${sprintIndex}`] || [],
+              time: sprint.time || "5-10 min",
+              order_index: sprintIndex
+            };
+          })
+        };
+      });
+      
+      // Save the course to Supabase
+      const { data, error } = await createLearningPath(pathData, moduleData);
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to save course. Please try again.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+      
+      toast({
+        title: "Course saved",
+        description: "Your course has been saved successfully.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      
+      // Navigate to dashboard
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error saving course:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   // Helper to render content based on type

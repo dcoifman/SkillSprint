@@ -1,0 +1,67 @@
+name: Test and Deploy 3D Anatomy Component
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        chmod +x ./setup-anatomy-models.sh
+        ./setup-anatomy-models.sh
+        npm ci
+    
+    - name: Build project
+      run: npm run build
+    
+    - name: Test
+      run: npm test
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifacts
+        path: build/
+        
+  deploy-storybook:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install Storybook dependencies
+      run: |
+        npm install -g @storybook/cli
+        npm install
+    
+    - name: Build Storybook
+      run: npm run build-storybook
+    
+    - name: Deploy to GitHub Pages
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        branch: gh-pages
+        folder: storybook-static
+        clean: true 

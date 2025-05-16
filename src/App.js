@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import SprintPage from './pages/SprintPage';
 import ProfilePage from './pages/ProfilePage';
+import InstructorProfilePage from './pages/InstructorProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 import ExplorePathsPage from './pages/ExplorePathsPage';
 import { LoginPage, SignupPage } from './pages/AuthPages';
@@ -61,11 +62,20 @@ function AppRoutes() {
               <ProfilePage />
             </ProtectedRoute>
           } />
+          <Route path="/instructor-profile" element={
+            <ProtectedRoute>
+              <InstructorProfilePage />
+            </ProtectedRoute>
+          } />
           <Route path="/explore" element={<ExplorePathsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
-          <Route path="/paths/:pathId" element={<PathDetailPage />} />
-          <Route path="/build-course" element={<CourseBuilderPage />} />
+          <Route path="/path/:pathId" element={<PathDetailPage />} />
+          <Route path="/course-builder" element={
+            <ProtectedRoute>
+              <CourseBuilderPage />
+            </ProtectedRoute>
+          } />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

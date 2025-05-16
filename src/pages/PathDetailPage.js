@@ -65,28 +65,62 @@ function PathDetailPage() {
         const { data, error } = await fetchPathDetail(pathId);
         
         if (error) {
-          console.error('Error fetching path details:', error);
-          setError(error.message);
-          toast({
-            title: 'Error loading path details',
-            description: error.message,
-            status: 'error',
-            duration: 5000,
-            isClosable: true,
-          });
+          // Check for JSON parsing errors
+          if (error.message && (
+            error.message.includes('JSON Parse') || 
+            error.message.includes('Unexpected token') || 
+            error.message.includes('Unterminated string')
+          )) {
+            console.error('JSON parsing error:', error);
+            setError('There was an error processing data from our servers');
+            toast({
+              title: 'Data Processing Error',
+              description: 'We encountered an issue while processing the course data. Please try again later.',
+              status: 'error',
+              duration: 5000,
+              isClosable: true,
+            });
+          } else {
+            console.error('Error fetching path details:', error);
+            setError(error.message);
+            toast({
+              title: 'Error loading path details',
+              description: error.message,
+              status: 'error',
+              duration: 5000,
+              isClosable: true,
+            });
+          }
           return;
         }
         
         setPathDetail(data);
       } catch (error) {
-        console.error('Unexpected error:', error);
-        setError('An unexpected error occurred');
-        toast({
-          title: 'An unexpected error occurred',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
+        // Check for JSON parsing errors in unexpected errors too
+        if (error.message && (
+          error.message.includes('JSON Parse') || 
+          error.message.includes('Unexpected token') || 
+          error.message.includes('Unterminated string')
+        )) {
+          console.error('JSON parsing error:', error);
+          setError('There was an error processing data from our servers');
+          toast({
+            title: 'Data Processing Error',
+            description: 'We encountered an issue while processing the course data. Please try again later.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+        } else {
+          console.error('Unexpected error:', error);
+          setError('An unexpected error occurred');
+          toast({
+            title: 'An unexpected error occurred',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+        }
       } finally {
         setIsLoading(false);
       }

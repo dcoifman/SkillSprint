@@ -56,6 +56,8 @@ import {
 } from '@chakra-ui/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
+import CourseInvitationsComponent from '../components/CourseInvitationsComponent';
+import { getInstructorProfile } from '../services/supabaseClient';
 
 // Motion components for animations
 const MotionBox = motion(Box);
@@ -66,6 +68,7 @@ function DashboardPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isInstructor, setIsInstructor] = useState(false);
   
   // Simulate data loading
   useEffect(() => {
@@ -73,8 +76,18 @@ function DashboardPage() {
       setLoading(false);
     }, 1000);
     
+    // Check if user is an instructor
+    const checkInstructorStatus = async () => {
+      if (user) {
+        const { data } = await getInstructorProfile();
+        setIsInstructor(!!data);
+      }
+    };
+    
+    checkInstructorStatus();
+    
     return () => clearTimeout(timer);
-  }, []);
+  }, [user]);
 
   // Cards and text styling
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -152,17 +165,44 @@ function DashboardPage() {
           </Flex>
           
           <Flex mt={{ base: 4, md: 0 }}>
-            <Tooltip label="Create new course" placement="top">
-              <RouterLink to="/build-course">
-                <Button 
-                  colorScheme="whiteAlpha" 
-                  leftIcon={<AddIcon />}
-                  mr={2}
-                >
-                  Create Course
-                </Button>
-              </RouterLink>
-            </Tooltip>
+            {isInstructor ? (
+              <>
+                <Tooltip label="Manage instructor profile" placement="top">
+                  <RouterLink to="/instructor-profile">
+                    <Button 
+                      colorScheme="whiteAlpha" 
+                      leftIcon={<AtSignIcon />}
+                      mr={2}
+                    >
+                      Instructor Profile
+                    </Button>
+                  </RouterLink>
+                </Tooltip>
+                <Tooltip label="Create new course" placement="top">
+                  <RouterLink to="/course-builder">
+                    <Button 
+                      colorScheme="whiteAlpha" 
+                      leftIcon={<AddIcon />}
+                      mr={2}
+                    >
+                      Create Course
+                    </Button>
+                  </RouterLink>
+                </Tooltip>
+              </>
+            ) : (
+              <Tooltip label="Become an instructor" placement="top">
+                <RouterLink to="/instructor-profile">
+                  <Button 
+                    colorScheme="whiteAlpha" 
+                    leftIcon={<StarIcon />}
+                    mr={2}
+                  >
+                    Become Instructor
+                  </Button>
+                </RouterLink>
+              </Tooltip>
+            )}
             
             <Tooltip label="View notifications" placement="top">
               <IconButton
@@ -848,6 +888,26 @@ function DashboardPage() {
           </Card>
         </MotionBox>
       </SimpleGrid>
+      
+      {/* Course Invitations Section */}
+      <Skeleton isLoaded={!loading}>
+        <MotionCard
+          mb={8}
+          borderWidth="1px"
+          borderColor={cardBorder}
+          borderRadius="lg"
+          bg={cardBg}
+          boxShadow="sm"
+          overflow="hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <CardBody>
+            <CourseInvitationsComponent />
+          </CardBody>
+        </MotionCard>
+      </Skeleton>
       
       {/* Notifications Modal */}
       <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">

@@ -31,6 +31,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import ReactMarkdown from 'react-markdown';
 import InteractiveAnatomyModel from '../components/InteractiveAnatomyModel';
 import ThreeDAnatomyModel from '../components/ThreeDAnatomyModel';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 function SprintPage() {
   const { sprintId } = useParams();
@@ -559,16 +560,19 @@ Continue to the next sprint to learn about upper body musculature and its role i
               
               <Card variant="outline" p={4} my={4}>
                 <CardBody>
-                  <ThreeDAnatomyModel 
-                    systemType={currentStep.systemType || 'skeletal'}
-                    initialView="anterior"
-                    onSelectStructure={(structure) => toast({
-                      title: structure,
-                      description: `You selected the ${structure}`,
-                      status: 'info',
-                      duration: 2000,
-                    })}
-                  />
+                  <ErrorBoundary>
+                    <ThreeDAnatomyModel 
+                      systemType={currentStep.systemType || 'skeletal'}
+                      initialView="anterior"
+                      onSelectStructure={(structure) => toast({
+                        title: structure,
+                        description: `You selected the ${structure}`,
+                        status: 'info',
+                        duration: 2000,
+                      })}
+                      fallbackImage="/img/anatomy_fallback.png"
+                    />
+                  </ErrorBoundary>
                 </CardBody>
               </Card>
               

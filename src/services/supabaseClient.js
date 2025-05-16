@@ -17,11 +17,91 @@ if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'https://your-project-id
   `);
 }
 
+// Custom error formatter function
+export const formatErrorAsXml = (error, type = 'api') => {
+  if (!error) return null;
+  
+  const errorMsg = error.message || 'Unknown error';
+  const errorCode = error.code || 'unknown';
+  const timestamp = new Date().toISOString();
+  
+  return `<error type="${type}"><message>${errorMsg}</message><code>${errorCode}</code><timestamp>${timestamp}</timestamp></error>`;
+};
+
+// Safe JSON parser to handle malformed JSON
+export const safeJsonParse = (jsonString) => {
+  try {
+    return { 
+      data: JSON.parse(jsonString), 
+      error: null 
+    };
+  } catch (error) {
+    console.error('JSON Parse Error:', error);
+    const xmlError = formatErrorAsXml({
+      message: `JSON Parse error: ${error.message}`,
+      code: 'INVALID_JSON'
+    }, 'json');
+    
+    return { 
+      data: null, 
+      error: {
+        message: `JSON Parse error: ${error.message}`,
+        code: 'INVALID_JSON',
+        xml: xmlError
+      }
+    };
+  }
+};
+
 // Create a Supabase client with fallback values for development if needed
 export const supabase = createClient(
   supabaseUrl || 'https://your-project-id.supabase.co', 
   supabaseAnonKey || 'your-anon-key'
 );
+
+// Augment the built-in fetch to handle malformed JSON
+const originalFetch = supabase.fetch;
+if (originalFetch) {
+  supabase.fetch = async (...args) => {
+    try {
+      const response = await originalFetch(...args);
+      return response;
+    } catch (error) {
+      if (error.message && error.message.includes('JSON')) {
+        console.error('JSON parsing error in Supabase fetch:', error);
+        
+        const xmlError = formatErrorAsXml({
+          message: `API Response JSON Parse error: ${error.message}`,
+          code: 'INVALID_JSON_RESPONSE'
+        }, 'json_response');
+        
+        throw {
+          ...error,
+          xml: xmlError
+        };
+      }
+      throw error;
+    }
+  };
+}
+
+// Custom error handler for JSON parsing issues in API responses
+const handleJsonParseError = (error) => {
+  if (error.message && error.message.includes('JSON')) {
+    console.error('JSON parsing error:', error);
+    
+    const errorMessage = `JSON Parse error: ${error.message}`;
+    const errorXml = `<error type="json"><message>${errorMessage}</message><timestamp>${new Date().toISOString()}</timestamp></error>`;
+    
+    // Create a custom error object with XML formatting for the error
+    return {
+      message: errorMessage,
+      code: 'INVALID_JSON',
+      xml: errorXml
+    };
+  }
+  return error;
+};
 
 // Auth helper functions
 export const signUp = async (email, password, name) => {
@@ -41,14 +121,13 @@ export const signUp = async (email, password, name) => {
     
     if (error) {
       console.error('Sign up error:', error);
-    } else {
-      console.log('Sign up successful');
     }
     
     return { data, error };
   } catch (err) {
     console.error('Exception during sign up:', err);
-    return { data: null, error: err };
+    const formattedError = handleJsonParseError(err);
+    return { data: null, error: formattedError };
   }
 };
 
@@ -112,28 +191,39 @@ export const getCurrentUser = async () => {
 
 // Database helper functions for learning paths
 export const fetchLearningPaths = async ({ category = null, level = null, search = null }) => {
-  let query = supabase
-    .from('learning_paths')
-    .select(`
-      *,
-      instructor:instructor_id (name, avatar)
-    `);
-  
-  // Apply filters if provided
-  if (category) {
-    query = query.eq('category', category);
+  try {
+    let query = supabase
+      .from('learning_paths')
+      .select(`
+        *,
+        instructor:instructor_id (name, avatar)
+      `);
+    
+    // Apply filters if provided
+    if (category) {
+      query = query.eq('category', category);
+    }
+    
+    if (level) {
+      query = query.eq('level', level);
+    }
+    
+    if (search) {
+      query = query.or(`title.ilike.%${search}%, description.ilike.%${search}%`);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching learning paths:', error);
+    }
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Exception during fetching learning paths:', err);
+    const formattedError = handleJsonParseError(err);
+    return { data: null, error: formattedError };
   }
-  
-  if (level) {
-    query = query.eq('level', level);
-  }
-  
-  if (search) {
-    query = query.or(`title.ilike.%${search}%, description.ilike.%${search}%`);
-  }
-  
-  const { data, error } = await query;
-  return { data, error };
 };
 
 export const fetchPathDetail = async (pathId) => {
@@ -294,4 +384,241 @@ export const updateSprintProgress = async (sprintId, isCompleted) => {
     ]);
   
   return { data, error };
+};
+
+export const createLearningPath = async (pathData, moduleData) => {
+  try {
+    const { user } = await getCurrentUser();
+    
+    if (!user) {
+      return { error: { message: 'You must be logged in to create a course' } };
+    }
+    
+    // First, check if this user has an instructor profile
+    const { data: instructorData, error: instructorError } = await supabase
+      .from('instructors')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+    
+    // If no instructor profile exists, create one
+    let instructorId;
+    if (instructorError || !instructorData) {
+      const { data: newInstructor, error: createError } = await supabase
+        .from('instructors')
+        .insert([
+          { 
+            user_id: user.id,
+            name: user.user_metadata?.full_name || 'Instructor',
+            avatar: user.user_metadata?.avatar_url || null
+          }
+        ])
+        .select('id')
+        .single();
+      
+      if (createError) {
+        console.error('Error creating instructor profile:', createError);
+        return { error: createError };
+      }
+      
+      instructorId = newInstructor.id;
+    } else {
+      instructorId = instructorData.id;
+    }
+    
+    // Create the learning path
+    const { data: path, error: pathError } = await supabase
+      .from('learning_paths')
+      .insert([
+        {
+          ...pathData,
+          instructor_id: instructorId
+        }
+      ])
+      .select('id')
+      .single();
+    
+    if (pathError) {
+      console.error('Error creating learning path:', pathError);
+      return { error: pathError };
+    }
+    
+    // Create modules for this path
+    for (const module of moduleData) {
+      const { data: newModule, error: moduleError } = await supabase
+        .from('modules')
+        .insert([
+          {
+            path_id: path.id,
+            title: module.title,
+            description: module.description,
+            order_index: module.order_index
+          }
+        ])
+        .select('id')
+        .single();
+      
+      if (moduleError) {
+        console.error('Error creating module:', moduleError);
+        continue;
+      }
+      
+      // Create sprints for this module
+      for (const sprint of module.sprints) {
+        const { error: sprintError } = await supabase
+          .from('sprints')
+          .insert([
+            {
+              module_id: newModule.id,
+              title: sprint.title,
+              description: sprint.description,
+              content: JSON.stringify(sprint.content),
+              time: sprint.time,
+              order_index: sprint.order_index
+            }
+          ]);
+        
+        if (sprintError) {
+          console.error('Error creating sprint:', sprintError);
+        }
+      }
+    }
+    
+    return { data: { path_id: path.id }, error: null };
+  } catch (err) {
+    console.error('Exception during course creation:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const sendCourseToStudent = async (pathId, studentEmail) => {
+  try {
+    // First check if the student exists
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', studentEmail)
+      .single();
+    
+    if (userError) {
+      return { error: { message: 'Student not found with this email' } };
+    }
+    
+    // Add an invitation record
+    const { data, error } = await supabase
+      .from('course_invitations')
+      .insert([
+        {
+          path_id: pathId,
+          user_id: userData.id,
+          status: 'pending'
+        }
+      ]);
+    
+    if (error) {
+      console.error('Error sending course invitation:', error);
+      return { error };
+    }
+    
+    return { data, error: null };
+  } catch (err) {
+    console.error('Exception during sending course invitation:', err);
+    return { error: err };
+  }
+};
+
+export const getInstructorProfile = async () => {
+  try {
+    const { user } = await getCurrentUser();
+    
+    if (!user) {
+      return { error: { message: 'Not authenticated' } };
+    }
+    
+    const { data, error } = await supabase
+      .from('instructors')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Exception during fetching instructor profile:', err);
+    return { error: err };
+  }
+};
+
+export const updateInstructorProfile = async (profileData) => {
+  try {
+    const { user } = await getCurrentUser();
+    
+    if (!user) {
+      return { error: { message: 'Not authenticated' } };
+    }
+    
+    // Check if instructor profile exists
+    const { data: existingProfile } = await getInstructorProfile();
+    
+    if (existingProfile) {
+      // Update existing profile
+      const { data, error } = await supabase
+        .from('instructors')
+        .update(profileData)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      
+      return { data, error };
+    } else {
+      // Create new profile
+      const { data, error } = await supabase
+        .from('instructors')
+        .insert([
+          { 
+            ...profileData,
+            user_id: user.id,
+            name: profileData.name || user.user_metadata?.full_name || 'Instructor'
+          }
+        ])
+        .select()
+        .single();
+      
+      return { data, error };
+    }
+  } catch (err) {
+    console.error('Exception during updating instructor profile:', err);
+    return { error: err };
+  }
+};
+
+export const getInstructorCourses = async (instructorId) => {
+  try {
+    const { data, error } = await supabase
+      .from('learning_paths')
+      .select(`
+        *,
+        instructor:instructor_id (name, avatar)
+      `)
+      .eq('instructor_id', instructorId);
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Exception during fetching instructor courses:', err);
+    return { error: err };
+  }
+};
+
+export const getMyInstructorCourses = async () => {
+  try {
+    const { data: instructorData } = await getInstructorProfile();
+    
+    if (!instructorData) {
+      return { data: [], error: null };
+    }
+    
+    return await getInstructorCourses(instructorData.id);
+  } catch (err) {
+    console.error('Exception during fetching my instructor courses:', err);
+    return { error: err };
+  }
 };

@@ -1,6 +1,7 @@
 -- Create instructors table
 CREATE TABLE instructors (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     title TEXT,
     bio TEXT,
@@ -150,4 +151,62 @@ FOR EACH ROW EXECUTE FUNCTION update_path_sprint_count();
 
 CREATE TRIGGER update_path_sprint_count_delete
 AFTER DELETE ON sprints
-FOR EACH ROW EXECUTE FUNCTION update_path_sprint_count(); 
+FOR EACH ROW EXECUTE FUNCTION update_path_sprint_count();
+
+-- Create course_invitations table
+CREATE TABLE course_invitations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    path_id UUID REFERENCES learning_paths(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    status TEXT DEFAULT 'pending', -- pending, accepted, rejected
+    message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(path_id, user_id)
+);
+
+-- Add RLS policies for course_invitations
+ALTER TABLE course_invitations ENABLE ROW LEVEL SECURITY;
+
+-- Allow students to view their own invitations
+CREATE POLICY "Students can view their own invitations" 
+    ON course_invitations FOR SELECT USING (auth.uid() = user_id);
+
+-- Allow students to update (accept/reject) their own invitations
+CREATE POLICY "Students can update their own invitations" 
+    ON course_invitations FOR UPDATE USING (auth.uid() = user_id);
+
+-- Allow instructors to create invitations for their own courses
+CREATE POLICY "Instructors can create invitations for their own courses" 
+    ON course_invitations FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM learning_paths lp
+            WHERE lp.id = path_id AND 
+                  EXISTS (
+                      SELECT 1 FROM instructors i
+                      WHERE i.id = lp.instructor_id AND i.user_id = auth.uid()
+                  )
+        )
+    );
+
+-- Create function to auto-enroll student when invitation is accepted
+CREATE OR REPLACE FUNCTION handle_invitation_acceptance()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.status = 'accepted' AND (OLD.status IS NULL OR OLD.status <> 'accepted') THEN
+        -- Auto-enroll the student
+        INSERT INTO user_paths (user_id, path_id)
+        VALUES (NEW.user_id, NEW.path_id)
+        ON CONFLICT (user_id, path_id) DO NOTHING;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for invitation acceptance
+CREATE TRIGGER on_invitation_acceptance
+AFTER UPDATE ON course_invitations
+FOR EACH ROW
+WHEN (NEW.status = 'accepted' AND (OLD.status IS NULL OR OLD.status <> 'accepted'))
+EXECUTE FUNCTION handle_invitation_acceptance(); 

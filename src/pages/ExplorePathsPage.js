@@ -25,9 +25,15 @@ import {
   Spinner,
   Center,
   useToast,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
 } from '@chakra-ui/react';
 import { SearchIcon } from '@chakra-ui/icons';
 import { fetchLearningPaths } from '../services/supabaseClient';
+import PathCard from '../components/PathCard';
+import useApiErrorHandler from '../hooks/useApiErrorHandler';
 
 function ExplorePathsPage() {
   // States for filtering and search
@@ -42,6 +48,7 @@ function ExplorePathsPage() {
   
   const toast = useToast();
   const navigate = useNavigate();
+  const { handleApiError } = useApiErrorHandler();
 
   // Fetch learning paths from Supabase
   useEffect(() => {
@@ -56,15 +63,7 @@ function ExplorePathsPage() {
         });
         
         if (error) {
-          console.error('Error fetching learning paths:', error);
-          setError(error.message);
-          toast({
-            title: 'Error fetching learning paths',
-            description: error.message,
-            status: 'error',
-            duration: 5000,
-            isClosable: true,
-          });
+          handleApiError(error);
           return;
         }
         
@@ -79,21 +78,14 @@ function ExplorePathsPage() {
           setLevels(uniqueLevels);
         }
       } catch (error) {
-        console.error('Unexpected error:', error);
-        setError('An unexpected error occurred');
-        toast({
-          title: 'An unexpected error occurred',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
+        handleApiError(error);
       } finally {
         setIsLoading(false);
       }
     }
     
     loadLearningPaths();
-  }, [selectedCategory, selectedLevel, toast]);
+  }, [selectedCategory, selectedLevel, searchQuery, handleApiError]);
   
   // Debounced search function
   useEffect(() => {
