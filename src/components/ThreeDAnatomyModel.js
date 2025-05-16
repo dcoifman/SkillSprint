@@ -174,77 +174,62 @@ function useAnatomyModel(systemType) {
   const [modelError, setModelError] = useState(false);
   const [loadAttempted, setLoadAttempted] = useState(false);
   
+  // Always call useGLTF unconditionally at the top level
+  const modelData = useGLTF(MODELS[systemType].path, undefined, 
+    (error) => {
+      console.error(`Error loading ${systemType} model:`, error);
+      setModelError(true);
+      setLoadAttempted(true);
+    }
+  );
+  
   // Try to get model from cache first
   useEffect(() => {
     if (modelCache.has(systemType)) {
       setLoadAttempted(true);
       return;
     }
-  }, [systemType]);
-  
-  // Try to load the model with fallback
-  let modelData = { scene: null, nodes: {}, materials: {}, animations: [] };
-  
-  try {
-    if (!modelError && !loadAttempted) {
-      modelData = useGLTF(MODELS[systemType].path, undefined, 
-        (error) => {
-          console.error(`Error loading ${systemType} model:`, error);
-          setModelError(true);
-          setLoadAttempted(true);
-        }
-      );
-      
-      // Cache successful loads
-      if (modelData.scene) {
-        modelCache.set(systemType, modelData);
-        console.log(`Preloaded ${systemType} model`);
-      }
+    
+    // Cache successful loads
+    if (modelData.scene) {
+      modelCache.set(systemType, modelData);
+      console.log(`Preloaded ${systemType} model`);
     }
-  } catch (error) {
-    console.error(`Error loading ${systemType} model:`, error);
-    setModelError(true);
-    setLoadAttempted(true);
-  }
-  
-  // Get cached model if available
-  if (modelCache.has(systemType)) {
-    modelData = modelCache.get(systemType);
-  }
+  }, [systemType, modelData.scene]);
   
   // Apply model-specific transformations
   useEffect(() => {
-    if (modelData.scene) {
-      const config = MODELS[systemType];
-      modelData.scene.scale.set(config.scale, config.scale, config.scale);
-      modelData.scene.position.set(...config.position);
-      modelData.scene.rotation.set(...config.rotation);
-      
-      // Traverse the scene to enable shadows on all meshes
-      modelData.scene.traverse(object => {
-        if (object.isMesh) {
-          object.castShadow = true;
-          object.receiveShadow = true;
+    if (!modelData.scene) return;
+    
+    const config = MODELS[systemType];
+    modelData.scene.scale.set(config.scale, config.scale, config.scale);
+    modelData.scene.position.set(...config.position);
+    modelData.scene.rotation.set(...config.rotation);
+    
+    // Traverse the scene to enable shadows on all meshes
+    modelData.scene.traverse(object => {
+      if (object.isMesh) {
+        object.castShadow = true;
+        object.receiveShadow = true;
+        
+        // Enhance materials for better visual quality
+        if (object.material) {
+          object.material.roughness = 0.7;
+          object.material.metalness = 0.2;
+          object.material.colorSpace = SRGBColorSpace;
           
-          // Enhance materials for better visual quality
-          if (object.material) {
-            object.material.roughness = 0.7;
-            object.material.metalness = 0.2;
-            object.material.colorSpace = SRGBColorSpace;
-            
-            // Convert colors to linear space for correct lighting
-            if (systemType === 'skeletal') {
-              object.material.color = new THREE.Color('#f0e6d2').convertSRGBToLinear();
-            } else if (systemType === 'muscular') {
-              object.material.color = new THREE.Color('#a83232').convertSRGBToLinear();
-            }
+          // Convert colors to linear space for correct lighting
+          if (systemType === 'skeletal') {
+            object.material.color = new THREE.Color('#f0e6d2').convertSRGBToLinear();
+          } else if (systemType === 'muscular') {
+            object.material.color = new THREE.Color('#a83232').convertSRGBToLinear();
           }
         }
-      });
-    }
-  }, [modelData.scene, systemType]);
+      }
+    });
+  }, [systemType, modelData.scene]);
   
-  // If model failed to load, return a simple placeholder
+  // Return placeholder if model failed to load
   if (modelError || !modelData.scene) {
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.MeshStandardMaterial({ 
