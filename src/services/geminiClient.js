@@ -125,7 +125,8 @@ Format the response as a JSON object with the following structure:
   ]
 }
 
-Keep sprints short (5-15 minutes) and focused on specific learning outcomes.`,
+Keep sprints short (5-15 minutes) and focused on specific learning outcomes.
+Output ONLY valid JSON. Do not include markdown, code fences, or any explanation.`,
 
   SPRINT_CONTENT: `Create detailed content for a sprint titled "{title}" that is part of the "{module}" module in the "{course}" course.
 This sprint should cover: {outline}
@@ -161,7 +162,9 @@ Format the response as a JSON object with the following structure:
   ],
   "summary": "A concise summary of what was learned in this sprint (2-3 sentences)",
   "nextSteps": "Suggestion for what to learn next"
-}`,
+}
+
+Output ONLY valid JSON. Do not include markdown, code fences, or any explanation.`,
 
   IMPROVE_CONTENT: `Review and improve the following course content to make it more engaging, clear, and educational:
 
@@ -174,10 +177,23 @@ Consider the following criteria:
 - Appropriate complexity for {level} level students
 - Use of examples and analogies
 
-Provide an improved version maintaining the same overall structure.`
+Provide an improved version maintaining the same overall structure.
+Output ONLY valid JSON. Do not include markdown, code fences, or any explanation.`
 };
+
+// Helper to strip code fences from Gemini responses
+export function stripCodeFences(response) {
+  let clean = response.trim();
+  if (clean.startsWith('```json')) {
+    clean = clean.replace(/^```json/, '').replace(/```$/, '').trim();
+  } else if (clean.startsWith('```')) {
+    clean = clean.replace(/^```/, '').replace(/```$/, '').trim();
+  }
+  return clean;
+}
 
 export default {
   generateContent,
-  PROMPT_TEMPLATES
+  PROMPT_TEMPLATES,
+  stripCodeFences
 }; 

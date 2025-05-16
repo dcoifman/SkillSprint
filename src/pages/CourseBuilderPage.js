@@ -54,7 +54,7 @@ import {
   CheckCircleIcon
 } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
-import geminiClient, { PROMPT_TEMPLATES, generateContent } from '../services/geminiClient';
+import geminiClient, { PROMPT_TEMPLATES, generateContent, stripCodeFences } from '../services/geminiClient';
 
 // Default course structure
 const defaultCourseForm = {
@@ -124,7 +124,7 @@ function CourseBuilderPage() {
       
       try {
         // Parse the JSON response
-        const courseData = JSON.parse(response);
+        const courseData = JSON.parse(stripCodeFences(response));
         setGeneratedCourse(courseData);
         
         // Success message
@@ -208,7 +208,7 @@ function CourseBuilderPage() {
       
       try {
         // Parse the JSON response
-        const content = JSON.parse(response);
+        const content = JSON.parse(stripCodeFences(response));
         
         // Update sprint content state
         setSprintContent(prev => ({
@@ -272,7 +272,7 @@ function CourseBuilderPage() {
       
       try {
         // Parse the JSON response
-        const improvedContent = JSON.parse(response);
+        const improvedContent = JSON.parse(stripCodeFences(response));
         
         // Update sprint content state
         setSprintContent(prev => ({
