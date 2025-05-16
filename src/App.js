@@ -13,6 +13,7 @@ import ExplorePathsPage from './pages/ExplorePathsPage';
 import { LoginPage, SignupPage } from './pages/AuthPages';
 import PathDetailPage from './pages/PathDetailPage';
 import CourseBuilderPage from './pages/CourseBuilderPage';
+import CommunityPage from './pages/CommunityPage';
 
 // Import layout components
 import Header from './components/layout/Header';
@@ -65,6 +66,7 @@ function AppRoutes() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/paths/:pathId" element={<PathDetailPage />} />
           <Route path="/build-course" element={<CourseBuilderPage />} />
+          <Route path="/community" element={<CommunityPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Box>
