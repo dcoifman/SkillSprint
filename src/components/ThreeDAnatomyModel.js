@@ -35,11 +35,6 @@ import { ChevronDownIcon, DownloadIcon, ViewIcon } from '@chakra-ui/icons';
 import ErrorBoundary from './ErrorBoundary';
 import JSONErrorHandler from './JSONErrorHandler';
 
-// Compatibility shim for three.js color space naming
-if (!THREE.sRGBEncoding && THREE.SRGBColorSpace) {
-  THREE.sRGBEncoding = THREE.SRGBColorSpace;
-}
-
 // Cache for loaded models to improve performance
 const modelCache = new Map();
 
