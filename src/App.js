@@ -16,6 +16,7 @@ import PathDetailPage from './pages/PathDetailPage';
 import CourseBuilderPage from './pages/CourseBuilderPage';
 import CommunityPage from './pages/CommunityPage';
 import CourseGenerationPage from './pages/CourseGenerationPage';
+import HowItWorksPage from './pages/HowItWorksPage';
 
 // Import layout components
 import Header from './components/layout/Header';
@@ -72,6 +73,7 @@ function AppRoutes() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/path/:pathId" element={<PathDetailPage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/course-builder" element={
             <ProtectedRoute>
               <CourseBuilderPage />
