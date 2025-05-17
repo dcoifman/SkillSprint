@@ -1029,11 +1029,13 @@ function CourseBuilderPage() {
                         onChange={(e) => setUseBackendGeneration(e.target.checked)}
                       />
                     </FormControl>
-                    <FormHelperText>
-                      {useBackendGeneration 
-                        ? "Course will be generated on the server (more reliable for large courses)" 
-                        : "Course will be generated in the browser (faster for simple courses)"}
-                    </FormHelperText>
+                    <FormControl>
+                      <FormHelperText>
+                        {useBackendGeneration 
+                          ? "Course will be generated on the server (more reliable for large courses)" 
+                          : "Course will be generated in the browser (faster for simple courses)"}
+                      </FormHelperText>
+                    </FormControl>
                     
                     <Button
                       colorScheme="purple"
