@@ -653,3 +653,27 @@ export const debugDatabase = async () => {
   
   console.log('Sample instructor:', sampleInstructor?.[0]);
 };
+
+// Export all functions as a default object
+export default {
+  signUp,
+  signIn,
+  signOut,
+  getCurrentUser,
+  fetchLearningPaths,
+  fetchPathDetail,
+  enrollUserInPath,
+  updateSprintProgress,
+  createLearningPath,
+  sendCourseToStudent,
+  getInstructorByUserId,
+  getInstructorProfile,
+  updateInstructorProfile,
+  getInstructorCourses,
+  getMyInstructorCourses,
+  inspectTableStructure,
+  debugDatabase,
+  formatError,
+  safeJsonParse,
+  supabase
+};
