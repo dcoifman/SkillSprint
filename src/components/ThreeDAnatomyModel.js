@@ -179,43 +179,38 @@ function useAnatomyModel(systemType) {
   const modelConfig = MODELS[systemType];
   const modelPath = modelConfig?.path;
   
-  // Try loading the model
-  const { scene, nodes, materials, animations } = useGLTF(modelPath, undefined, 
-    (error) => {
-      console.error(`Error loading ${systemType} model:`, error);
+  // Load the model using useGLTF hook
+  const model = useGLTF(modelPath);
+  const { scene, nodes, materials, animations } = model;
+
+  // Handle errors and caching
+  useEffect(() => {
+    if (!scene) {
+      console.error(`Error loading ${systemType} model`);
       setModelError(true);
       setLoadAttempted(true);
       
       // Try loading placeholder if main model fails
       const placeholderPath = `/models/anatomy/${systemType}/placeholder.glb`;
-      useGLTF(placeholderPath, undefined, 
-        (placeholderError) => {
-          console.error(`Error loading placeholder for ${systemType}:`, placeholderError);
-          // Will use generated placeholder
-        },
-        () => {
+      try {
+        const placeholderModel = useGLTF(placeholderPath);
+        if (placeholderModel.scene) {
           setIsPlaceholder(true);
           console.log(`Loaded placeholder for ${systemType}`);
         }
-      );
-    },
-    () => {
+      } catch (placeholderError) {
+        console.error(`Error loading placeholder for ${systemType}:`, placeholderError);
+        // Will use generated placeholder
+      }
+    } else {
       setLoadAttempted(true);
       console.log(`Successfully loaded ${systemType} model`);
-    }
-  );
-  
-  // Try to get model from cache first
-  useEffect(() => {
-    if (modelCache.has(systemType)) {
-      setLoadAttempted(true);
-      return;
-    }
-    
-    // Cache successful loads
-    if (scene && !isPlaceholder) {
-      modelCache.set(systemType, { scene, nodes, materials, animations });
-      console.log(`Cached ${systemType} model`);
+      
+      // Cache successful loads
+      if (!isPlaceholder && !modelCache.has(systemType)) {
+        modelCache.set(systemType, { scene, nodes, materials, animations });
+        console.log(`Cached ${systemType} model`);
+      }
     }
   }, [systemType, scene, isPlaceholder, nodes, materials, animations]);
   
@@ -249,31 +244,9 @@ function useAnatomyModel(systemType) {
         }
       }
     });
-  }, [systemType, scene]);
-  
-  // Return generated placeholder if both model and placeholder file failed
-  if (modelError && !scene) {
-    console.log(`Using generated placeholder for ${systemType}`);
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshStandardMaterial({ 
-      color: systemType === 'skeletal' ? '#f0e6d2' : '#a83232',
-      roughness: 0.7,
-      metalness: 0.2
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    const placeholderScene = new THREE.Scene();
-    placeholderScene.add(mesh);
-    
-    return {
-      scene: placeholderScene,
-      nodes: {},
-      materials: { default: material },
-      animations: [],
-      isPlaceholder: true
-    };
-  }
-  
-  return { scene, nodes, materials, animations, isPlaceholder };
+  }, [scene, systemType]);
+
+  return { scene, nodes, materials, animations, modelError, loadAttempted, isPlaceholder };
 }
 
 // Component to handle model selection and highlighting
