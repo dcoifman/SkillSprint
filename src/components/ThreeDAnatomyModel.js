@@ -14,13 +14,12 @@ import {
   RandomizedLight,
   BakeShadows,
   Selection,
-  Mesh,
   Color,
   Fog,
   AmbientLight,
   Primitive
 } from '@react-three/drei';
-import { Group } from 'three';
+import { Group, Mesh } from 'three';
 import { Box, VStack, Button, ButtonGroup, Badge, Text, Spinner, useColorModeValue, Flex, Tooltip, IconButton, Menu, MenuButton, MenuList, MenuItem, Image } from '@chakra-ui/react';
 import { EffectComposer, NormalPass, Outline, SSAO } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
