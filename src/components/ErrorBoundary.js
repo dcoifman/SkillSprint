@@ -40,6 +40,8 @@ class ErrorBoundary extends Component {
       errorType = 'json';
     } else if (error.message && error.message.includes('network')) {
       errorType = 'network';
+    } else if (error.message && error.message.includes('model')) {
+      errorType = 'model';
     }
     
     this.setState({ 
@@ -47,8 +49,10 @@ class ErrorBoundary extends Component {
       errorType
     });
     
-    // You can also log the error to an error reporting service
-    // logErrorToMyService(error, errorInfo);
+    // If there's an onError callback in props, call it
+    if (this.props.onError && typeof this.props.onError === 'function') {
+      this.props.onError(error, errorType);
+    }
   }
   
   formatError() {
@@ -60,7 +64,7 @@ class ErrorBoundary extends Component {
   <message>${error?.message || 'Unknown error'}</message>
   <stack>${error?.stack?.replace(/</g, '&lt;').replace(/>/g, '&gt;') || 'No stack trace available'}</stack>
   <timestamp>${new Date().toISOString()}</timestamp>
-</error>
+</e>
     `;
   }
   
@@ -75,12 +79,20 @@ class ErrorBoundary extends Component {
             <Box>
               <AlertTitle>3D Rendering Error</AlertTitle>
               <AlertDescription>
-                There was a problem with WebGL rendering. This might be due to:
-                <VStack align="start" mt={2} spacing={1}>
-                  <Text>• Your browser or device might not support 3D graphics</Text>
-                  <Text>• Your graphics drivers might need updating</Text>
-                  <Text>• Your device might be low on resources</Text>
-                </VStack>
+                There was a problem with WebGL rendering. You can still continue with the course.
+              </AlertDescription>
+            </Box>
+          </Alert>
+        );
+      
+      case 'model':
+        return (
+          <Alert status="warning" variant="left-accent">
+            <AlertIcon as={WarningTwoIcon} />
+            <Box>
+              <AlertTitle>3D Model Error</AlertTitle>
+              <AlertDescription>
+                There was a problem loading the 3D model. You can still continue with the course.
               </AlertDescription>
             </Box>
           </Alert>
@@ -93,12 +105,7 @@ class ErrorBoundary extends Component {
             <Box>
               <AlertTitle>Data Processing Error</AlertTitle>
               <AlertDescription>
-                There was a problem processing the data from our servers:
-                <VStack align="start" mt={2} spacing={1}>
-                  <Text>• The data format received was invalid</Text>
-                  <Text>• There might be an issue with the API response</Text>
-                  <Text>• Original error: {error?.message}</Text>
-                </VStack>
+                There was a problem processing the data. You can still continue with the course.
               </AlertDescription>
             </Box>
           </Alert>
@@ -111,12 +118,7 @@ class ErrorBoundary extends Component {
             <Box>
               <AlertTitle>Network Error</AlertTitle>
               <AlertDescription>
-                Unable to connect to our servers:
-                <VStack align="start" mt={2} spacing={1}>
-                  <Text>• Please check your internet connection</Text>
-                  <Text>• Our servers might be temporarily unavailable</Text>
-                  <Text>• Try again in a few moments</Text>
-                </VStack>
+                Unable to connect to our servers. You can still continue with the course.
               </AlertDescription>
             </Box>
           </Alert>
@@ -129,8 +131,7 @@ class ErrorBoundary extends Component {
             <Box>
               <AlertTitle>Something went wrong</AlertTitle>
               <AlertDescription>
-                An unexpected error occurred:
-                <Text mt={2}>{error?.message || 'Unknown error'}</Text>
+                An unexpected error occurred. You can still continue with the course.
               </AlertDescription>
             </Box>
           </Alert>
@@ -140,41 +141,36 @@ class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
+      // Use custom fallback if provided
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+      
       return (
         <Box 
-          p={5} 
+          p={4} 
           borderWidth="1px" 
           borderRadius="lg" 
           bg="white" 
-          shadow="md"
+          shadow="sm"
           maxW="100%"
         >
-          <VStack spacing={4} align="stretch">
-            <Heading size="md">Application Error</Heading>
-            
+          <VStack spacing={3} align="stretch">
             {this.renderErrorMessage()}
             
-            <Box mt={2}>
-              <Button
-                leftIcon={<RepeatIcon />}
-                colorScheme="primary"
-                onClick={() => {
-                  this.setState({ hasError: false, error: null, errorInfo: null });
-                  window.location.reload();
-                }}
-              >
-                Reload Application
-              </Button>
-            </Box>
-            
-            {process.env.NODE_ENV !== 'production' && (
-              <Box mt={4}>
-                <Heading size="sm" mb={2}>Technical Details (Development Only)</Heading>
-                <Code p={2} borderRadius="md" fontSize="xs" width="100%" overflowX="auto" display="block" whiteSpace="pre-wrap">
-                  {this.formatError()}
-                </Code>
-              </Box>
-            )}
+            <Button
+              leftIcon={<RepeatIcon />}
+              colorScheme="purple"
+              size="sm"
+              onClick={() => {
+                this.setState({ hasError: false, error: null, errorInfo: null });
+                if (this.props.onReset && typeof this.props.onReset === 'function') {
+                  this.props.onReset();
+                }
+              }}
+            >
+              Try Again
+            </Button>
           </VStack>
         </Box>
       );

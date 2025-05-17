@@ -623,7 +623,8 @@ const ThreeDAnatomyModel = ({
   systemType = 'skeletal',
   initialView = 'anterior',
   onSelectStructure,
-  selectedStructure
+  selectedStructure,
+  onError = () => {},
 }) => {
   const [view, setView] = useState(initialView);
   const [hoveredStructure, setHoveredStructure] = useState(null);
@@ -635,6 +636,7 @@ const ThreeDAnatomyModel = ({
   const [sliceView, setSliceView] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentSystem, setCurrentSystem] = useState(systemType);
+  const canvasRef = useRef(null);
   
   // UI styling
   const bgColor = useColorModeValue('gray.100', 'gray.900');
@@ -702,10 +704,13 @@ const ThreeDAnatomyModel = ({
           console.error('Error loading model:', error);
           setErrorType('model');
           setHasError(true);
+          if (typeof onError === 'function') {
+            onError(error);
+          }
         }
       );
     }
-  }, [currentSystem]);
+  }, [currentSystem, onError]);
   
   // Handle WebGL context lost errors
   useEffect(() => {
@@ -713,6 +718,9 @@ const ThreeDAnatomyModel = ({
       console.log('WebGL context lost detected');
       setErrorType('webgl');
       setHasError(true);
+      if (typeof onError === 'function') {
+        onError(new Error('WebGL context lost'));
+      }
     };
 
     window.addEventListener('webglcontextlost', handleWebGLContextLost);
@@ -720,7 +728,7 @@ const ThreeDAnatomyModel = ({
     return () => {
       window.removeEventListener('webglcontextlost', handleWebGLContextLost);
     };
-  }, []);
+  }, [onError]);
   
   // Handle taking screenshots
   const handleScreenshot = () => {
@@ -738,18 +746,21 @@ const ThreeDAnatomyModel = ({
     setCurrentSystem(newModelType);
   };
 
+  // Add error handling for model loading failures
+  const handleModelLoadError = (error) => {
+    console.error('Model loading error:', error);
+    setHasError(true);
+    if (typeof onError === 'function') {
+      onError(error);
+    }
+  };
+
   if (hasError) {
     return (
-      <JSONErrorHandler 
-        errorType={errorType || 'unknown'} 
-        message={
-          errorType === 'webgl' 
-            ? 'WebGL context lost' 
-            : errorType === 'model'
-            ? 'Failed to load 3D model'
-            : 'An error occurred in the 3D component'
-        } 
-      />
+      <Box p={4} bg="red.50" borderRadius="md">
+        <Text fontWeight="bold" color="red.600">3D Model Error</Text>
+        <Text>There was a problem loading the 3D model. You can still continue with the course.</Text>
+      </Box>
     );
   }
 

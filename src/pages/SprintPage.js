@@ -27,6 +27,7 @@ import {
   AspectRatio,
   useToast,
   FormControl,
+  Spinner,
 } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import ReactMarkdown from 'react-markdown';
@@ -41,6 +42,9 @@ function SprintPage() {
   const [userAnswers, setUserAnswers] = useState({});
   const [showFeedback, setShowFeedback] = useState(false);
   const toast = useToast();
+  // Add state variables to track model loading and errors
+  const [modelLoading, setModelLoading] = useState(false);
+  const [modelError, setModelError] = useState(false);
   
   // Mock data - in a real app, this would be fetched from API
   const sprintData = {
@@ -453,10 +457,65 @@ Continue to the next sprint to learn about upper body musculature and its role i
     },
   };
 
-  // Get the specific sprint data based on the ID parameter
-  const currentSprintData = sprintData[sprintId] || sprintData["101"];
+  // Get the current sprint data based on the sprint ID
+  const currentSprintData = sprintData[sprintId] || { 
+    id: "not-found",
+    title: "Sprint Not Found",
+    path: "Error",
+    totalSteps: 1,
+    progress: 0,
+    steps: [{ 
+      type: 'content',
+      title: 'Sprint Not Found', 
+      content: 'The requested sprint could not be found. Please go back to the dashboard and try again.' 
+    }]
+  };
+  
+  // Get the current step based on current step index
   const currentStep = currentSprintData.steps[currentStepIndex];
   
+  // Add useEffect for handling 3D model components
+  useEffect(() => {
+    // Check if current step exists
+    if (!currentStep) {
+      console.error('Current step is undefined - this could cause the next button to disappear');
+      // Return to a fallback state
+      setCurrentStepIndex(0);
+      return;
+    }
+    
+    // Check if the current step involves a 3D model
+    if (currentStep.useThreeDModel || (currentStep.type === 'interactive' && currentStep.componentType === 'anatomy')) {
+      // Set loading state
+      setModelLoading(true);
+      
+      // Simulate model loading time (this would happen naturally with real models)
+      const timeoutId = setTimeout(() => {
+        setModelLoading(false);
+      }, 1500);
+      
+      // Clear timeout on cleanup
+      return () => clearTimeout(timeoutId);
+    } else {
+      // Reset states if no model is needed
+      setModelLoading(false);
+      setModelError(false);
+    }
+  }, [currentStep, currentStepIndex]);
+  
+  // Add handler for model loading errors
+  const handleModelError = () => {
+    setModelError(true);
+    setModelLoading(false);
+    toast({
+      title: "Model loading error",
+      description: "There was a problem loading the 3D model. You can still continue with the course.",
+      status: "error",
+      duration: 5000,
+      isClosable: true,
+    });
+  };
+
   const handleAnswer = (value) => {
     setUserAnswers({
       ...userAnswers,
@@ -489,31 +548,70 @@ Continue to the next sprint to learn about upper body musculature and its role i
   };
 
   // Helper to render the Next and Previous buttons
-  const renderNextButton = (currentStep) => (
-    <Flex justify="space-between">
-      <Button
-        onClick={handlePrevStep}
-        leftIcon={<ChevronLeftIcon />}
-        isDisabled={currentStepIndex === 0}
-        variant="ghost"
-      >
-        Previous
-      </Button>
-      <Button
-        onClick={handleNextStep}
-        colorScheme="purple"
-        isDisabled={
-          currentStep.type === 'quiz' &&
-          !showFeedback &&
-          userAnswers[currentStepIndex] === undefined
-        }
-      >
-        {currentStep.type === 'quiz' && !showFeedback ? 'Check Answer' : 'Next'}
-      </Button>
-    </Flex>
-  );
+  const renderNextButton = (currentStep) => {
+    // Add check to ensure currentStep exists before proceeding
+    if (!currentStep) {
+      console.error("Current step is undefined - unable to render navigation buttons");
+      return (
+        <Flex justify="space-between">
+          <Button
+            as={RouterLink}
+            to="/dashboard"
+            leftIcon={<ChevronLeftIcon />}
+            variant="ghost"
+          >
+            Back to Dashboard
+          </Button>
+        </Flex>
+      );
+    }
+
+    return (
+      <Flex justify="space-between">
+        <Button
+          onClick={handlePrevStep}
+          leftIcon={<ChevronLeftIcon />}
+          isDisabled={currentStepIndex === 0}
+          variant="ghost"
+        >
+          Previous
+        </Button>
+        <Button
+          onClick={handleNextStep}
+          colorScheme="purple"
+          isDisabled={
+            currentStep.type === 'quiz' &&
+            !showFeedback &&
+            userAnswers[currentStepIndex] === undefined
+          }
+          // Add data-testid for easier debugging
+          data-testid="next-button"
+        >
+          {currentStep.type === 'quiz' && !showFeedback ? 'Check Answer' : 'Next'}
+        </Button>
+      </Flex>
+    );
+  };
 
   const renderStepContent = () => {
+    // Add protection against undefined currentStep
+    if (!currentStep) {
+      console.error("Current step is undefined - unable to render content");
+      return (
+        <VStack spacing={6} align="stretch">
+          <Heading size="lg">Error Loading Content</Heading>
+          <Text>There was a problem loading this step. Please try refreshing the page.</Text>
+          <Button 
+            as={RouterLink}
+            to="/dashboard"
+            colorScheme="purple"
+          >
+            Return to Dashboard
+          </Button>
+        </VStack>
+      );
+    }
+
     switch (currentStep.type) {
       case 'content':
         return (
@@ -522,16 +620,30 @@ Continue to the next sprint to learn about upper body musculature and its role i
             
             {currentStep.useThreeDModel ? (
               <Box borderRadius="md" overflow="hidden" my={4}>
-                <ThreeDAnatomyModel 
-                  systemType={currentStep.modelType || 'skeletal'} 
-                  initialView="anterior"
-                  onSelectStructure={(structure) => toast({
-                    title: structure,
-                    description: `You selected the ${structure}`,
-                    status: 'info',
-                    duration: 2000,
-                  })}
-                />
+                <ErrorBoundary fallback={
+                  <Box p={4} bg="red.50" borderRadius="md">
+                    <Text>Error loading the 3D model. You can still continue with the course.</Text>
+                  </Box>
+                }>
+                  {modelLoading ? (
+                    <Flex justify="center" align="center" height="300px">
+                      <Spinner size="xl" color="purple.500" thickness="4px" />
+                      <Text ml={4}>Loading 3D model...</Text>
+                    </Flex>
+                  ) : (
+                    <ThreeDAnatomyModel 
+                      systemType={currentStep.modelType || 'skeletal'} 
+                      initialView="anterior"
+                      onSelectStructure={(structure) => toast({
+                        title: structure,
+                        description: `You selected the ${structure}`,
+                        status: 'info',
+                        duration: 2000,
+                      })}
+                      onError={handleModelError}
+                    />
+                  )}
+                </ErrorBoundary>
               </Box>
             ) : currentStep.image ? (
               <AspectRatio ratio={16/9} maxH="400px" my={4}>
@@ -550,6 +662,7 @@ Continue to the next sprint to learn about upper body musculature and its role i
               </MarkdownWithMath>
             </Box>
             
+            {/* Always render navigation buttons, even if there's an error */}
             {renderNextButton(currentStep)}
           </VStack>
         );
@@ -562,22 +675,43 @@ Continue to the next sprint to learn about upper body musculature and its role i
               
               <Card variant="outline" p={4} my={4}>
                 <CardBody>
-                  <ErrorBoundary>
-                    <ThreeDAnatomyModel 
-                      systemType={currentStep.systemType || 'skeletal'}
-                      initialView="anterior"
-                      onSelectStructure={(structure) => toast({
-                        title: structure,
-                        description: `You selected the ${structure}`,
-                        status: 'info',
-                        duration: 2000,
-                      })}
-                      fallbackImage="/img/anatomy_fallback.png"
-                    />
+                  <ErrorBoundary fallback={
+                    <Box p={4} bg="red.50" borderRadius="md">
+                      <Text>Error loading the 3D model. You can still continue with the course.</Text>
+                      <Button 
+                        mt={2} 
+                        size="sm" 
+                        colorScheme="purple" 
+                        onClick={() => setModelError(false)}
+                      >
+                        Try Again
+                      </Button>
+                    </Box>
+                  }>
+                    {modelLoading ? (
+                      <Flex justify="center" align="center" height="300px">
+                        <Spinner size="xl" color="purple.500" thickness="4px" />
+                        <Text ml={4}>Loading 3D model...</Text>
+                      </Flex>
+                    ) : (
+                      <ThreeDAnatomyModel 
+                        systemType={currentStep.systemType || 'skeletal'}
+                        initialView="anterior"
+                        onSelectStructure={(structure) => toast({
+                          title: structure,
+                          description: `You selected the ${structure}`,
+                          status: 'info',
+                          duration: 2000,
+                        })}
+                        fallbackImage="/img/anatomy_fallback.png"
+                        onError={handleModelError}
+                      />
+                    )}
                   </ErrorBoundary>
                 </CardBody>
               </Card>
               
+              {/* Always render navigation buttons, even if there's an error */}
               {renderNextButton(currentStep)}
             </VStack>
           );

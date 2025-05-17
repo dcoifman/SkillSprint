@@ -1,6 +1,5 @@
 -- Drop existing policies and constraints
 DROP POLICY IF EXISTS "Users can view their own course generation requests" ON public.course_generation_requests;
-DROP POLICY IF EXISTS "Users can insert their own course generation requests" ON public.course_generation_requests;
 DROP POLICY IF EXISTS "Allow anonymous access to course generation requests" ON public.course_generation_requests;
 
 -- Modify the table to allow null user_id and drop the foreign key constraint
@@ -74,4 +73,52 @@ $$;
 CREATE TRIGGER course_generation_request_trigger
 AFTER INSERT ON public.course_generation_requests
 FOR EACH ROW
-EXECUTE FUNCTION notify_course_generation_request(); 
+EXECUTE FUNCTION notify_course_generation_request();
+
+-- Drop existing restrictive policy
+DROP POLICY IF EXISTS "Users can insert their own course generation requests" ON public.course_generation_requests;
+
+-- Create a more permissive policy that allows null user_id
+CREATE POLICY "Allow inserts with null user_id" 
+ON public.course_generation_requests 
+FOR INSERT
+WITH CHECK (
+  (auth.uid() = user_id) OR 
+  (user_id IS NULL)
+);
+
+-- Make sure the anonymous access policy exists and is correct
+DROP POLICY IF EXISTS "Allow anonymous access to course generation requests" ON public.course_generation_requests;
+
+CREATE POLICY "Allow anonymous access to course generation requests"
+ON public.course_generation_requests
+FOR ALL
+USING (true)
+WITH CHECK (true);
+
+-- Ensure service role has access to all functions
+GRANT USAGE ON SCHEMA public TO service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO service_role;
+
+-- Add any missing tables if they don't exist
+CREATE TABLE IF NOT EXISTS public.sprint_contents (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  request_id uuid REFERENCES public.course_generation_requests(id) ON DELETE CASCADE,
+  module_index integer NOT NULL,
+  sprint_index integer NOT NULL,
+  content jsonb NOT NULL,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+
+-- Make sure RLS is configured correctly
+ALTER TABLE public.sprint_contents ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow anonymous access to sprint_contents" ON public.sprint_contents;
+CREATE POLICY "Allow anonymous access to sprint_contents" 
+ON public.sprint_contents
+FOR ALL
+USING (true)
+WITH CHECK (true); 

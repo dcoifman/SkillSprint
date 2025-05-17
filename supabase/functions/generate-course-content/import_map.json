@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "node:fs": "./lib/fs.mjs",
+    "fs": "./lib/fs.mjs",
+    "https://esm.sh/node/fs.mjs": "./lib/fs.mjs",
+    "node:buffer": "node:buffer",
+    "https://esm.sh/node/buffer.mjs": "node:buffer"
+  }
+} 

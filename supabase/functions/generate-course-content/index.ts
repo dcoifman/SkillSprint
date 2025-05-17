@@ -1,10 +1,27 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "npm:@supabase/supabase-js@2.21.0";
 import axios from "npm:axios";
-import { fetch as denoFetch } from "https://deno.land/x/file_fetch/mod.ts";
 
-// Configure axios to use Deno's fetch
-axios.defaults.adapter = 'fetch';
+// Create a global fs stub to replace node:fs functionality
+// This is needed because Gemini API tries to use fs.readFileSync which isn't available in Deno
+const fs = {
+  readFileSync: (p: string, e = "utf-8") => {
+    console.log(`Stub: Called readFileSync with path: ${p}, encoding: ${e}`);
+    return p;
+  },
+  promises: {
+    readFile: async (path: string) => {
+      console.log(`Stub: Called promises.readFile with path: ${path}`);
+      return path;
+    }
+  },
+  existsSync: () => false,
+  statSync: () => ({ isFile: () => true })
+};
+
+// Add fs to global scope
+// @ts-ignore - Adding fs to global scope to handle imports by Gemini API
+(globalThis as any).fs = fs;
 
 // Types
 interface CourseRequest {
@@ -30,7 +47,11 @@ async function logDebug(supabase: any, requestId: string, message: string, data?
   console.log(`[DEBUG] RequestID ${requestId}: ${message}`, data ? JSON.stringify(data) : '');
   
   // Also update the request with detailed status
-  const updates: any = {
+  const updates: {
+    status_message: string;
+    updated_at: string;
+    [key: string]: any;
+  } = {
     status_message: `${message}${data ? ' - ' + JSON.stringify(data) : ''}`,
     updated_at: new Date().toISOString()
   };
@@ -147,17 +168,58 @@ Output ONLY valid JSON. Do not include markdown, code fences, or any explanation
 // Helper to strip code fences from Gemini responses
 function stripCodeFences(response: string): string {
   let clean = response.trim();
+  
+  // Remove code fences
   if (clean.startsWith('```json')) {
     clean = clean.replace(/^```json/, '').replace(/```$/, '').trim();
   } else if (clean.startsWith('```')) {
     clean = clean.replace(/^```/, '').replace(/```$/, '').trim();
   }
   
-  // Fix common JSON formatting issues
-  clean = clean.replace(/\},(\s*)\}/g, '}$1]'); // Fix array closing brackets
-  clean = clean.replace(/\\"/g, '"'); // Fix escaped quotes
-  
-  return clean;
+  try {
+    // Check if it's valid JSON first
+    JSON.parse(clean);
+    return clean;
+  } catch (e) {
+    // If not valid JSON, try to fix common issues
+    console.log(`JSON parse error: ${e.message}. Attempting to fix...`);
+    
+    // Fix line breaks inside strings
+    clean = clean.replace(/("[^"\\]*(?:\\.[^"\\]*)*")/, (match) => {
+      return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+    });
+    
+    // Fix missing commas between properties
+    clean = clean.replace(/"\s*\n\s*"/g, '",\n"');
+    
+    // Fix missing commas between array items
+    clean = clean.replace(/}\s*{/g, '}, {');
+    
+    // Fix missing commas in arrays
+    clean = clean.replace(/]\s*\[/g, '], [');
+    
+    // Fix trailing commas before closing brackets
+    clean = clean.replace(/,(\s*[\]}])/g, '$1');
+    
+    // Fix unescaped quotes in strings
+    clean = clean.replace(/"([^"]*)(?<!\\)"/g, (match, p1) => {
+      return '"' + p1.replace(/(?<!\\)"/g, '\\"') + '"';
+    });
+    
+    try {
+      // Final validation
+      JSON.parse(clean);
+      console.log("Successfully fixed JSON");
+    } catch (e) {
+      console.log(`Still invalid JSON after fixes: ${e.message}`);
+      // Last resort - try a more aggressive approach
+      clean = clean.replace(/(\w+):/g, '"$1":'); // Ensure property names are quoted
+      clean = clean.replace(/,\s*}/g, '}'); // Remove trailing commas
+      clean = clean.replace(/,\s*]/g, ']'); // Remove trailing commas in arrays
+    }
+    
+    return clean;
+  }
 }
 
 // Generate content using Gemini API
@@ -253,7 +315,15 @@ async function updateRequestStatus(
   errorMessage?: string,
   courseData?: any
 ) {
-  const updates: any = {
+  const updates: {
+    status: string;
+    updated_at: string;
+    status_message?: string;
+    progress?: number;
+    error_message?: string;
+    course_data?: any;
+    content_generated?: boolean;
+  } = {
     status,
     updated_at: new Date().toISOString()
   };
@@ -369,6 +439,8 @@ async function generateCourseContent(
     );
     
     let processedSprints = 0;
+    let failedSprints = 0;
+    let sprintErrors: { moduleIndex: number; sprintIndex: number; error: string }[] = [];
     
     // Process sprints in smaller batches to manage memory
     const BATCH_SIZE = 2;
@@ -401,12 +473,60 @@ async function generateCourseContent(
             .replace('{duration}', sprint.duration || '10');
           
           const sprintResponse = await generateContent(supabase, requestId, sprintPrompt, 0.7);
-          const cleanSprintResponse = stripCodeFences(sprintResponse);
+          let cleanSprintResponse = stripCodeFences(sprintResponse);
           
           try {
-            const sprintContent = JSON.parse(cleanSprintResponse);
+            // Try to parse the sprint content JSON
+            let sprintContent;
+            try {
+              sprintContent = JSON.parse(cleanSprintResponse);
+            } catch (parseError) {
+              // If parsing fails, try a more aggressive JSON fix
+              await logDebug(supabase, requestId, `Error parsing sprint content JSON for sprint ${moduleIndex}-${sprintIndex}`, { 
+                error: parseError.message,
+                originalResponse: sprintResponse.substring(0, 200) + '...'
+              });
+              
+              // Make one last attempt with a more aggressive fix
+              cleanSprintResponse = cleanSprintResponse
+                .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":') // Ensure all keys are properly quoted
+                .replace(/'/g, '"') // Replace single quotes with double quotes
+                .replace(/,(\s*[}\]])/g, '$1'); // Remove trailing commas
+                
+              try {
+                sprintContent = JSON.parse(cleanSprintResponse);
+                await logDebug(supabase, requestId, `Successfully fixed JSON for sprint ${moduleIndex}-${sprintIndex} with aggressive repair`);
+              } catch (finalError) {
+                // Create a simplified placeholder content if all parsing attempts fail
+                await logDebug(supabase, requestId, `Failed to parse JSON even after aggressive fix: ${finalError.message}`);
+                failedSprints++;
+                sprintErrors.push({
+                  moduleIndex,
+                  sprintIndex,
+                  error: finalError.message
+                });
+                
+                // Create placeholder content
+                sprintContent = {
+                  title: sprint.title,
+                  introduction: `Introduction to ${sprint.title}`,
+                  content: sprint.contentOutline.map(item => ({ type: "text", value: item })),
+                  summary: `Summary of ${sprint.title}`,
+                  quiz: [
+                    {
+                      question: "Placeholder question about " + sprint.title,
+                      options: ["Option A", "Option B", "Option C", "Option D"],
+                      correctAnswer: 0,
+                      explanation: "This is a placeholder quiz question",
+                      type: "multiple_choice"
+                    }
+                  ],
+                  nextSteps: "Continue to the next sprint"
+                };
+              }
+            }
             
-            // Store sprint content directly in database instead of keeping in memory
+            // Store sprint content in database
             await supabase
               .from('sprint_contents')
               .insert([{
@@ -416,13 +536,23 @@ async function generateCourseContent(
                 content: sprintContent
               }]);
               
-          } catch (parseError) {
-            console.error(`Error parsing sprint content JSON for sprint ${moduleIndex}-${sprintIndex}:`, parseError);
-            // Continue with other sprints even if one fails
+          } catch (storeError) {
+            console.error(`Error storing sprint content for sprint ${moduleIndex}-${sprintIndex}:`, storeError);
+            failedSprints++;
+            sprintErrors.push({
+              moduleIndex,
+              sprintIndex,
+              error: storeError.message
+            });
           }
         } catch (error) {
           console.error(`Error generating sprint content for ${moduleIndex}-${sprintIndex}:`, error);
-          // Continue with other sprints even if one fails
+          failedSprints++;
+          sprintErrors.push({
+            moduleIndex,
+            sprintIndex,
+            error: error.message
+          });
         }
         
         processedSprints++;
@@ -448,7 +578,13 @@ async function generateCourseContent(
     // 6. Finalize and update with complete course data
     const finalCourseData = {
       course: courseData,
-      sprints: sprintContentMap
+      sprints: sprintContentMap,
+      generationStats: {
+        totalSprints,
+        processedSprints,
+        failedSprints,
+        sprintErrors: failedSprints > 0 ? sprintErrors : undefined
+      }
     };
     
     await updateRequestStatus(
@@ -522,7 +658,7 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     // Check for missing environment variables
-    const missingEnvVars = [];
+    const missingEnvVars: string[] = [];
     if (!GEMINI_API_KEY) missingEnvVars.push('GEMINI_API_KEY');
     if (!supabaseUrl) missingEnvVars.push('SUPABASE_URL');
     if (!supabaseServiceKey) missingEnvVars.push('SUPABASE_SERVICE_ROLE_KEY');
@@ -589,14 +725,18 @@ serve(async (req: Request) => {
       );
     }
 
-    // Create Supabase admin client with service role key
-    console.log('[DEBUG] Creating Supabase client');
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    });
+          // Create Supabase admin client with service role key
+      console.log('[DEBUG] Creating Supabase client');
+      const supabase = createClient(
+        supabaseUrl || '', 
+        supabaseServiceKey || '', 
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        }
+      );
 
     // Test Gemini API connectivity before proceeding
     try {
@@ -663,7 +803,7 @@ serve(async (req: Request) => {
         .insert([
           {
             id: requestId,
-            user_id: null, // Use NULL for anonymous users
+            user_id: null, // Allow NULL for anonymous users
             status: 'pending',
             status_message: 'Starting course generation...',
             progress: 0,
