@@ -340,12 +340,48 @@ AFTER INSERT ON public.course_generation_requests
 FOR EACH ROW
 EXECUTE FUNCTION notify_course_generation_request();
 
+-- Modify course_generation_requests table to allow NULL user_id
+ALTER TABLE public.course_generation_requests
+  ALTER COLUMN user_id DROP NOT NULL;
+
+-- Update RLS policies for course_generation_requests
+DROP POLICY IF EXISTS "Allow anonymous access to course generation requests" ON public.course_generation_requests;
+
+CREATE POLICY "Allow anonymous access to course generation requests"
+  ON public.course_generation_requests
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Create sprint_contents table
+CREATE TABLE IF NOT EXISTS public.sprint_contents (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  request_id uuid REFERENCES public.course_generation_requests(id) ON DELETE CASCADE,
+  module_index integer NOT NULL,
+  sprint_index integer NOT NULL,
+  content jsonb NOT NULL,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+
+-- Add RLS policies for sprint_contents
+ALTER TABLE public.sprint_contents ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow anonymous access to sprint_contents" ON public.sprint_contents
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Add indexes
+CREATE INDEX IF NOT EXISTS sprint_contents_request_id_idx ON public.sprint_contents(request_id);
+CREATE UNIQUE INDEX IF NOT EXISTS sprint_contents_request_module_sprint_idx ON public.sprint_contents(request_id, module_index, sprint_index);
+
 -- Final status check
 DO $$
 BEGIN
     RAISE NOTICE '----------------------------------------';
     RAISE NOTICE 'Schema setup completed successfully';
-    RAISE NOTICE 'Tables created: instructors, learning_paths, modules, sprints, user_paths, user_progress, course_invitations, course_generation_requests';
+    RAISE NOTICE 'Tables created: instructors, learning_paths, modules, sprints, user_paths, user_progress, course_invitations, course_generation_requests, sprint_contents';
     RAISE NOTICE 'RLS policies applied to all tables';
     RAISE NOTICE 'Triggers and functions created';
     RAISE NOTICE '----------------------------------------';

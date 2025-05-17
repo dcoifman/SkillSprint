@@ -15,6 +15,7 @@ import { LoginPage, SignupPage } from './pages/AuthPages';
 import PathDetailPage from './pages/PathDetailPage';
 import CourseBuilderPage from './pages/CourseBuilderPage';
 import CommunityPage from './pages/CommunityPage';
+import CourseGenerationPage from './pages/CourseGenerationPage';
 
 // Import layout components
 import Header from './components/layout/Header';
@@ -74,6 +75,11 @@ function AppRoutes() {
           <Route path="/course-builder" element={
             <ProtectedRoute>
               <CourseBuilderPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/course-generation" element={
+            <ProtectedRoute>
+              <CourseGenerationPage />
             </ProtectedRoute>
           } />
           <Route path="/community" element={<CommunityPage />} />

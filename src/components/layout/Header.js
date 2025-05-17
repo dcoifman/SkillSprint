@@ -397,6 +397,16 @@ const NAV_ITEMS = [
         subLabel: 'Recently added learning paths',
         href: '/paths/new',
       },
+      {
+        label: 'Course Builder',
+        subLabel: 'Create your own learning path',
+        href: '/course-builder',
+      },
+      {
+        label: 'Course Generation',
+        subLabel: 'Monitor AI-generated courses',
+        href: '/course-generation',
+      },
     ],
   },
   {

@@ -1,6 +1,10 @@
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.21.0';
-import axios from 'https://esm.sh/axios@1.3.6';
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "@supabase/supabase-js";
+import axios from "npm:axios";
+import { fetch as denoFetch } from "https://deno.land/x/file_fetch/mod.ts";
+
+// Configure axios to use Deno's fetch
+axios.defaults.adapter = 'fetch';
 
 // Types
 interface CourseRequest {
@@ -20,6 +24,26 @@ interface GenerationRequest {
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+
+// Enhanced logging function
+async function logDebug(supabase: any, requestId: string, message: string, data?: any) {
+  console.log(`[DEBUG] RequestID ${requestId}: ${message}`, data ? JSON.stringify(data) : '');
+  
+  // Also update the request with detailed status
+  const updates: any = {
+    status_message: `${message}${data ? ' - ' + JSON.stringify(data) : ''}`,
+    updated_at: new Date().toISOString()
+  };
+  
+  try {
+    await supabase
+      .from('course_generation_requests')
+      .update(updates)
+      .eq('id', requestId);
+  } catch (error) {
+    console.error(`[ERROR] Failed to update status for ${requestId}:`, error);
+  }
+}
 
 // Prompt templates
 const PROMPT_TEMPLATES = {
@@ -137,54 +161,84 @@ function stripCodeFences(response: string): string {
 }
 
 // Generate content using Gemini API
-async function generateContent(prompt: string, temperature = 0.7): Promise<string> {
+async function generateContent(supabase: any, requestId: string, prompt: string, temperature = 0.7): Promise<string> {
+  await logDebug(supabase, requestId, 'Checking GEMINI_API_KEY configuration');
+  
   if (!GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY environment variable is not set');
+    const error = 'GEMINI_API_KEY environment variable is not set';
+    await logDebug(supabase, requestId, 'API Key Error', { error });
+    throw new Error(error);
   }
   
   try {
+    await logDebug(supabase, requestId, 'Preparing Gemini API request', {
+      temperature,
+      promptLength: prompt.length,
+      apiEndpoint: 'generativelanguage.googleapis.com'
+    });
+
+    const requestBody = {
+      contents: [
+        {
+          parts: [
+            {
+              text: prompt
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature,
+        maxOutputTokens: 32768, // Using 32k tokens as requested
+        topP: 0.95,
+        topK: 64,
+      },
+      safetySettings: [
+        {
+          category: "HARM_CATEGORY_HARASSMENT",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+          category: "HARM_CATEGORY_HATE_SPEECH",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        }
+      ]
+    };
+
+    await logDebug(supabase, requestId, 'Sending request to Gemini API');
+    
     const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=${GEMINI_API_KEY}`,
+      requestBody,
       {
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature,
-          maxOutputTokens: 64000,
-          topP: 0.95,
-          topK: 64,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
-        ]
+        timeout: 30000 // Add 30s timeout to prevent hanging
       }
     );
     
+    await logDebug(supabase, requestId, 'Received response from Gemini API', {
+      status: response.status,
+      hasContent: !!response.data?.candidates?.[0]?.content,
+      responseSize: JSON.stringify(response.data).length
+    });
+    
     return response.data.candidates[0].content.parts[0].text;
   } catch (error) {
-    console.error('Error generating content:', error);
+    await logDebug(supabase, requestId, 'Error generating content', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      axiosError: error.response ? {
+        status: error.response.status,
+        data: error.response.data
+      } : undefined
+    });
     throw error;
   }
 }
@@ -212,13 +266,15 @@ async function updateRequestStatus(
     updates.content_generated = true;
   }
   
+  await logDebug(supabase, requestId, 'Updating request status', { updates });
+  
   const { data, error } = await supabase
     .from('course_generation_requests')
     .update(updates)
     .eq('id', requestId);
     
   if (error) {
-    console.error('Error updating request status:', error);
+    await logDebug(supabase, requestId, 'Error updating request status', { error });
   }
   
   return { data, error };
@@ -231,6 +287,8 @@ async function generateCourseContent(
   courseRequest: CourseRequest
 ): Promise<any> {
   try {
+    await logDebug(supabase, requestId, 'Starting course generation', { courseRequest });
+    
     // 1. Update status to processing
     await updateRequestStatus(
       supabase, 
@@ -241,6 +299,8 @@ async function generateCourseContent(
     );
     
     // 2. Generate course outline
+    await logDebug(supabase, requestId, 'Preparing course outline prompt');
+    
     const filledPrompt = PROMPT_TEMPLATES.COURSE_OUTLINE
       .replace('{topic}', courseRequest.topic)
       .replace('{audience}', courseRequest.audience)
@@ -248,14 +308,40 @@ async function generateCourseContent(
       .replace('{duration}', courseRequest.duration)
       .replace('{goals}', courseRequest.goals);
     
-    const outlineResponse = await generateContent(filledPrompt, 0.7);
+    await logDebug(supabase, requestId, 'Filled prompt template', {
+      promptLength: filledPrompt.length,
+      replacements: {
+        topic: courseRequest.topic,
+        audience: courseRequest.audience,
+        level: courseRequest.level,
+        duration: courseRequest.duration,
+        goals: courseRequest.goals
+      }
+    });
+    
+    const outlineResponse = await generateContent(supabase, requestId, filledPrompt, 0.7);
+    await logDebug(supabase, requestId, 'Received outline response', {
+      responseLength: outlineResponse.length
+    });
+    
     const cleanOutlineResponse = stripCodeFences(outlineResponse);
+    await logDebug(supabase, requestId, 'Cleaned outline response', {
+      cleanedLength: cleanOutlineResponse.length
+    });
     
     let courseData: any;
     try {
       courseData = JSON.parse(cleanOutlineResponse);
+      await logDebug(supabase, requestId, 'Successfully parsed course outline JSON', {
+        modules: courseData.modules?.length,
+        title: courseData.title
+      });
     } catch (parseError) {
-      console.error('Error parsing course outline JSON:', parseError);
+      await logDebug(supabase, requestId, 'Error parsing course outline JSON', {
+        error: parseError instanceof Error ? parseError.message : 'Unknown error',
+        rawResponse: cleanOutlineResponse
+      });
+      
       await updateRequestStatus(
         supabase,
         requestId,
@@ -282,8 +368,10 @@ async function generateCourseContent(
       (acc: number, module: any) => acc + module.sprints.length, 0
     );
     
-    const sprintContents: Record<string, any> = {};
     let processedSprints = 0;
+    
+    // Process sprints in smaller batches to manage memory
+    const BATCH_SIZE = 2;
     
     for (let moduleIndex = 0; moduleIndex < courseData.modules.length; moduleIndex++) {
       const module = courseData.modules[moduleIndex];
@@ -312,12 +400,22 @@ async function generateCourseContent(
             .replace('{level}', courseRequest.level)
             .replace('{duration}', sprint.duration || '10');
           
-          const sprintResponse = await generateContent(sprintPrompt, 0.7);
+          const sprintResponse = await generateContent(supabase, requestId, sprintPrompt, 0.7);
           const cleanSprintResponse = stripCodeFences(sprintResponse);
           
           try {
             const sprintContent = JSON.parse(cleanSprintResponse);
-            sprintContents[`${moduleIndex}-${sprintIndex}`] = sprintContent;
+            
+            // Store sprint content directly in database instead of keeping in memory
+            await supabase
+              .from('sprint_contents')
+              .insert([{
+                request_id: requestId,
+                module_index: moduleIndex,
+                sprint_index: sprintIndex,
+                content: sprintContent
+              }]);
+              
           } catch (parseError) {
             console.error(`Error parsing sprint content JSON for sprint ${moduleIndex}-${sprintIndex}:`, parseError);
             // Continue with other sprints even if one fails
@@ -328,13 +426,29 @@ async function generateCourseContent(
         }
         
         processedSprints++;
+        
+        // Add a small delay between sprints to prevent rate limiting
+        if (processedSprints % BATCH_SIZE === 0) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
     }
     
-    // 5. Finalize and update with complete course data
+    // 5. Fetch all sprint contents and create final course data
+    const { data: sprintContents } = await supabase
+      .from('sprint_contents')
+      .select('*')
+      .eq('request_id', requestId);
+      
+    const sprintContentMap = sprintContents.reduce((acc: any, sprint: any) => {
+      acc[`${sprint.module_index}-${sprint.sprint_index}`] = sprint.content;
+      return acc;
+    }, {});
+    
+    // 6. Finalize and update with complete course data
     const finalCourseData = {
       course: courseData,
-      sprints: sprintContents
+      sprints: sprintContentMap
     };
     
     await updateRequestStatus(
@@ -353,7 +467,10 @@ async function generateCourseContent(
     };
     
   } catch (error) {
-    console.error('Error in course generation process:', error);
+    await logDebug(supabase, requestId, 'Error in course generation process', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     
     // Update status to failed
     await updateRequestStatus(
@@ -372,62 +489,154 @@ async function generateCourseContent(
   }
 }
 
+// Helper function to generate UUID v4
+function uuidv4() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 // Main handler function
 serve(async (req: Request) => {
+  const requestStartTime = Date.now();
+  let requestId = uuidv4(); // Initialize with a UUID immediately
+  
   try {
     // CORS headers
-    const headers = {
+    const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
     };
 
     // Handle OPTIONS request for CORS
     if (req.method === 'OPTIONS') {
-      return new Response('ok', { headers });
+      return new Response('ok', { headers: corsHeaders });
     }
+
+    // Verify request method
+    if (req.method !== 'POST') {
+      console.log('[ERROR] Invalid method:', req.method);
+      return new Response(
+        JSON.stringify({ error: 'Method not allowed' }),
+        { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Parse request body
+    let requestData;
+    try {
+      requestData = await req.json();
+      console.log('[DEBUG] Received request data:', JSON.stringify(requestData));
+    } catch (error) {
+      console.log('[ERROR] Invalid JSON body:', error);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { courseRequest } = requestData;
+    console.log(`[DEBUG] Generated requestId: ${requestId}`);
     
-    // Verify necessary env vars
-    if (!GEMINI_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    if (!courseRequest) {
+      console.log('[ERROR] Missing courseRequest in payload');
+      return new Response(
+        JSON.stringify({ error: 'Invalid request data: missing courseRequest' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create Supabase admin client with service role key
+    console.log('[DEBUG] Checking Supabase configuration');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.log('[ERROR] Missing Supabase configuration');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('[DEBUG] Creating Supabase client');
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+
+    try {
+      console.log('[DEBUG] Creating initial request record');
+      // Create initial request record using service role (bypasses RLS)
+      const { data: requestRecord, error: insertError } = await supabase
+        .from('course_generation_requests')
+        .insert([
+          {
+            id: requestId,
+            user_id: null, // Use NULL for anonymous users
+            status: 'pending',
+            status_message: 'Starting course generation...',
+            progress: 0,
+            request_data: courseRequest,
+            content_generated: false
+          }
+        ])
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('[ERROR] Failed to create request record:', insertError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to create request record', details: insertError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('[DEBUG] Starting course generation process');
+      // Start the generation process in the background
+      generateCourseContent(supabase, requestId, courseRequest)
+        .catch(error => {
+          console.error('[ERROR] Course generation failed:', error);
+          updateRequestStatus(
+            supabase,
+            requestId,
+            'failed',
+            'Course generation failed',
+            0,
+            error instanceof Error ? error.message : 'Unknown error'
+          );
+        });
+
+      const processingTime = Date.now() - requestStartTime;
+      console.log(`[DEBUG] Request processed in ${processingTime}ms`);
+
+      // Return immediate response
       return new Response(
         JSON.stringify({
-          error: 'Missing required environment variables'
+          message: 'Course generation started',
+          requestId,
+          status: 'pending'
         }),
-        { status: 500, headers: { ...headers, 'Content-Type': 'application/json' } }
+        { 
+          status: 202, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       );
-    }
-    
-    // Create supabase admin client with service role key
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-    
-    // Parse request body
-    const requestData: GenerationRequest = await req.json();
-    const { requestId, courseRequest } = requestData;
-    
-    if (!requestId || !courseRequest) {
+    } catch (error) {
+      console.error('[ERROR] Failed to process request:', error);
       return new Response(
-        JSON.stringify({ error: 'Invalid request data: missing requestId or courseRequest' }),
-        { status: 400, headers: { ...headers, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Failed to process request', details: error instanceof Error ? error.message : 'Unknown error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    
-    // Process the request asynchronously and respond immediately
-    // This allows the function to continue processing after responding to the client
-    const promise = generateCourseContent(supabase, requestId, courseRequest);
-    
-    // Return a 202 Accepted response immediately
-    return new Response(
-      JSON.stringify({
-        message: 'Course generation started',
-        requestId
-      }),
-      { 
-        status: 202, 
-        headers: { ...headers, 'Content-Type': 'application/json' } 
-      }
-    );
     
   } catch (error) {
-    console.error('Unhandled error in Edge Function:', error);
+    console.error('[ERROR] Unhandled error in Edge Function:', error);
     
     return new Response(
       JSON.stringify({
