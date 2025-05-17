@@ -194,7 +194,8 @@ function useAnatomyModel(systemType) {
     'lymphatic': '/models/anatomy/circulatory/vascular-system-gyozocz.glb'
   };
   
-  const placeholderPath = '/models/anatomy/skeletal/placeholder.glb';
+  // Default placeholder that's known to exist
+  const placeholderPath = '/models/anatomy/skeletal/skeletal-system-gyozocz.glb';
   const fallbackPath = fallbackMap[systemType] || placeholderPath;
   
   // Setup state for model loading
@@ -294,7 +295,7 @@ function useAnatomyModel(systemType) {
         if (object.material) {
           object.material.roughness = 0.7;
           object.material.metalness = 0.2;
-          object.material.colorSpace = SRGBColorSpace;
+          // Don't set colorSpace directly on materials as it causes warnings
           
           // Convert colors to linear space for correct lighting
           if (systemType === 'skeletal') {
@@ -319,8 +320,7 @@ function AnatomicalModel({ systemType, onSelectStructure, selectedStructure, hov
     emissive: new THREE.Color('#9f7aea'),
     emissiveIntensity: 0.5,
     roughness: 0.5,
-    metalness: 0.3,
-    colorSpace: SRGBColorSpace
+    metalness: 0.3
   }));
   
   // Store original materials for resetting
@@ -523,7 +523,6 @@ function EnhancedScene({
         castShadow 
         shadow-mapSize={1024}
         color="#ffffff"
-        colorSpace={SRGBColorSpace}
       />
       
       {/* Fill light */}
@@ -535,7 +534,6 @@ function EnhancedScene({
         distance={10}
         castShadow={false}
         color="#b3ccff"
-        colorSpace={SRGBColorSpace}
       />
       
       {/* Rim light for edge definition */}
@@ -547,7 +545,6 @@ function EnhancedScene({
         distance={10}
         castShadow={false}
         color="#ffcca3"
-        colorSpace={SRGBColorSpace}
       />
       
       {/* Camera setup */}
@@ -592,7 +589,6 @@ function EnhancedScene({
           color="#030303"
           metalness={0.8}
           mirror={0.5}
-          colorSpace={SRGBColorSpace}
         />
       </mesh>
       
@@ -604,7 +600,6 @@ function EnhancedScene({
         scale={12}
         position={[0, -1.99, 0]}
         opacity={0.8}
-        colorSpace={SRGBColorSpace}
       >
         <RandomizedLight 
           amount={8}
@@ -612,7 +607,6 @@ function EnhancedScene({
           intensity={0.8}
           ambient={0.5}
           position={[5, 5, -10]}
-          colorSpace={SRGBColorSpace}
         />
       </AccumulativeShadows>
       
@@ -633,7 +627,6 @@ function EnhancedScene({
             hiddenEdgeColor="#ffffff"
             blur={1}
             xRay={xRay}
-            colorSpace={SRGBColorSpace}
           />
           
           {/* Medical visualization effects */}
@@ -644,25 +637,21 @@ function EnhancedScene({
                 radius={0.5} 
                 intensity={xRay ? 30 : 20}
                 luminanceInfluence={0.6}
-                colorSpace={SRGBColorSpace}
               />
               
               <Bloom
                 intensity={0.5}
                 luminanceThreshold={0.8}
                 luminanceSmoothing={0.3}
-                colorSpace={SRGBColorSpace}
               />
               
               <ToneMapping
                 mode={3} // ACESFilmic
-                colorSpace={SRGBColorSpace}
               />
               
               <Vignette
                 darkness={0.5}
                 offset={0.5}
-                colorSpace={SRGBColorSpace}
               />
             </>
           )}

@@ -322,7 +322,7 @@ function PathDetailPage() {
                 width="100%"
                 height="250px"
                 objectFit="cover"
-                fallbackSrc="https://via.placeholder.com/500x300?text=No+Image"
+                fallbackSrc="https://placehold.co/500x300/e2e8f0/1a202c?text=No+Image"
               />
             </Box>
           </Flex>
@@ -550,7 +550,7 @@ function PathDetailPage() {
                           maxW="80px"
                           src={path.image}
                           alt={path.title}
-                          fallbackSrc="https://via.placeholder.com/80x80?text=Path"
+                          fallbackSrc="https://placehold.co/80x80/e2e8f0/1a202c?text=Path"
                         />
                         <CardBody py={2}>
                           <Heading size="xs">{path.title}</Heading>

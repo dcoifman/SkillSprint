@@ -225,7 +225,7 @@ function HomePage() {
                   w={'100%'}
                   h={'100%'}
                   src={'https://images.unsplash.com/photo-1522881193457-37ae97c905bf?q=80&w=2070'}
-                  fallbackSrc="https://via.placeholder.com/800x600?text=SkillSprint"
+                  fallbackSrc="https://placehold.co/800x600/e2e8f0/1a202c?text=SkillSprint"
                 />
                 <Box
                   position="absolute"

@@ -176,12 +176,13 @@ export function LoginPage() {
       <Flex direction={{ base: 'column', md: 'row' }} align="center">
         <Box flex="1" display={{ base: 'none', md: 'block' }} mr={8}>
           <Image
-            src="https://via.placeholder.com/1200x800?text=SkillSprint+Learning"
+            src="/img/login-banner.jpg"
             alt="Learning together"
             borderRadius="lg"
             objectFit="cover"
             height="500px"
             width="100%"
+            fallbackSrc="https://placehold.co/1200x800/e2e8f0/1a202c?text=SkillSprint+Learning"
           />
         </Box>
         
