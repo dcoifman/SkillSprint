@@ -1,40 +1,29 @@
 import React, { useRef, useState, useEffect, Suspense } from 'react';
-import { Canvas, useThree, useLoader, useFrame } from '@react-three/fiber';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { 
   OrbitControls, 
   useGLTF, 
   Environment, 
   Html,
-  Edges,
   Bounds,
-  useBounds,
-  useHelper,
   PerspectiveCamera,
-  Text3D,
-  MeshTransmissionMaterial,
   SpotLight,
-  ContactShadows,
-  useTexture,
   MeshReflectorMaterial,
   PerformanceMonitor,
   AccumulativeShadows,
   RandomizedLight,
   BakeShadows,
-  useFBX,
 } from '@react-three/drei';
 import { Box, VStack, Button, ButtonGroup, Badge, Text, Spinner, useColorModeValue, Flex, Tooltip, IconButton, Menu, MenuButton, MenuList, MenuItem } from '@chakra-ui/react';
-import { EffectComposer, Bloom, SSAO, Outline, Selection, DepthOfField, Noise, Vignette, ChromaticAberration, ToneMapping } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, SSAO, Outline, Selection, Noise, Vignette, ToneMapping } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
-import { useSpring, animated, a } from '@react-spring/three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import * as THREE from 'three';
 import { ChevronDownIcon, DownloadIcon, ViewIcon } from '@chakra-ui/icons';
 import ErrorBoundary from './ErrorBoundary';
 import JSONErrorHandler from './JSONErrorHandler';
-import { SRGBColorSpace, LinearSRGBColorSpace } from 'three';
+import { SRGBColorSpace } from 'three';
 
 // Enable color management
 THREE.ColorManagement.enabled = true;
@@ -200,104 +189,60 @@ function useAnatomyModel(systemType) {
   // Default placeholder that's known to exist
   const placeholderPath = '/models/anatomy/male_body/male_body.glb';
   const fallbackPath = fallbackMap[systemType] || placeholderPath;
-  
-  // Setup state for model loading
-  const [modelPath1, setModelPath1] = useState(modelPath);
-  
-  // Try to get model from cache first
-  const cachedModel = modelCache.get(systemType);
-  
-  // Custom error handling loader
-  const useGLTFSafe = (path) => {
-    if (cachedModel) {
-      return { model: cachedModel, error: null };
-    }
-    
-    try {
-      // Try to load the model
-      const model = useGLTF(path);
-      // Check if model is valid (has a scene property)
-      if (model && model.scene) {
-        return { model, error: null };
-      } else {
-        console.error(`Invalid model loaded for path: ${path}`);
-        return { model: null, error: 'Invalid model format' };
-      }
-    } catch (error) {
-      console.error(`Error loading model from ${path}:`, error);
-      return { model: null, error: error.message || 'Unknown model loading error' };
-    }
-  };
-  
-  // Load models with error handling
-  const { model: primaryModel, error: primaryError } = useGLTFSafe(modelPath1);
-  
-  // Effect to handle model loading flow
+
+  // Always call useGLTF for both paths (never conditionally)
+  let primaryModel, primaryError, fallbackModel, fallbackError;
+  try {
+    const result = useGLTF(modelPath);
+    primaryModel = result;
+    primaryError = null;
+  } catch (e) {
+    primaryModel = null;
+    primaryError = e;
+  }
+  try {
+    const result = useGLTF(fallbackPath);
+    fallbackModel = result;
+    fallbackError = null;
+  } catch (e) {
+    fallbackModel = null;
+    fallbackError = e;
+  }
+
   useEffect(() => {
-    // If main model failed but we haven't tried fallback yet
-    if (primaryError && modelPath1 !== fallbackPath) {
-      console.log(`[Error] Error preloading ${systemType} model: – ${primaryError}`);
-      // Try the mapped fallback
-      setModelPath1(fallbackPath);
-      setIsPlaceholder(true);
-    }
-    
     setLoadAttempted(true);
-    
-    // If we're using the placeholder or the fallback
-    if (modelPath1 !== modelConfig?.path) {
+    if (primaryError && !fallbackError) {
       setModelError(true);
+      setIsPlaceholder(true);
+    } else if (primaryError && fallbackError) {
+      setModelError(true);
+      setIsPlaceholder(true);
+    } else {
+      setModelError(false);
+      setIsPlaceholder(false);
     }
-    
-    // Cache successful model loads
-    if (!primaryError && !isPlaceholder && primaryModel && !modelCache.has(systemType)) {
-      modelCache.set(systemType, primaryModel);
-      console.log(`Cached ${systemType} model`);
-    }
-  }, [systemType, primaryModel, primaryError, modelPath1, fallbackPath, modelConfig, isPlaceholder]);
-  
-  // Get the appropriate model
-  const model = primaryModel || null;
-  
-  // If we still have no model after all attempts
-  useEffect(() => {
-    if (loadAttempted && !model) {
-      console.error(`Failed to load any model for ${systemType}, even placeholder`);
-    } else if (model) {
-      if (isPlaceholder) {
-        console.log(`Using placeholder for ${systemType}`);
-      } else if (modelPath1 === fallbackPath) {
-        console.log(`Using fallback for ${systemType}`);
-      } else {
-        console.log(`Preloaded ${systemType} model`);
-      }
-    }
-  }, [loadAttempted, model, isPlaceholder, systemType, modelPath1, fallbackPath]);
-  
+  }, [primaryError, fallbackError]);
+
+  // Select which model to use
+  const model = primaryModel || fallbackModel || null;
+
   // Extract scene, nodes, materials, animations from the model
   const { scene, nodes, materials, animations } = model || {};
   
   // Apply model-specific transformations
   useEffect(() => {
     if (!scene) return;
-    
     const config = MODELS[systemType];
     scene.scale.set(config.scale, config.scale, config.scale);
     scene.position.set(...config.position);
     scene.rotation.set(...config.rotation);
-    
-    // Traverse the scene to enable shadows on all meshes
     scene.traverse(object => {
       if (object.isMesh) {
         object.castShadow = true;
         object.receiveShadow = true;
-        
-        // Enhance materials for better visual quality
         if (object.material) {
           object.material.roughness = 0.7;
           object.material.metalness = 0.2;
-          
-          // Convert colors to linear space for correct lighting
           if (systemType === 'skeletal') {
             object.material.color = new THREE.Color('#f0e6d2').convertSRGBToLinear();
           } else if (systemType === 'muscular') {
