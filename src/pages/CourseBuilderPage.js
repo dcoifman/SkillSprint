@@ -44,6 +44,7 @@ import {
   Tag,
   TagLabel,
   Tooltip,
+  Progress,
 } from '@chakra-ui/react';
 import { 
   AddIcon, 
@@ -56,9 +57,8 @@ import {
 } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 import geminiClient, { PROMPT_TEMPLATES, generateContent, stripCodeFences } from '../services/geminiClient';
-import { createLearningPath } from '../services/supabaseClient';
-import MarkdownWithMath from '../components/MarkdownWithMath';
-import MathEditor from '../components/MathEditor';
+import supabaseClient from '../services/supabaseClient';
+import { keyframes } from '@chakra-ui/react';
 
 // Default course structure
 const defaultCourseForm = {
@@ -67,6 +67,51 @@ const defaultCourseForm = {
   level: 'Beginner',
   duration: '2-4 hours',
   goals: '',
+};
+
+// Add animation keyframes after imports
+const pulseAnimation = keyframes`
+  0% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 0.3; }
+`;
+
+// Add BulkGenerationProgress component before CourseBuilderPage
+const BulkGenerationProgress = ({ current, total, isComplete }) => {
+  const progress = (current / total) * 100;
+  
+  return (
+    <Box 
+      p={6} 
+      borderWidth={1} 
+      borderRadius="lg" 
+      bg="white" 
+      boxShadow="lg"
+      animation={isComplete ? "none" : `${pulseAnimation} 2s infinite`}
+    >
+      <VStack spacing={4} align="stretch">
+        <HStack justify="space-between">
+          <Text fontWeight="bold">Generating Course Content</Text>
+          <Text>{current} / {total} sprints</Text>
+        </HStack>
+        
+        <Progress 
+          value={progress} 
+          size="lg" 
+          colorScheme={isComplete ? "green" : "purple"} 
+          borderRadius="full"
+          hasStripe
+          isAnimated={!isComplete}
+        />
+        
+        <Text fontSize="sm" color="gray.600" textAlign="center">
+          {isComplete 
+            ? "All content generated successfully!" 
+            : "Please wait while we generate your course content..."}
+        </Text>
+      </VStack>
+    </Box>
+  );
 };
 
 function CourseBuilderPage() {
@@ -86,13 +131,6 @@ function CourseBuilderPage() {
   const sprintRef = useRef(null);
   const [suggestedObjectives, setSuggestedObjectives] = useState([]);
   const [isGeneratingObjectives, setIsGeneratingObjectives] = useState(false);
-  
-  // New state for math editor
-  const [mathEditorOpen, setMathEditorOpen] = useState(false);
-  const [currentMathContent, setCurrentMathContent] = useState('');
-  const [mathEditorMode, setMathEditorMode] = useState('create');
-  const [mathAssignmentTitle, setMathAssignmentTitle] = useState('');
-  const [editingContentIndex, setEditingContentIndex] = useState(-1);
   
   // Rate limit warning threshold (8 out of 10 free requests)
   const RATE_LIMIT_WARNING = 8;
@@ -445,6 +483,86 @@ function CourseBuilderPage() {
     setIsGenerating(true);
     
     try {
+      // Generate any missing sprint content in parallel
+      const missingContent = [];
+      generatedCourse.modules.forEach((module, moduleIndex) => {
+        module.sprints.forEach((sprint, sprintIndex) => {
+          if (!sprintContent[`${moduleIndex}-${sprintIndex}`]) {
+            missingContent.push({ moduleIndex, sprintIndex, sprint, module });
+          }
+        });
+      });
+
+      if (missingContent.length > 0) {
+        // Show initial progress
+        const totalSprints = missingContent.length;
+        let completedSprints = 0;
+        
+        // Create a modal to show progress
+        onOpen();
+        
+        // Generate content in batches of 5 to avoid overwhelming the API
+        const batchSize = 5;
+        for (let i = 0; i < missingContent.length; i += batchSize) {
+          const batch = missingContent.slice(i, i + batchSize);
+          const results = await Promise.allSettled(
+            batch.map(async ({ moduleIndex, sprintIndex, sprint, module }) => {
+              try {
+                // Replace template placeholders
+                const filledPrompt = PROMPT_TEMPLATES.SPRINT_CONTENT
+                  .replace('{title}', sprint.title)
+                  .replace('{module}', module.title)
+                  .replace('{course}', generatedCourse.title)
+                  .replace('{outline}', sprint.contentOutline.join(', '))
+                  .replace('{audience}', courseForm.audience)
+                  .replace('{level}', courseForm.level)
+                  .replace('{duration}', sprint.duration || '10');
+                
+                // Generate content
+                const response = await generateContent(filledPrompt, 0.7);
+                
+                try {
+                  // Parse the JSON response
+                  const content = JSON.parse(stripCodeFences(response));
+                  
+                  // Update sprint content state
+                  setSprintContent(prev => ({
+                    ...prev,
+                    [`${moduleIndex}-${sprintIndex}`]: content
+                  }));
+
+                  completedSprints++;
+                  return { success: true, moduleIndex, sprintIndex };
+                } catch (parseError) {
+                  console.error('Error parsing JSON response:', parseError);
+                  return { success: false, error: 'JSON parsing error', moduleIndex, sprintIndex };
+                }
+              } catch (error) {
+                console.error('Error generating sprint content:', error);
+                return { success: false, error: error.message, moduleIndex, sprintIndex };
+              }
+            })
+          );
+
+          // Report generation progress
+          const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+          const failedCount = batch.length - successCount;
+
+          if (failedCount > 0) {
+            toast({
+              title: "Generation Progress",
+              description: `Batch ${Math.floor(i/batchSize) + 1}: ${successCount} succeeded, ${failedCount} failed. Continuing...`,
+              status: "warning",
+              duration: 3000,
+              isClosable: true,
+            });
+          }
+        }
+        
+        // Close progress modal
+        onClose();
+      }
+
       // Prepare course data
       const pathData = {
         title: generatedCourse.title,
@@ -476,7 +594,7 @@ function CourseBuilderPage() {
       });
       
       // Save the course to Supabase
-      const { data, error } = await createLearningPath(pathData, moduleData);
+      const { data, error } = await supabaseClient.createLearningPath(pathData, moduleData);
       
       if (error) {
         toast({
@@ -521,45 +639,6 @@ function CourseBuilderPage() {
           <Box key={index} p={4} borderWidth={1} borderRadius="md">
             <Badge colorScheme="blue" mb={2}>text</Badge>
             <Text>{item.value}</Text>
-          </Box>
-        );
-      case 'math':
-        return (
-          <Box key={index} p={4} borderWidth={1} borderRadius="md" bg="blue.50">
-            <Badge colorScheme="blue" mb={2}>math</Badge>
-            <MarkdownWithMath>
-              {item.value}
-            </MarkdownWithMath>
-          </Box>
-        );
-      case 'math_assignment':
-        return (
-          <Box key={index} p={4} borderWidth={1} borderRadius="md" bg="purple.50">
-            <Badge colorScheme="purple" mb={2}>math assignment</Badge>
-            <Heading size="sm" mb={2}>{item.title || "Math Assignment"}</Heading>
-            <MarkdownWithMath>
-              {item.content}
-            </MarkdownWithMath>
-            {item.problems && (
-              <VStack align="stretch" mt={3} spacing={3}>
-                <Text fontWeight="bold">Problems:</Text>
-                {item.problems.map((problem, i) => (
-                  <Box key={i} bg="white" p={3} borderRadius="md" borderWidth={1}>
-                    <MarkdownWithMath>
-                      {problem.question}
-                    </MarkdownWithMath>
-                    {problem.solution && (
-                      <Box mt={2} p={2} bg="gray.50" borderRadius="md">
-                        <Text fontWeight="bold" mb={1}>Solution:</Text>
-                        <MarkdownWithMath>
-                          {problem.solution}
-                        </MarkdownWithMath>
-                      </Box>
-                    )}
-                  </Box>
-                ))}
-              </VStack>
-            )}
           </Box>
         );
       case 'key_point':
@@ -679,80 +758,6 @@ function CourseBuilderPage() {
         </Box>
       </VStack>
     );
-  };
-
-  // Add a math assignment to sprint content
-  const addMathAssignment = () => {
-    if (!activeModule && !activeSprint) return;
-    
-    // Open math editor in create mode
-    setMathEditorMode('create');
-    setCurrentMathContent('');
-    setMathAssignmentTitle('Math Assignment');
-    setEditingContentIndex(-1);
-    setMathEditorOpen(true);
-  };
-  
-  // Edit an existing math content
-  const editMathContent = (index, type) => {
-    if (!activeModule && !activeSprint) return;
-    
-    const content = sprintContent[`${activeModule}-${activeSprint}`].content[index];
-    setMathEditorMode(type === 'math' ? 'edit-math' : 'edit-assignment');
-    setCurrentMathContent(type === 'math' ? content.value : content.content);
-    if (type === 'math_assignment') {
-      setMathAssignmentTitle(content.title || 'Math Assignment');
-    }
-    setEditingContentIndex(index);
-    setMathEditorOpen(true);
-  };
-  
-  // Save math content from editor
-  const saveMathContent = () => {
-    if (!activeModule && !activeSprint) return;
-    
-    const currentSprintKey = `${activeModule}-${activeSprint}`;
-    const updatedSprintContent = {...sprintContent};
-    
-    if (mathEditorMode === 'create') {
-      // Add new math assignment
-      const newAssignment = {
-        type: 'math_assignment',
-        title: mathAssignmentTitle,
-        content: currentMathContent,
-        problems: []
-      };
-      
-      updatedSprintContent[currentSprintKey] = {
-        ...updatedSprintContent[currentSprintKey],
-        content: [
-          ...updatedSprintContent[currentSprintKey].content,
-          newAssignment
-        ]
-      };
-    } else if (mathEditorMode === 'edit-math') {
-      // Update existing math content
-      updatedSprintContent[currentSprintKey].content[editingContentIndex] = {
-        ...updatedSprintContent[currentSprintKey].content[editingContentIndex],
-        value: currentMathContent
-      };
-    } else if (mathEditorMode === 'edit-assignment') {
-      // Update existing math assignment
-      updatedSprintContent[currentSprintKey].content[editingContentIndex] = {
-        ...updatedSprintContent[currentSprintKey].content[editingContentIndex],
-        title: mathAssignmentTitle,
-        content: currentMathContent
-      };
-    }
-    
-    setSprintContent(updatedSprintContent);
-    setMathEditorOpen(false);
-    
-    toast({
-      title: "Math content saved",
-      status: "success",
-      duration: 2000,
-    });
   };
 
   return (
@@ -1174,18 +1179,6 @@ function CourseBuilderPage() {
                                     {sprintContent[`${activeModule}-${activeSprint}`].content.map((item, i) => 
                                       renderContentItem(item, i)
                                     )}
-                                    
-                                    {/* Add content buttons */}
-                                    <HStack mt={4} spacing={4} justify="center">
-                                      <Button
-                                        leftIcon={<AddIcon />}
-                                        onClick={addMathAssignment}
-                                        colorScheme="purple"
-                                        variant="outline"
-                                      >
-                                        Add Math Assignment
-                                      </Button>
-                                    </HStack>
                                   </VStack>
                                 </CardBody>
                               </Card>
@@ -1388,75 +1381,17 @@ function CourseBuilderPage() {
         </TabPanels>
       </Tabs>
 
-      {/* Math Editor Modal */}
-      <Modal isOpen={mathEditorOpen} onClose={() => setMathEditorOpen(false)} size="xl">
+      {/* Rate limit warning modal */}
+      <Modal isOpen={isOpen} onClose={onClose} closeOnOverlayClick={false} closeOnEsc={false}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>
-            {mathEditorMode === 'create' ? 'Create Math Assignment' : 
-             mathEditorMode === 'edit-math' ? 'Edit Math Content' : 
-             'Edit Math Assignment'}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            {(mathEditorMode === 'create' || mathEditorMode === 'edit-assignment') && (
-              <FormControl mb={4}>
-                <FormLabel>Assignment Title</FormLabel>
-                <Input 
-                  value={mathAssignmentTitle} 
-                  onChange={(e) => setMathAssignmentTitle(e.target.value)}
-                  placeholder="Enter a title for this math assignment"
-                />
-              </FormControl>
-            )}
-            
-            <MathEditor
-              initialContent={currentMathContent}
-              onChange={setCurrentMathContent}
-              placeholder={
-                mathEditorMode === 'create' ? 
-                  'Create your math assignment with $...$ for inline and $$...$$ for display math' : 
-                  'Edit math content'
-              }
-              height="400px"
+          <ModalBody py={8}>
+            <BulkGenerationProgress 
+              current={Object.keys(sprintContent).length} 
+              total={generatedCourse?.modules.reduce((acc, module) => acc + module.sprints.length, 0) || 0}
+              isComplete={!isGenerating}
             />
           </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={() => setMathEditorOpen(false)}>
-              Cancel
-            </Button>
-            <Button colorScheme="purple" onClick={saveMathContent}>
-              Save
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Rate limit warning modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Rate Limit Warning</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack align="start" spacing={4}>
-              <Alert status="warning">
-                <AlertIcon />
-                You're approaching the free tier rate limit of 10 requests per minute.
-              </Alert>
-              <Text>
-                Consider spreading out your requests or upgrading to a paid tier for more capacity.
-              </Text>
-              <Text fontWeight="bold">
-                Requests made in this session: {requestCount}
-              </Text>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="blue" onClick={onClose}>
-              I Understand
-            </Button>
-          </ModalFooter>
         </ModalContent>
       </Modal>
     </Container>
