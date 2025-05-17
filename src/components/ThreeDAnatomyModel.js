@@ -178,38 +178,101 @@ function useAnatomyModel(systemType) {
   // Get model configuration
   const modelConfig = MODELS[systemType];
   const modelPath = modelConfig?.path;
-  const placeholderPath = `/models/anatomy/${systemType}/placeholder.glb`;
   
-  // Load both main model and placeholder UNCONDITIONALLY
-  const mainModel = useGLTF(modelPath);
-  const placeholderModel = useGLTF(placeholderPath);
-
-  // Handle errors and caching
-  useEffect(() => {
-    if (!mainModel.scene) {
-      console.error(`Error loading ${systemType} model`);
-      setModelError(true);
-      setLoadAttempted(true);
-      
-      // Use placeholder if available
-      if (placeholderModel?.scene) {
-        setIsPlaceholder(true);
-        console.log(`Loaded placeholder for ${systemType}`);
+  // Define fallback model paths for when the primary model fails
+  const fallbackMap = {
+    'muscular': '/models/anatomy/skeletal/skeletal-system-gyozocz.glb',
+    'skull': '/models/anatomy/skeletal/skeleton-better.glb',
+    'nervous': '/models/anatomy/skeletal/skeletal-system-gyozocz.glb',
+    'brain': '/models/anatomy/skeletal/skeletal-system-gyozocz.glb',
+    'heart': '/models/anatomy/circulatory/vascular-system-gyozocz.glb',
+    'lungs': '/models/anatomy/skeletal/skeletal-system-gyozocz.glb',
+    'respiratory': '/models/anatomy/circulatory/vascular-system-gyozocz.glb',
+    'male_body': '/models/anatomy/skeletal/skeletal-system-gyozocz.glb',
+    'reproductive_male': '/models/anatomy/digestive/abdominal-organs-gyozocz.glb',
+    'reproductive_female': '/models/anatomy/digestive/abdominal-organs-gyozocz.glb',
+    'lymphatic': '/models/anatomy/circulatory/vascular-system-gyozocz.glb'
+  };
+  
+  const placeholderPath = '/models/anatomy/skeletal/placeholder.glb';
+  const fallbackPath = fallbackMap[systemType] || placeholderPath;
+  
+  // Setup state for model loading
+  const [modelPath1, setModelPath1] = useState(modelPath);
+  const [modelPath2, setModelPath2] = useState(fallbackPath);
+  
+  // Custom error handling loader
+  const useGLTFSafe = (path) => {
+    try {
+      // Try to load the model
+      const model = useGLTF(path);
+      // Check if model is valid (has a scene property)
+      if (model && model.scene) {
+        return { model, error: null };
+      } else {
+        console.error(`Invalid model loaded for path: ${path}`);
+        return { model: null, error: 'Invalid model format' };
       }
-    } else {
-      setLoadAttempted(true);
-      console.log(`Successfully loaded ${systemType} model`);
-      
-      // Cache successful loads
-      if (!isPlaceholder && !modelCache.has(systemType)) {
-        modelCache.set(systemType, mainModel);
-        console.log(`Cached ${systemType} model`);
-      }
+    } catch (error) {
+      console.error(`Error loading model from ${path}:`, error);
+      return { model: null, error: error.message || 'Unknown model loading error' };
     }
-  }, [systemType, mainModel, placeholderModel, isPlaceholder]);
+  };
+  
+  // Load models with error handling
+  const { model: primaryModel, error: primaryError } = useGLTFSafe(modelPath1);
+  const { model: fallbackModel, error: fallbackError } = useGLTFSafe(modelPath2);
+  
+  // Effect to handle model loading flow
+  useEffect(() => {
+    // If main model failed but we haven't tried fallback yet
+    if (primaryError && modelPath1 !== fallbackPath) {
+      console.log(`[Error] Error preloading ${systemType} model: – ${primaryError}`);
+      // First try the mapped fallback if available
+      setModelPath1(fallbackPath);
+    }
+    
+    // If both main model and fallback failed
+    if (primaryError && modelPath1 === fallbackPath) {
+      console.log(`[Error] Fallback also failed for ${systemType} model: – ${primaryError}`);
+      // If all else fails, use a generic placeholder
+      setModelPath1(placeholderPath);
+      setIsPlaceholder(true);
+    }
+    
+    setLoadAttempted(true);
+    
+    // If we're using the placeholder or the fallback
+    if (modelPath1 !== modelConfig?.path) {
+      setModelError(true);
+    }
+    
+    // Cache successful model loads
+    if (!primaryError && !isPlaceholder && !modelCache.has(systemType)) {
+      modelCache.set(systemType, primaryModel);
+      console.log(`Cached ${systemType} model`);
+    }
+  }, [systemType, primaryModel, primaryError, modelPath1, fallbackPath, placeholderPath, modelConfig]);
   
   // Get the appropriate model
-  const model = isPlaceholder ? placeholderModel : mainModel;
+  const model = primaryModel || fallbackModel || null;
+  
+  // If we still have no model after all attempts
+  useEffect(() => {
+    if (loadAttempted && !model) {
+      console.error(`Failed to load any model for ${systemType}, even placeholder`);
+    } else if (model) {
+      if (isPlaceholder) {
+        console.log(`Using placeholder for ${systemType}`);
+      } else if (modelPath1 === fallbackPath) {
+        console.log(`Using fallback for ${systemType}`);
+      } else {
+        console.log(`Preloaded ${systemType} model`);
+      }
+    }
+  }, [loadAttempted, model, isPlaceholder, systemType, modelPath1, fallbackPath]);
+  
+  // Extract scene, nodes, materials, animations from the model
   const { scene, nodes, materials, animations } = model || {};
   
   // Apply model-specific transformations
