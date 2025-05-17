@@ -178,29 +178,29 @@ function useAnatomyModel(systemType) {
   // Get model configuration
   const modelConfig = MODELS[systemType];
   const modelPath = modelConfig?.path;
+  const placeholderPath = `/models/anatomy/${systemType}/placeholder.glb`;
   
-  // Load the model using useGLTF hook
-  const model = useGLTF(modelPath);
-  const { scene, nodes, materials, animations } = model;
+  // Load both main model and placeholder
+  const mainModel = useGLTF(modelPath);
+  let placeholderModel;
+  
+  try {
+    placeholderModel = useGLTF(placeholderPath);
+  } catch (error) {
+    console.error(`Error loading placeholder for ${systemType}:`, error);
+  }
 
   // Handle errors and caching
   useEffect(() => {
-    if (!scene) {
+    if (!mainModel.scene) {
       console.error(`Error loading ${systemType} model`);
       setModelError(true);
       setLoadAttempted(true);
       
-      // Try loading placeholder if main model fails
-      const placeholderPath = `/models/anatomy/${systemType}/placeholder.glb`;
-      try {
-        const placeholderModel = useGLTF(placeholderPath);
-        if (placeholderModel.scene) {
-          setIsPlaceholder(true);
-          console.log(`Loaded placeholder for ${systemType}`);
-        }
-      } catch (placeholderError) {
-        console.error(`Error loading placeholder for ${systemType}:`, placeholderError);
-        // Will use generated placeholder
+      // Use placeholder if available
+      if (placeholderModel?.scene) {
+        setIsPlaceholder(true);
+        console.log(`Loaded placeholder for ${systemType}`);
       }
     } else {
       setLoadAttempted(true);
@@ -208,11 +208,15 @@ function useAnatomyModel(systemType) {
       
       // Cache successful loads
       if (!isPlaceholder && !modelCache.has(systemType)) {
-        modelCache.set(systemType, { scene, nodes, materials, animations });
+        modelCache.set(systemType, mainModel);
         console.log(`Cached ${systemType} model`);
       }
     }
-  }, [systemType, scene, isPlaceholder, nodes, materials, animations]);
+  }, [systemType, mainModel, placeholderModel, isPlaceholder]);
+  
+  // Get the appropriate model
+  const model = isPlaceholder ? placeholderModel : mainModel;
+  const { scene, nodes, materials, animations } = model || {};
   
   // Apply model-specific transformations
   useEffect(() => {
