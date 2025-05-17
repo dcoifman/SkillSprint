@@ -91,7 +91,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from '@chakra-ui/icons';
-import { FaGraduationCap, FaRocket, FaBrain, FaChartLine, FaLightbulb, FaUserGraduate, FaUsers, FaClock, FaCode, FaMobileAlt } from 'react-icons/fa';
+import { FaGraduationCap, FaRocket, FaBrain, FaChartLine, FaLightbulb, FaUserGraduate, FaUsers, FaClock, FaCode, FaMobileAlt, FaUser } from 'react-icons/fa';
 import { GiArtificialIntelligence, GiMagnifyingGlass, GiTargetArrows, GiBrain } from 'react-icons/gi';
 import { BiCodeAlt, BiAnalyse, BiBarChartAlt2, BiBookOpen } from 'react-icons/bi';
 import { fetchLearningPaths } from '../services/supabaseClient';
@@ -320,6 +320,89 @@ const particlesConfig = {
   retina_detect: true,
 };
 
+// Animated Stat Card Component
+const StatCard = ({ icon, accentColor, value, suffix, label, delay, isVisible }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 40 }}
+    animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
+    transition={{ duration: 0.7, delay }}
+  >
+    <VStack 
+      p={8} 
+      borderRadius="xl" 
+      bg="whiteAlpha.100"
+      backdropFilter="blur(8px)"
+      border="1px solid"
+      borderColor="whiteAlpha.200"
+      spacing={4}
+      height="100%"
+      boxShadow="0 10px 30px -5px rgba(0, 0, 0, 0.1)"
+      transition="transform 0.3s, box-shadow 0.3s"
+      _hover={{ transform: "translateY(-5px)", boxShadow: "xl" }}
+    >
+      <Circle 
+        size={14} 
+        bg={accentColor} 
+        color="white" 
+        opacity={0.9}
+      >
+        <Icon as={icon} boxSize={6} />
+      </Circle>
+      
+      <Box textAlign="center">
+        <HStack justify="center" fontSize={{ base: '3xl', md: '4xl' }} fontWeight="bold" color="white">
+          <VisibilitySensor partialVisibility offset={{ bottom: 50 }}>
+            {({ isVisible: isCounterVisible }) => (
+              <Text display="flex" alignItems="baseline">
+                <CountUp 
+                  start={0} 
+                  end={isVisible && isCounterVisible ? value : 0}
+                  duration={2.5}
+                  separator=","
+                  decimals={value < 100 ? 1 : 0}
+                  decimal="."
+                />
+                <Text as="span" ml={1}>{suffix}</Text>
+              </Text>
+            )}
+          </VisibilitySensor>
+        </HStack>
+        <Text mt={1} color="whiteAlpha.800" fontWeight="medium">{label}</Text>
+      </Box>
+    </VStack>
+  </motion.div>
+);
+
+// Achievement Component
+const Achievement = ({ icon, title, description, delay, isVisible }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 30 }}
+    animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+    transition={{ duration: 0.6, delay }}
+  >
+    <HStack 
+      align="start" 
+      spacing={4} 
+      bg="whiteAlpha.100" 
+      p={5} 
+      borderRadius="lg"
+      border="1px solid"
+      borderColor="whiteAlpha.200"
+      backdropFilter="blur(8px)"
+      transition="transform 0.3s"
+      _hover={{ transform: "translateY(-5px)" }}
+    >
+      <Circle size={10} bg="whiteAlpha.300" color="white">
+        <Icon as={icon} boxSize={5} />
+      </Circle>
+      <Box>
+        <Text color="white" fontWeight="bold" fontSize="lg" mb={1}>{title}</Text>
+        <Text color="whiteAlpha.800" fontSize="sm">{description}</Text>
+      </Box>
+    </HStack>
+  </motion.div>
+);
+
 function HomePage() {
   const pulseAnimation = `${pulse} 2s infinite`;
   const floatAnimation = `${float} 6s ease-in-out infinite`;
@@ -439,7 +522,7 @@ function HomePage() {
         // Show fallback data
         setTimeout(() => {
           setCourses(featuredCourses);
-          setIsLoading(false);
+        setIsLoading(false);
         }, 1500);
       }
     };
@@ -482,7 +565,7 @@ function HomePage() {
       position: "top",
     });
   };
-  
+
   return (
     <ParallaxProvider>
       <Box position="relative" overflow="hidden">
@@ -558,7 +641,7 @@ function HomePage() {
           <Particles id="tsparticles" init={particlesInit} options={particlesConfig} />
         </Box>
 
-        {/* Hero Section */}
+      {/* Hero Section */}
         <Box 
           position="relative" 
           minH="100vh" 
@@ -599,12 +682,12 @@ function HomePage() {
                       AI-Powered Learning Platform
                     </Badge>
                     
-                    <Heading
+              <Heading
                       as={motion.h1}
                       initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4, duration: 0.6 }}
-                      lineHeight={1.1}
+                lineHeight={1.1}
                       fontWeight={700}
                       fontSize={heroTextSize}
                     >
@@ -641,13 +724,13 @@ function HomePage() {
                           fontSize: '1.25rem', 
                           display: 'inline-block',
                           fontWeight: 'medium',
-                          color: useColorModeValue('purple.600', 'purple.300')
+                          color: 'var(--chakra-colors-purple-500)'
                         }}
                         repeat={Infinity}
                       />
                     </Box>
                     
-                    <Text
+                <Text
                       as={motion.p}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -658,18 +741,18 @@ function HomePage() {
                     >
                       SkillSprint's personalized AI learning platform delivers targeted micro-lessons
                       engineered for maximum retention and rapid skill acquisition.
-                    </Text>
+                </Text>
                     
-                    <Stack
+              <Stack
                       as={motion.div}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 1, duration: 0.6 }}
                       spacing={5}
-                      direction={{ base: 'column', sm: 'row' }}
+                direction={{ base: 'column', sm: 'row' }}
                       mt={2}
-                    >
-                      <Button
+              >
+                <Button
                         as={motion.button}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -683,22 +766,22 @@ function HomePage() {
                           bg: useColorModeValue('primary.600', 'primary.300'),
                         }}
                         leftIcon={<Icon as={FaRocket} h={5} w={5} />}
-                        position="relative"
-                        _after={{
-                          content: "''",
-                          width: '100%',
-                          height: '100%',
-                          borderRadius: '50px',
+                  position="relative"
+                  _after={{
+                    content: "''",
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50px',
                           position: 'absolute',
-                          zIndex: -1,
-                          animation: pulseAnimation,
-                        }}
+                    zIndex: -1,
+                    animation: pulseAnimation,
+                  }}
                         onClick={() => navigate('/signup')}
-                      >
+                >
                         Start Free Trial
-                      </Button>
+                </Button>
                       
-                      <Button
+                <Button
                         as={motion.button}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -712,9 +795,9 @@ function HomePage() {
                         onClick={() => navigate('/courses')}
                       >
                         Browse Courses
-                      </Button>
-                    </Stack>
-                    
+                </Button>
+              </Stack>
+              
                     <HStack 
                       as={motion.div}
                       initial={{ opacity: 0 }}
@@ -765,10 +848,10 @@ function HomePage() {
                     >
                       {/* 3D model preview for anatomy course */}
                       <ErrorBoundary fallback={
-                        <Image
+                <Image
                           src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=2026"
                           alt="Learning dashboard"
-                          objectFit="cover"
+                  objectFit="cover"
                           width="100%"
                           height="100%"
                         />
@@ -779,10 +862,10 @@ function HomePage() {
                             initialView="anterior"
                           />
                         ) : (
-                          <Image
+                <Image
                             src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=2026"
                             alt="Learning dashboard"
-                            objectFit="cover"
+                  objectFit="cover"
                             width="100%"
                             height="100%"
                           />
@@ -816,17 +899,17 @@ function HomePage() {
                     >
                       <CardBody p={0}>
                         <AspectRatio ratio={16/9}>
-                          <Image
+                <Image
                             src="https://images.unsplash.com/photo-1509228627152-72ae9ae6848d?q=80&w=2070"
                             alt="Machine Learning"
-                            objectFit="cover"
+                  objectFit="cover"
                           />
                         </AspectRatio>
                         <Box p={4}>
                           <HStack mb={2}>
                             <Badge colorScheme="green">Trending</Badge>
                             <Badge colorScheme="purple">AI</Badge>
-                          </HStack>
+              </HStack>
                           <Heading size="md" mb={2}>Machine Learning Fundamentals</Heading>
                           <HStack mb={3}>
                             <Icon as={FaUser} color="gray.500" />
@@ -861,8 +944,8 @@ function HomePage() {
                     initial={{ x: -30, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ duration: 0.5, delay: 1.1 }}
-                  >
-                    <Box
+            >
+              <Box
                       position="absolute"
                       top="60px"
                       left="0"
@@ -901,13 +984,13 @@ function HomePage() {
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.5, delay: 1.4 }}
                   >
-                    <Box
-                      position="absolute"
-                      bottom="20px"
+                <Box
+                  position="absolute"
+                  bottom="20px"
                       right="40px"
                       width="250px"
                       bg={useColorModeValue('white', 'gray.800')}
-                      borderRadius="lg"
+                  borderRadius="lg"
                       boxShadow="xl"
                       p={3}
                       borderWidth="1px"
@@ -915,7 +998,7 @@ function HomePage() {
                       zIndex={3}
                       as={motion.div}
                       whileHover={{ y: -5 }}
-                      animation={`${floatAnimation} 7s infinite`}
+                      animation={`${float} 7s infinite`}
                     >
                       <HStack spacing={3}>
                         <Circle size={10} bg="green.100" color="green.500">
@@ -925,8 +1008,8 @@ function HomePage() {
                           <Text fontWeight="bold" fontSize="sm">Daily Goal Achieved!</Text>
                           <Text fontSize="xs" color="gray.500">You've completed today's learning sprint.</Text>
                         </Box>
-                      </HStack>
-                    </Box>
+                  </HStack>
+                  </Box>
                   </motion.div>
                 </Box>
               </GridItem>
@@ -942,7 +1025,7 @@ function HomePage() {
             >
               <Text textAlign="center" fontSize="sm" fontWeight="medium" mb={6} color="gray.500">
                 TRUSTED BY LEADING COMPANIES WORLDWIDE
-              </Text>
+                  </Text>
               <SimpleGrid 
                 columns={{ base: 2, md: 4, lg: 6 }} 
                 spacing={10} 
@@ -992,11 +1075,11 @@ function HomePage() {
                   filter={useColorModeValue("grayscale(100%)", "grayscale(100%) brightness(1.5)")}
                 />
               </SimpleGrid>
-            </Box>
-          </Container>
-        </Box>
+                </Box>
+        </Container>
+      </Box>
 
-        {/* Featured Courses Section */}
+      {/* Featured Courses Section */}
         <Box position="relative" py={20} bg={useColorModeValue('gray.50', 'gray.800')}>
           {/* Background decoration */}
           <Box
@@ -1038,18 +1121,18 @@ function HomePage() {
                 >
                   Top-Rated Programs
                 </Badge>
-                <Heading
+          <Heading
                   as={motion.h2}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5 }}
                   fontSize={{ base: '3xl', md: '4xl' }}
-                  fontWeight="bold"
+            fontWeight="bold"
                   mb={4}
-                >
+          >
                   Featured Learning Paths
-                </Heading>
+          </Heading>
                 <Text
                   color={useColorModeValue('gray.600', 'gray.400')}
                   maxW="800px"
@@ -1062,7 +1145,7 @@ function HomePage() {
               </Box>
               
               {/* Course cards slider */}
-              {isLoading ? (
+          {isLoading ? (
                 <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={10} width="100%">
                   {[...Array(3)].map((_, i) => (
                     <Box key={i} borderRadius="xl" overflow="hidden" height="450px">
@@ -1239,9 +1322,9 @@ function HomePage() {
                 View All Courses
               </Button>
             </Box>
-          </Container>
-        </Box>
-        
+        </Container>
+      </Box>
+
         {/* Course Preview Modal */}
         <Modal isOpen={isOpen} onClose={onClose} size="5xl" motionPreset="slideInBottom">
           <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(10px)" />
@@ -1308,7 +1391,7 @@ function HomePage() {
                               ))}
                             </SimpleGrid>
                           </Box>
-                        </VStack>
+            </VStack>
                       </TabPanel>
                       <TabPanel>
                         <Heading size="md" mb={4}>Course Content</Heading>
@@ -1329,7 +1412,7 @@ function HomePage() {
                                   <HStack>
                                     <Text mr={2} fontSize="sm" color="gray.500">
                                       {section.lessons} lessons • {section.duration}
-                                    </Text>
+              </Text>
                                     <AccordionIcon />
                                   </HStack>
                                 </AccordionButton>
@@ -1341,14 +1424,14 @@ function HomePage() {
                                       <Icon as={j === 0 ? UnlockIcon : LockIcon} color={j === 0 ? "green.500" : "gray.500"} />
                                       <Text fontWeight={j === 0 ? "medium" : "normal"}>
                                         Lesson {j + 1}: {section.title.replace(/s$/, '')} {j + 1}
-                                      </Text>
+              </Text>
                                       <Spacer />
                                       <Text fontSize="sm" color="gray.500">
                                         {Math.floor(5 + Math.random() * 15)} min
                                       </Text>
                                     </HStack>
                                   ))}
-                                </VStack>
+            </VStack>
                               </AccordionPanel>
                             </AccordionItem>
                           ))}
@@ -1365,7 +1448,7 @@ function HomePage() {
                               <Text fontSize="sm">
                                 Expert in machine learning with over 10 years of experience in both academic and industry settings. 
                                 Previously lead AI researcher at Tech Innovators Inc.
-                              </Text>
+              </Text>
                             </Box>
                           </HStack>
                           <HStack align="start" spacing={4}>
@@ -1561,7 +1644,7 @@ function HomePage() {
                   label="Completion Rate" 
                   delay={0.6}
                 />
-              </SimpleGrid>
+          </SimpleGrid>
               
               <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8} mt={4} w="full">
                 <Achievement 
@@ -1587,8 +1670,8 @@ function HomePage() {
                 />
               </SimpleGrid>
             </VStack>
-          </Container>
-        </Box>
+        </Container>
+      </Box>
         
         {/* Animated Stat Card Component */}
         const StatCard = ({ icon, accentColor, value, suffix, label, delay, isVisible }) => (
@@ -1673,7 +1756,7 @@ function HomePage() {
           </motion.div>
         );
 
-        {/* Features Section */}
+      {/* Features Section */}
         <Box 
           py={24} 
           position="relative" 
@@ -1728,22 +1811,22 @@ function HomePage() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.5 }}
                   fontSize={{ base: '3xl', md: '4xl' }}
-                  fontWeight="bold"
+              fontWeight="bold"
                   bgGradient="linear(to-r, primary.500, secondary.500)"
                   bgClip="text"
-                  mb={5}
-                >
-                  Everything you need to master new skills
+              mb={5}
+            >
+              Everything you need to master new skills
                 </Heading>
-                <Text
+            <Text 
                   color={useColorModeValue('gray.600', 'gray.400')}
                   fontSize={{ base: 'md', md: 'lg' }}
-                >
+            >
                   Our AI-powered platform adapts to your learning style, delivering personalized 
                   micro-lessons that fit perfectly into your busy schedule.
-                </Text>
-              </Box>
-              
+            </Text>
+          </Box>
+
               <Grid 
                 templateColumns={{ base: 'repeat(1, 1fr)', md: 'repeat(3, 1fr)' }}
                 gap={10}
@@ -1801,356 +1884,356 @@ function HomePage() {
               
               <FeatureShowcase isVisible={featuresVisible} />
             </VStack>
-          </Container>
-        </Box>
+        </Container>
+      </Box>
 
-        {/* How it Works Section */}
-        <Box bg={useColorModeValue('gray.50', 'gray.900')} py={20}>
-          <Container maxW={'7xl'}>
-            <Box mb={16} textAlign="center">
-              <chakra.h2
-                fontSize={{ base: '2xl', sm: '3xl' }}
-                fontWeight="bold"
-                mb={5}
-              >
-                How SkillSprint Works
-              </chakra.h2>
-              <Text 
-                color={'gray.500'} 
-                maxW={'3xl'} 
-                mx={'auto'}
-              >
-                Our proven learning methodology helps you build skills faster and retain knowledge longer.
-              </Text>
-            </Box>
-
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: 10, md: 20 }}>
-              <HowItWorksStep 
-                number={1}
-                title="Set your learning goals"
-                description="Tell us what you want to learn, and our AI will design a personalized learning path just for you."
-              />
-              <HowItWorksStep 
-                number={2}
-                title="Complete daily sprints"
-                description="Short, focused learning sessions that adapt to your progress and keep you engaged."
-              />
-              <HowItWorksStep 
-                number={3}
-                title="Master new skills"
-                description="Track your progress, earn certificates, and apply your new skills in real-world scenarios."
-              />
-            </SimpleGrid>
-
-            <Box textAlign="center" mt={16}>
-              <Button
-                as={RouterLink}
-                to="/signup"
-                size="lg"
-                colorScheme="primary"
-                rightIcon={<ChevronRightIcon />}
-              >
-                Start Your Learning Journey
-              </Button>
-            </Box>
-          </Container>
-        </Box>
-
-        {/* Community Spotlight Section - NEW SECTION */}
-        <Box bg={useColorModeValue('white', 'gray.800')} py={20}>
-          <Container maxW={'7xl'}>
-            <Box mb={16} textAlign="center">
-              <chakra.h2
-                fontSize={{ base: '2xl', sm: '3xl' }}
-                fontWeight="bold"
-                mb={5}
-              >
-                Community Spotlight
-              </chakra.h2>
-              <Text 
-                color={'gray.500'} 
-                maxW={'3xl'} 
-                mx={'auto'}
-              >
-                Join thousands of learners sharing knowledge, celebrating wins, and supporting each other.
-              </Text>
-            </Box>
-
-            <Grid templateColumns={{ base: "repeat(1, 1fr)", md: "repeat(3, 1fr)" }} gap={8}>
-              {/* Community Card 1 */}
-              <GridItem>
-                <Card borderRadius="lg" overflow="hidden" boxShadow="md" borderWidth="1px" 
-                      borderColor={borderColor} height="100%">
-                  <CardBody p={0}>
-                    <Box bg="purple.50" p={4}>
-                      <HStack>
-                        <Avatar 
-                          src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1974" 
-                          name="Sarah Johnson" 
-                        />
-                        <VStack align="start" spacing={0}>
-                          <Text fontWeight="bold">Sarah Johnson</Text>
-                          <Text fontSize="sm" color="gray.500">Data Scientist</Text>
-                        </VStack>
-                      </HStack>
-                    </Box>
-                    <Box p={5}>
-                      <Text fontSize="md" mb={4}>
-                        "Just completed the Advanced SQL Learning Path! The bite-sized sprints made it so easy to fit learning into my busy schedule. Now applying these skills to optimize our customer database."
-                      </Text>
-                      <HStack>
-                        <Badge colorScheme="green">SQL</Badge>
-                        <Badge colorScheme="purple">Data</Badge>
-                      </HStack>
-                    </Box>
-                  </CardBody>
-                  <CardFooter bg="gray.50" p={4}>
-                    <HStack justify="space-between" width="100%">
-                      <HStack>
-                        <Tooltip label="42 likes">
-                          <IconButton 
-                            aria-label="Like" 
-                            icon={<StarIcon />} 
-                            size="sm" 
-                            variant="ghost" 
-                            colorScheme="purple"
-                          />
-                        </Tooltip>
-                        <Text fontSize="sm">42</Text>
-                      </HStack>
-                      <HStack>
-                        <Tooltip label="18 comments">
-                          <IconButton 
-                            aria-label="Comment" 
-                            icon={<ChatIcon />} 
-                            size="sm" 
-                            variant="ghost"
-                            colorScheme="purple"
-                          />
-                        </Tooltip>
-                        <Text fontSize="sm">18</Text>
-                      </HStack>
-                      <HStack>
-                        <TimeIcon color="gray.400" />
-                        <Text fontSize="sm" color="gray.500">2 days ago</Text>
-                      </HStack>
-                    </HStack>
-                  </CardFooter>
-                </Card>
-              </GridItem>
-
-              {/* Community Card 2 */}
-              <GridItem>
-                <Card borderRadius="lg" overflow="hidden" boxShadow="md" borderWidth="1px" 
-                      borderColor={borderColor} height="100%">
-                  <CardBody p={0}>
-                    <Box bg="blue.50" p={4}>
-                      <HStack>
-                        <Avatar 
-                          src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974" 
-                          name="Michael Chen" 
-                        />
-                        <VStack align="start" spacing={0}>
-                          <Text fontWeight="bold">Michael Chen</Text>
-                          <Text fontSize="sm" color="gray.500">UX Designer</Text>
-                        </VStack>
-                      </HStack>
-                    </Box>
-                    <Box p={5}>
-                      <Text fontSize="md" mb={4}>
-                        "The UX Research learning path completely changed how I approach user interviews. I've created a resource guide for our team based on what I learned in the sprints."
-                      </Text>
-                      <HStack>
-                        <Badge colorScheme="blue">UX</Badge>
-                        <Badge colorScheme="orange">Research</Badge>
-                      </HStack>
-                    </Box>
-                  </CardBody>
-                  <CardFooter bg="gray.50" p={4}>
-                    <HStack justify="space-between" width="100%">
-                      <HStack>
-                        <Tooltip label="36 likes">
-                          <IconButton 
-                            aria-label="Like" 
-                            icon={<StarIcon />} 
-                            size="sm" 
-                            variant="ghost" 
-                            colorScheme="blue"
-                          />
-                        </Tooltip>
-                        <Text fontSize="sm">36</Text>
-                      </HStack>
-                      <HStack>
-                        <Tooltip label="14 comments">
-                          <IconButton 
-                            aria-label="Comment" 
-                            icon={<ChatIcon />} 
-                            size="sm" 
-                            variant="ghost"
-                            colorScheme="blue"
-                          />
-                        </Tooltip>
-                        <Text fontSize="sm">14</Text>
-                      </HStack>
-                      <HStack>
-                        <TimeIcon color="gray.400" />
-                        <Text fontSize="sm" color="gray.500">5 days ago</Text>
-                      </HStack>
-                    </HStack>
-                  </CardFooter>
-                </Card>
-              </GridItem>
-
-              {/* Community Card 3 */}
-              <GridItem>
-                <Card borderRadius="lg" overflow="hidden" boxShadow="md" borderWidth="1px" 
-                      borderColor={borderColor} height="100%">
-                  <CardBody p={0}>
-                    <Box bg="green.50" p={4}>
-                      <HStack>
-                        <Avatar 
-                          src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1974" 
-                          name="James Wilson" 
-                        />
-                        <VStack align="start" spacing={0}>
-                          <Text fontWeight="bold">James Wilson</Text>
-                          <Text fontSize="sm" color="gray.500">Product Manager</Text>
-                        </VStack>
-                      </HStack>
-                    </Box>
-                    <Box p={5}>
-                      <Text fontSize="md" mb={4}>
-                        "After completing the 'Agile Product Management' path, I reorganized our entire workflow. Our team's velocity increased by 40% in just one sprint!"
-                      </Text>
-                      <HStack>
-                        <Badge colorScheme="green">Agile</Badge>
-                        <Badge colorScheme="teal">Management</Badge>
-                      </HStack>
-                    </Box>
-                  </CardBody>
-                  <CardFooter bg="gray.50" p={4}>
-                    <HStack justify="space-between" width="100%">
-                      <HStack>
-                        <Tooltip label="58 likes">
-                          <IconButton 
-                            aria-label="Like" 
-                            icon={<StarIcon />} 
-                            size="sm" 
-                            variant="ghost" 
-                            colorScheme="green"
-                          />
-                        </Tooltip>
-                        <Text fontSize="sm">58</Text>
-                      </HStack>
-                      <HStack>
-                        <Tooltip label="24 comments">
-                          <IconButton 
-                            aria-label="Comment" 
-                            icon={<ChatIcon />} 
-                            size="sm" 
-                            variant="ghost"
-                            colorScheme="green"
-                          />
-                        </Tooltip>
-                        <Text fontSize="sm">24</Text>
-                      </HStack>
-                      <HStack>
-                        <TimeIcon color="gray.400" />
-                        <Text fontSize="sm" color="gray.500">1 week ago</Text>
-                      </HStack>
-                    </HStack>
-                  </CardFooter>
-                </Card>
-              </GridItem>
-            </Grid>
-
-            <Box textAlign="center" mt={10}>
-              <Button
-                as={RouterLink}
-                to="/community"
-                size="md"
-                colorScheme="purple"
-                variant="outline"
-                rightIcon={<ChevronRightIcon />}
-              >
-                Join Our Community
-              </Button>
-            </Box>
-          </Container>
-        </Box>
-
-        {/* Testimonials Section */}
-        <Box bg={useColorModeValue('gray.50', 'gray.900')} py={20}>
-          <Container maxW={'7xl'}>
-            <Box mb={16} textAlign="center">
-              <chakra.h2
-                fontSize={{ base: '2xl', sm: '3xl' }}
-                fontWeight="bold"
-                mb={5}
-              >
-                What Our Learners Say
-              </chakra.h2>
-              <Text 
-                color={'gray.500'} 
-                maxW={'3xl'} 
-                mx={'auto'}
-              >
-                Join thousands of satisfied learners who have transformed their skills with SkillSprint.
-              </Text>
-            </Box>
-
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10}>
-              <Testimonial 
-                name="Samantha Lee"
-                role="Marketing Specialist"
-                content="The bite-sized learning approach is perfect for my busy schedule. I've learned more in 2 weeks with SkillSprint than in 2 months with traditional courses."
-                avatar="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=2070"
-              />
-              <Testimonial 
-                name="David Rodriguez"
-                role="Software Engineer"
-                content="The AI tutor is incredible! It answered all my questions and helped me understand complex programming concepts better than any human instructor ever has."
-                avatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070"
-              />
-              <Testimonial 
-                name="Alex Kumar"
-                role="Product Manager"
-                content="SkillSprint's personalized pathways helped me fill specific knowledge gaps for my new role. The analytics showed me exactly where to focus my efforts."
-                avatar="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=1974"
-              />
-            </SimpleGrid>
-          </Container>
-        </Box>
-
-        {/* CTA Section */}
-        <Box bg={useColorModeValue('primary.500', 'primary.600')} py={16} color="white">
-          <Container maxW={'7xl'} textAlign="center">
-            <Heading as="h2" size="xl" mb={6}>
-              Ready to accelerate your learning?
-            </Heading>
-            <Text fontSize="lg" mb={10} maxW="2xl" mx="auto">
-              Join SkillSprint today and start building valuable skills in just minutes a day.
-              Our personalized approach ensures you'll learn efficiently and effectively.
+      {/* How it Works Section */}
+      <Box bg={useColorModeValue('gray.50', 'gray.900')} py={20}>
+        <Container maxW={'7xl'}>
+          <Box mb={16} textAlign="center">
+            <chakra.h2
+              fontSize={{ base: '2xl', sm: '3xl' }}
+              fontWeight="bold"
+              mb={5}
+            >
+              How SkillSprint Works
+            </chakra.h2>
+            <Text 
+              color={'gray.500'} 
+              maxW={'3xl'} 
+              mx={'auto'}
+            >
+              Our proven learning methodology helps you build skills faster and retain knowledge longer.
             </Text>
+          </Box>
+
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: 10, md: 20 }}>
+            <HowItWorksStep 
+              number={1}
+              title="Set your learning goals"
+              description="Tell us what you want to learn, and our AI will design a personalized learning path just for you."
+            />
+            <HowItWorksStep 
+              number={2}
+              title="Complete daily sprints"
+              description="Short, focused learning sessions that adapt to your progress and keep you engaged."
+            />
+            <HowItWorksStep 
+              number={3}
+              title="Master new skills"
+              description="Track your progress, earn certificates, and apply your new skills in real-world scenarios."
+            />
+          </SimpleGrid>
+
+          <Box textAlign="center" mt={16}>
             <Button
               as={RouterLink}
               to="/signup"
               size="lg"
-              bg="white"
-              color="primary.500"
-              _hover={{
-                bg: 'gray.100',
-              }}
-              px={8}
-              fontSize="md"
-              fontWeight="bold"
-              leftIcon={<CheckCircleIcon />}
+              colorScheme="primary"
+              rightIcon={<ChevronRightIcon />}
             >
-              Start Learning for Free
+              Start Your Learning Journey
             </Button>
-          </Container>
-        </Box>
+          </Box>
+        </Container>
       </Box>
+
+      {/* Community Spotlight Section - NEW SECTION */}
+      <Box bg={useColorModeValue('white', 'gray.800')} py={20}>
+        <Container maxW={'7xl'}>
+          <Box mb={16} textAlign="center">
+            <chakra.h2
+              fontSize={{ base: '2xl', sm: '3xl' }}
+              fontWeight="bold"
+              mb={5}
+            >
+              Community Spotlight
+            </chakra.h2>
+            <Text 
+              color={'gray.500'} 
+              maxW={'3xl'} 
+              mx={'auto'}
+            >
+              Join thousands of learners sharing knowledge, celebrating wins, and supporting each other.
+            </Text>
+          </Box>
+
+          <Grid templateColumns={{ base: "repeat(1, 1fr)", md: "repeat(3, 1fr)" }} gap={8}>
+            {/* Community Card 1 */}
+            <GridItem>
+              <Card borderRadius="lg" overflow="hidden" boxShadow="md" borderWidth="1px" 
+                    borderColor={borderColor} height="100%">
+                <CardBody p={0}>
+                  <Box bg="purple.50" p={4}>
+                    <HStack>
+                      <Avatar 
+                        src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1974" 
+                        name="Sarah Johnson" 
+                      />
+                      <VStack align="start" spacing={0}>
+                        <Text fontWeight="bold">Sarah Johnson</Text>
+                        <Text fontSize="sm" color="gray.500">Data Scientist</Text>
+                      </VStack>
+                    </HStack>
+                  </Box>
+                  <Box p={5}>
+                    <Text fontSize="md" mb={4}>
+                      "Just completed the Advanced SQL Learning Path! The bite-sized sprints made it so easy to fit learning into my busy schedule. Now applying these skills to optimize our customer database."
+                    </Text>
+                    <HStack>
+                      <Badge colorScheme="green">SQL</Badge>
+                      <Badge colorScheme="purple">Data</Badge>
+                    </HStack>
+                  </Box>
+                </CardBody>
+                <CardFooter bg="gray.50" p={4}>
+                  <HStack justify="space-between" width="100%">
+                    <HStack>
+                      <Tooltip label="42 likes">
+                        <IconButton 
+                          aria-label="Like" 
+                          icon={<StarIcon />} 
+                          size="sm" 
+                          variant="ghost" 
+                          colorScheme="purple"
+                        />
+                      </Tooltip>
+                      <Text fontSize="sm">42</Text>
+                    </HStack>
+                    <HStack>
+                      <Tooltip label="18 comments">
+                        <IconButton 
+                          aria-label="Comment" 
+                          icon={<ChatIcon />} 
+                          size="sm" 
+                          variant="ghost"
+                          colorScheme="purple"
+                        />
+                      </Tooltip>
+                      <Text fontSize="sm">18</Text>
+                    </HStack>
+                    <HStack>
+                      <TimeIcon color="gray.400" />
+                      <Text fontSize="sm" color="gray.500">2 days ago</Text>
+                    </HStack>
+                  </HStack>
+                </CardFooter>
+              </Card>
+            </GridItem>
+
+            {/* Community Card 2 */}
+            <GridItem>
+              <Card borderRadius="lg" overflow="hidden" boxShadow="md" borderWidth="1px" 
+                    borderColor={borderColor} height="100%">
+                <CardBody p={0}>
+                  <Box bg="blue.50" p={4}>
+                    <HStack>
+                      <Avatar 
+                        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974" 
+                        name="Michael Chen" 
+                      />
+                      <VStack align="start" spacing={0}>
+                        <Text fontWeight="bold">Michael Chen</Text>
+                        <Text fontSize="sm" color="gray.500">UX Designer</Text>
+                      </VStack>
+                    </HStack>
+                  </Box>
+                  <Box p={5}>
+                    <Text fontSize="md" mb={4}>
+                      "The UX Research learning path completely changed how I approach user interviews. I've created a resource guide for our team based on what I learned in the sprints."
+                    </Text>
+                    <HStack>
+                      <Badge colorScheme="blue">UX</Badge>
+                      <Badge colorScheme="orange">Research</Badge>
+                    </HStack>
+                  </Box>
+                </CardBody>
+                <CardFooter bg="gray.50" p={4}>
+                  <HStack justify="space-between" width="100%">
+                    <HStack>
+                      <Tooltip label="36 likes">
+                        <IconButton 
+                          aria-label="Like" 
+                          icon={<StarIcon />} 
+                          size="sm" 
+                          variant="ghost" 
+                          colorScheme="blue"
+                        />
+                      </Tooltip>
+                      <Text fontSize="sm">36</Text>
+                    </HStack>
+                    <HStack>
+                      <Tooltip label="14 comments">
+                        <IconButton 
+                          aria-label="Comment" 
+                          icon={<ChatIcon />} 
+                          size="sm" 
+                          variant="ghost"
+                          colorScheme="blue"
+                        />
+                      </Tooltip>
+                      <Text fontSize="sm">14</Text>
+                    </HStack>
+                    <HStack>
+                      <TimeIcon color="gray.400" />
+                      <Text fontSize="sm" color="gray.500">5 days ago</Text>
+                    </HStack>
+                  </HStack>
+                </CardFooter>
+              </Card>
+            </GridItem>
+
+            {/* Community Card 3 */}
+            <GridItem>
+              <Card borderRadius="lg" overflow="hidden" boxShadow="md" borderWidth="1px" 
+                    borderColor={borderColor} height="100%">
+                <CardBody p={0}>
+                  <Box bg="green.50" p={4}>
+                    <HStack>
+                      <Avatar 
+                        src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1974" 
+                        name="James Wilson" 
+                      />
+                      <VStack align="start" spacing={0}>
+                        <Text fontWeight="bold">James Wilson</Text>
+                        <Text fontSize="sm" color="gray.500">Product Manager</Text>
+                      </VStack>
+                    </HStack>
+                  </Box>
+                  <Box p={5}>
+                    <Text fontSize="md" mb={4}>
+                      "After completing the 'Agile Product Management' path, I reorganized our entire workflow. Our team's velocity increased by 40% in just one sprint!"
+                    </Text>
+                    <HStack>
+                      <Badge colorScheme="green">Agile</Badge>
+                      <Badge colorScheme="teal">Management</Badge>
+                    </HStack>
+                  </Box>
+                </CardBody>
+                <CardFooter bg="gray.50" p={4}>
+                  <HStack justify="space-between" width="100%">
+                    <HStack>
+                      <Tooltip label="58 likes">
+                        <IconButton 
+                          aria-label="Like" 
+                          icon={<StarIcon />} 
+                          size="sm" 
+                          variant="ghost" 
+                          colorScheme="green"
+                        />
+                      </Tooltip>
+                      <Text fontSize="sm">58</Text>
+                    </HStack>
+                    <HStack>
+                      <Tooltip label="24 comments">
+                        <IconButton 
+                          aria-label="Comment" 
+                          icon={<ChatIcon />} 
+                          size="sm" 
+                          variant="ghost"
+                          colorScheme="green"
+                        />
+                      </Tooltip>
+                      <Text fontSize="sm">24</Text>
+                    </HStack>
+                    <HStack>
+                      <TimeIcon color="gray.400" />
+                      <Text fontSize="sm" color="gray.500">1 week ago</Text>
+                    </HStack>
+                  </HStack>
+                </CardFooter>
+              </Card>
+            </GridItem>
+          </Grid>
+
+          <Box textAlign="center" mt={10}>
+            <Button
+              as={RouterLink}
+              to="/community"
+              size="md"
+              colorScheme="purple"
+              variant="outline"
+              rightIcon={<ChevronRightIcon />}
+            >
+              Join Our Community
+            </Button>
+          </Box>
+        </Container>
+      </Box>
+
+      {/* Testimonials Section */}
+      <Box bg={useColorModeValue('gray.50', 'gray.900')} py={20}>
+        <Container maxW={'7xl'}>
+          <Box mb={16} textAlign="center">
+            <chakra.h2
+              fontSize={{ base: '2xl', sm: '3xl' }}
+              fontWeight="bold"
+              mb={5}
+            >
+              What Our Learners Say
+            </chakra.h2>
+            <Text 
+              color={'gray.500'} 
+              maxW={'3xl'} 
+              mx={'auto'}
+            >
+              Join thousands of satisfied learners who have transformed their skills with SkillSprint.
+            </Text>
+          </Box>
+
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10}>
+            <Testimonial 
+              name="Samantha Lee"
+              role="Marketing Specialist"
+              content="The bite-sized learning approach is perfect for my busy schedule. I've learned more in 2 weeks with SkillSprint than in 2 months with traditional courses."
+              avatar="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=2070"
+            />
+            <Testimonial 
+              name="David Rodriguez"
+              role="Software Engineer"
+              content="The AI tutor is incredible! It answered all my questions and helped me understand complex programming concepts better than any human instructor ever has."
+              avatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070"
+            />
+            <Testimonial 
+              name="Alex Kumar"
+              role="Product Manager"
+              content="SkillSprint's personalized pathways helped me fill specific knowledge gaps for my new role. The analytics showed me exactly where to focus my efforts."
+              avatar="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=1974"
+            />
+          </SimpleGrid>
+        </Container>
+      </Box>
+
+      {/* CTA Section */}
+      <Box bg={useColorModeValue('primary.500', 'primary.600')} py={16} color="white">
+        <Container maxW={'7xl'} textAlign="center">
+          <Heading as="h2" size="xl" mb={6}>
+            Ready to accelerate your learning?
+          </Heading>
+          <Text fontSize="lg" mb={10} maxW="2xl" mx="auto">
+            Join SkillSprint today and start building valuable skills in just minutes a day.
+            Our personalized approach ensures you'll learn efficiently and effectively.
+          </Text>
+          <Button
+            as={RouterLink}
+            to="/signup"
+            size="lg"
+            bg="white"
+            color="primary.500"
+            _hover={{
+              bg: 'gray.100',
+            }}
+            px={8}
+            fontSize="md"
+            fontWeight="bold"
+            leftIcon={<CheckCircleIcon />}
+          >
+            Start Learning for Free
+          </Button>
+        </Container>
+      </Box>
+    </Box>
     </ParallaxProvider>
   );
 }
@@ -2351,7 +2434,8 @@ const FeatureShowcase = ({ isVisible }) => (
               size="lg"
               colorScheme="primary"
               rightIcon={<ArrowForwardIcon />}
-              onClick={() => navigate('/how-it-works')}
+              as={RouterLink}
+              to="/how-it-works"
             >
               See How It Works
             </Button>
