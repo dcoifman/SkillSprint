@@ -385,18 +385,8 @@ const NAV_ITEMS = [
   },
   {
     label: 'Learning Paths',
-    href: '/paths',
+    href: '/explore',
     children: [
-      {
-        label: 'Popular Paths',
-        subLabel: 'Trending skill pathways',
-        href: '/paths/popular',
-      },
-      {
-        label: 'New Paths',
-        subLabel: 'Recently added learning paths',
-        href: '/paths/new',
-      },
       {
         label: 'Course Builder',
         subLabel: 'Create your own learning path',
