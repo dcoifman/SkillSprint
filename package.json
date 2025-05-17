@@ -48,6 +48,7 @@
     "swiper": "^11.2.6",
     "three": "^0.164.1",
     "three-stdlib": "^2.36.0",
+    "tsparticles": "^3.8.1",
     "web-vitals": "^2.1.4",
     "zustand": "^5.0.4"
   },
