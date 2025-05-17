@@ -142,6 +142,7 @@ function HomePage() {
                   size={'lg'}
                   fontWeight={'bold'}
                   px={6}
+                  py={7}
                   colorScheme={'primary'}
                   as={RouterLink}
                   to="/signup"
@@ -155,6 +156,11 @@ function HomePage() {
                     zIndex: -1,
                     animation: pulseAnimation,
                   }}
+                  _hover={{
+                    transform: 'translateY(-2px)',
+                    boxShadow: 'lg',
+                  }}
+                  transition="all 0.2s"
                 >
                   Start Learning Free
                 </Button>
@@ -712,11 +718,15 @@ function HomePage() {
             color="primary.500"
             _hover={{
               bg: 'gray.100',
+              transform: 'translateY(-2px)', 
+              boxShadow: 'lg'
             }}
             px={8}
+            py={7}
             fontSize="md"
             fontWeight="bold"
             leftIcon={<CheckCircleIcon />}
+            transition="all 0.2s"
           >
             Start Learning for Free
           </Button>
