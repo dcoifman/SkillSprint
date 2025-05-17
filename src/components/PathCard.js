@@ -14,12 +14,15 @@ import {
   Avatar,
   useColorModeValue,
   Box,
-  Icon
+  Icon,
+  useToast
 } from '@chakra-ui/react';
 import { StarIcon, TimeIcon } from '@chakra-ui/icons';
+import { isValidUUID } from '../utils/uuid';
 
 function PathCard({ path }) {
   const navigate = useNavigate();
+  const toast = useToast();
   const cardBg = useColorModeValue('white', 'gray.800');
   
   // Color mapping for different categories
@@ -49,7 +52,17 @@ function PathCard({ path }) {
   const config = levelConfig[path.level] || levelConfig.Beginner;
 
   const handleClick = () => {
-    navigate(`/path/${path.id}`);
+    if (isValidUUID(path.id)) {
+      navigate(`/path/${path.id}`);
+    } else {
+      toast({
+        title: 'Demo Path',
+        description: 'This is a demo path. Please select a real path to view details.',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
 
   return (
