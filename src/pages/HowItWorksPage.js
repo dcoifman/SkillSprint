@@ -81,10 +81,7 @@ function HowItWorksPage() {
                   px={8}
                   py={7}
                   fontWeight="bold"
-                  bg="primary.500"
-                  color="white"
                   _hover={{
-                    bg: 'primary.600',
                     transform: 'translateY(-2px)',
                     boxShadow: 'lg',
                   }}
