@@ -14,10 +14,9 @@ import {
   Avatar,
   useColorModeValue,
   Box,
-  Icon,
   useToast
 } from '@chakra-ui/react';
-import { StarIcon, TimeIcon } from '@chakra-ui/icons';
+import { StarIcon } from '@chakra-ui/icons';
 import { isValidUUID } from '../utils/uuid';
 
 function PathCard({ path }) {

@@ -25,6 +25,7 @@ import {
   CardHeader,
   CardBody,
   useColorModeValue,
+  Flex,
 } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
 

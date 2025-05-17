@@ -58,14 +58,16 @@ class ErrorBoundary extends Component {
   formatError() {
     const { error, errorType } = this.state;
     
-    // Create XML-style error message
-    return `
-<error type="${errorType || 'unknown'}">
-  <message>${error?.message || 'Unknown error'}</message>
-  <stack>${error?.stack?.replace(/</g, '&lt;').replace(/>/g, '&gt;') || 'No stack trace available'}</stack>
-  <timestamp>${new Date().toISOString()}</timestamp>
-</e>
-    `;
+    // Create XML-style error message with error code
+    const errorXml = [
+      `<error type="${errorType || 'unknown'}" code="${error?.code || 'unknown'}">`,
+      `  <message>${error?.message || 'Unknown error'}</message>`,
+      `  <stack>${error?.stack?.replace(/</g, '&lt;').replace(/>/g, '&gt;') || 'No stack trace available'}</stack>`,
+      `  <timestamp>${new Date().toISOString()}</timestamp>`,
+      `</error>`
+    ].join('\n');
+    
+    return errorXml;
   }
   
   renderErrorMessage() {
@@ -79,7 +81,7 @@ class ErrorBoundary extends Component {
             <Box>
               <AlertTitle>3D Rendering Error</AlertTitle>
               <AlertDescription>
-                There was a problem with WebGL rendering. You can still continue with the course.
+                {error?.message || 'There was a problem with WebGL rendering. You can still continue with the course.'}
               </AlertDescription>
             </Box>
           </Alert>
@@ -92,7 +94,7 @@ class ErrorBoundary extends Component {
             <Box>
               <AlertTitle>3D Model Error</AlertTitle>
               <AlertDescription>
-                There was a problem loading the 3D model. You can still continue with the course.
+                {error?.message || 'There was a problem loading the 3D model. You can still continue with the course.'}
               </AlertDescription>
             </Box>
           </Alert>
@@ -105,7 +107,7 @@ class ErrorBoundary extends Component {
             <Box>
               <AlertTitle>Data Processing Error</AlertTitle>
               <AlertDescription>
-                There was a problem processing the data. You can still continue with the course.
+                {error?.message || 'There was a problem processing the data. You can still continue with the course.'}
               </AlertDescription>
             </Box>
           </Alert>
@@ -118,7 +120,7 @@ class ErrorBoundary extends Component {
             <Box>
               <AlertTitle>Network Error</AlertTitle>
               <AlertDescription>
-                Unable to connect to our servers. You can still continue with the course.
+                {error?.message || 'Unable to connect to our servers. You can still continue with the course.'}
               </AlertDescription>
             </Box>
           </Alert>
@@ -131,7 +133,7 @@ class ErrorBoundary extends Component {
             <Box>
               <AlertTitle>Something went wrong</AlertTitle>
               <AlertDescription>
-                An unexpected error occurred. You can still continue with the course.
+                {error?.message || 'An unexpected error occurred. You can still continue with the course.'}
               </AlertDescription>
             </Box>
           </Alert>

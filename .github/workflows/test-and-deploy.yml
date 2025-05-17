@@ -4,12 +4,14 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'src/components/3d-anatomy/**'
+      - 'src/components/ThreeDAnatomyModel.js'
+      - 'src/components/InteractiveAnatomyModel.js'
       - 'public/models/anatomy/**'
   pull_request:
     branches: [ main ]
     paths:
-      - 'src/components/3d-anatomy/**'
+      - 'src/components/ThreeDAnatomyModel.js'
+      - 'src/components/InteractiveAnatomyModel.js'
       - 'public/models/anatomy/**'
 
 # Limit concurrent runs of this workflow
@@ -54,10 +56,10 @@ jobs:
       run: npm run build
     
     - name: Test
-      run: npm test -- --testPathPattern=src/components/3d-anatomy
+      run: npm test -- --testPathPattern="src/components/(ThreeDAnatomyModel|InteractiveAnatomyModel)"
       
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: build-artifacts
         path: build/

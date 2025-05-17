@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import {
   Box,
-  Flex,
   Heading,
   Text,
   Button,
@@ -9,20 +9,13 @@ import {
   VStack,
   HStack,
   Image,
-  Tooltip,
   useColorModeValue,
   IconButton,
   Grid,
   GridItem,
   Tag,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  Radio,
   RadioGroup,
-  Stack,
+  Radio,
   Divider,
   Popover,
   PopoverTrigger,
@@ -32,8 +25,27 @@ import {
   PopoverArrow,
   PopoverCloseButton,
   FormControl,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
 } from '@chakra-ui/react';
-import { AddIcon, MinusIcon, CheckCircleIcon, LockIcon, RepeatIcon, InfoIcon, ViewIcon } from '@chakra-ui/icons';
+import { AddIcon, MinusIcon, CheckCircleIcon, RepeatIcon, InfoIcon } from '@chakra-ui/icons';
+
+// Structure type definition
+const StructureType = PropTypes.shape({
+  id: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+  description: PropTypes.string.isRequired,
+  region: PropTypes.oneOf(['upper', 'lower', 'core']).isRequired,
+  location: PropTypes.shape({
+    x: PropTypes.number.isRequired,
+    y: PropTypes.number.isRequired,
+  }).isRequired,
+  functions: PropTypes.arrayOf(PropTypes.string).isRequired,
+  connections: PropTypes.arrayOf(PropTypes.string).isRequired,
+  funFact: PropTypes.string,
+});
 
 /**
  * Interactive Anatomy Model Component
@@ -44,13 +56,18 @@ function InteractiveAnatomyModel({
   bodyRegion = 'full', // 'full', 'upper', 'lower', 'core'
   systemType = 'skeletal', // 'skeletal', 'muscular', 'nervous'
   initialView = 'anterior', // 'anterior', 'posterior', 'lateral', 'medial'
+  onSelectStructure,
+  selectedStructure,
+  hoveredStructure,
+  setHoveredStructure,
+  showControls = true,
 }) {
   const [currentView, setCurrentView] = useState(initialView);
   const [currentSystem, setCurrentSystem] = useState(systemType);
   const [showLabels, setShowLabels] = useState(true);
-  const [selectedStructure, setSelectedStructure] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [highlightMode, setHighlightMode] = useState('none');
+  const [error, setError] = useState(null);
   
   // Background and border colors based on color mode
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -58,6 +75,7 @@ function InteractiveAnatomyModel({
   
   // Get appropriate anatomy image based on current settings
   const getAnatomyImage = () => {
+    try {
     // In a production app, these would be actual anatomical images for each view and system
     
     // For skeleton
@@ -78,6 +96,10 @@ function InteractiveAnatomyModel({
     
     // Default/fallback image
     return 'https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YW5hdG9teXxlbnwwfHwwfHx8MA%3D%3D';
+    } catch (err) {
+      setError('Failed to load anatomy image');
+      return null;
+    }
   };
   
   // Structure data for each system
@@ -178,13 +200,13 @@ function InteractiveAnatomyModel({
   // Handle view change
   const handleViewChange = (view) => {
     setCurrentView(view);
-    setSelectedStructure(null);
+    setError(null);
   };
   
   // Handle system change
   const handleSystemChange = (system) => {
     setCurrentSystem(system);
-    setSelectedStructure(null);
+    setError(null);
   };
   
   // Handle zoom
@@ -198,7 +220,7 @@ function InteractiveAnatomyModel({
   
   // Handle structure selection
   const handleStructureSelect = (structure) => {
-    setSelectedStructure(structure);
+    onSelectStructure(structure);
   };
   
   // Reset all views
@@ -206,9 +228,9 @@ function InteractiveAnatomyModel({
     setCurrentView(initialView);
     setCurrentSystem(systemType);
     setZoomLevel(1);
-    setSelectedStructure(null);
     setShowLabels(true);
     setHighlightMode('none');
+    setError(null);
   };
   
   // Get visible structures
@@ -225,6 +247,36 @@ function InteractiveAnatomyModel({
     return 'purple.100';
   };
   
+  if (error) {
+    return (
+      <Alert
+        status="error"
+        variant="subtle"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        textAlign="center"
+        height="200px"
+      >
+        <AlertIcon boxSize="40px" mr={0} />
+        <AlertTitle mt={4} mb={1} fontSize="lg">
+          Error Loading Model
+        </AlertTitle>
+        <AlertDescription maxWidth="sm">
+          {error}
+          <Button
+            colorScheme="red"
+            size="sm"
+            mt={4}
+            onClick={handleReset}
+          >
+            Try Again
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+  
   return (
     <Box>
       <Grid templateColumns="3fr 1fr" gap={4}>
@@ -232,48 +284,49 @@ function InteractiveAnatomyModel({
         <GridItem>
           <VStack spacing={4} align="stretch">
             {/* Top controls */}
+            {showControls && (
+              <>
             <HStack justifyContent="space-between">
               <ButtonGroup size="sm" isAttached variant="outline">
                 <Button 
                   onClick={() => handleViewChange('anterior')}
-                  colorScheme={currentView === 'anterior' ? 'purple' : 'gray'}
+                      isActive={currentView === 'anterior'}
+                      aria-pressed={currentView === 'anterior'}
+                      data-testid="view-control-anterior"
                 >
                   Anterior
                 </Button>
                 <Button 
                   onClick={() => handleViewChange('lateral')}
-                  colorScheme={currentView === 'lateral' ? 'purple' : 'gray'}
+                      isActive={currentView === 'lateral'}
+                      aria-pressed={currentView === 'lateral'}
+                      data-testid="view-control-lateral"
                 >
                   Lateral
                 </Button>
                 <Button 
                   onClick={() => handleViewChange('posterior')}
-                  colorScheme={currentView === 'posterior' ? 'purple' : 'gray'}
+                      isActive={currentView === 'posterior'}
+                      aria-pressed={currentView === 'posterior'}
+                      data-testid="view-control-posterior"
                 >
                   Posterior
                 </Button>
               </ButtonGroup>
               
-              <ButtonGroup size="sm" isAttached variant="outline">
+                  <ButtonGroup size="sm" isAttached>
                 <IconButton
                   icon={<MinusIcon />}
                   onClick={() => handleZoom('out')}
+                      isDisabled={zoomLevel <= 0.5}
                   aria-label="Zoom out"
-                  isDisabled={zoomLevel <= 0.5}
                 />
-                <Button>{Math.round(zoomLevel * 100)}%</Button>
                 <IconButton
                   icon={<AddIcon />}
                   onClick={() => handleZoom('in')}
+                      isDisabled={zoomLevel >= 2}
                   aria-label="Zoom in"
-                  isDisabled={zoomLevel >= 2}
                 />
-              </ButtonGroup>
-              
-              <ButtonGroup size="sm">
-                <Button onClick={() => setShowLabels(!showLabels)} colorScheme={showLabels ? 'purple' : 'gray'}>
-                  {showLabels ? 'Hide Labels' : 'Show Labels'}
-                </Button>
                 <IconButton
                   icon={<RepeatIcon />}
                   onClick={handleReset}
@@ -297,6 +350,8 @@ function InteractiveAnatomyModel({
                 Muscular System
               </Button>
             </ButtonGroup>
+              </>
+            )}
             
             {/* Image display */}
             <Box 
@@ -363,6 +418,7 @@ function InteractiveAnatomyModel({
             </Box>
             
             {/* Highlight controls */}
+            {showControls && (
             <HStack justifyContent="center" spacing={4}>
               <Text fontSize="sm" fontWeight="medium">Highlight:</Text>
               <FormControl>
@@ -374,6 +430,7 @@ function InteractiveAnatomyModel({
                 </RadioGroup>
               </FormControl>
             </HStack>
+            )}
           </VStack>
         </GridItem>
         
@@ -432,7 +489,7 @@ function InteractiveAnatomyModel({
                 </VStack>
               ) : (
                 <VStack spacing={4} py={6} align="center">
-                  <ViewIcon boxSize={8} color="purple.400" />
+                  <InfoIcon boxSize={8} color="purple.400" />
                   <Text textAlign="center" color="gray.600">
                     Select a structure on the model to view detailed information
                   </Text>
@@ -464,5 +521,16 @@ function InteractiveAnatomyModel({
     </Box>
   );
 }
+
+InteractiveAnatomyModel.propTypes = {
+  bodyRegion: PropTypes.oneOf(['full', 'upper', 'lower', 'core']),
+  systemType: PropTypes.oneOf(['skeletal', 'muscular', 'nervous']),
+  initialView: PropTypes.oneOf(['anterior', 'posterior', 'lateral', 'medial']),
+  onSelectStructure: PropTypes.func.isRequired,
+  selectedStructure: StructureType,
+  hoveredStructure: StructureType,
+  setHoveredStructure: PropTypes.func.isRequired,
+  showControls: PropTypes.bool,
+};
 
 export default InteractiveAnatomyModel; 

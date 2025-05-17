@@ -470,7 +470,25 @@ Continue to the next sprint to learn about upper body musculature and its role i
   };
   
   // Get the current step based on current step index
-  const currentStep = currentSprintData.steps[currentStepIndex];
+  const currentStep = currentSprintData.steps?.[currentStepIndex] || {
+    type: 'content',
+    title: 'Error Loading Step',
+    content: 'There was a problem loading this step. Please try refreshing the page or return to the dashboard.',
+  };
+  
+  // Add useEffect for handling step transitions
+  useEffect(() => {
+    // Validate current step index
+    if (currentStepIndex < 0 || (currentSprintData.steps && currentStepIndex >= currentSprintData.steps.length)) {
+      console.error('Invalid step index:', currentStepIndex);
+      setCurrentStepIndex(0);
+      return;
+    }
+
+    // Reset states on step change
+    setShowFeedback(false);
+    setIsLoading(false);
+  }, [currentStepIndex, currentSprintData.steps]);
   
   // Add useEffect for handling 3D model components
   useEffect(() => {
@@ -530,6 +548,12 @@ Continue to the next sprint to learn about upper body musculature and its role i
   };
 
   const handleNextStep = () => {
+    // Ensure we have valid data to work with
+    if (!currentSprintData || !currentSprintData.steps || !currentStep) {
+      console.error('Invalid sprint data or current step');
+      return;
+    }
+
     // For quiz steps, toggle feedback first before advancing
     if (currentStep.type === 'quiz' && !showFeedback) {
       setShowFeedback(true);
@@ -538,12 +562,15 @@ Continue to the next sprint to learn about upper body musculature and its role i
     
     // Check if we're at the last step
     if (currentStepIndex < currentSprintData.steps.length - 1) {
-      // Reset any error states before moving to the next step
+      // Reset states before moving to the next step
       setIsLoading(false);
       setShowFeedback(false);
       
       // Move to the next step
-      setCurrentStepIndex(currentStepIndex + 1);
+      setCurrentStepIndex(prevIndex => prevIndex + 1);
+      
+      // Log for debugging
+      console.log(`Moving to step ${currentStepIndex + 1}`);
     }
   };
 
@@ -561,22 +588,10 @@ Continue to the next sprint to learn about upper body musculature and its role i
 
   // Helper to render the Next and Previous buttons
   const renderNextButton = (currentStep) => {
-    // Add check to ensure currentStep exists before proceeding
-    if (!currentStep) {
-      console.error("Current step is undefined - unable to render navigation buttons");
-      return (
-        <Flex justify="space-between">
-          <Button
-            as={RouterLink}
-            to="/dashboard"
-            leftIcon={<ChevronLeftIcon />}
-            variant="ghost"
-          >
-            Back to Dashboard
-          </Button>
-        </Flex>
-      );
-    }
+    // Always show the button, even if currentStep is undefined
+    const isLastStep = currentStepIndex === currentSprintData.steps.length - 1;
+    const isQuizStep = currentStep?.type === 'quiz';
+    const canProgress = !isQuizStep || (isQuizStep && (showFeedback || userAnswers[currentStepIndex] !== undefined));
 
     return (
       <Flex justify="space-between" width="100%" mt={4}>
@@ -588,20 +603,17 @@ Continue to the next sprint to learn about upper body musculature and its role i
         >
           Previous
         </Button>
-        <Button
-          onClick={handleNextStep}
-          colorScheme="purple"
-          isDisabled={
-            currentStep.type === 'quiz' &&
-            !showFeedback &&
-            userAnswers[currentStepIndex] === undefined
-          }
-          // Add data-testid for easier debugging
-          data-testid="next-button"
-          rightIcon={<ChevronRightIcon />}
-        >
-          {currentStep.type === 'quiz' && !showFeedback ? 'Check Answer' : 'Next'}
-        </Button>
+        {!isLastStep && (
+          <Button
+            onClick={handleNextStep}
+            colorScheme="purple"
+            isDisabled={!canProgress}
+            data-testid="next-button"
+            rightIcon={<ChevronRightIcon />}
+          >
+            {isQuizStep && !showFeedback ? 'Check Answer' : 'Next'}
+          </Button>
+        )}
       </Flex>
     );
   };
@@ -742,7 +754,6 @@ Continue to the next sprint to learn about upper body musculature and its role i
                 value={userAnswers[currentStepIndex]?.toString()}
                 isDisabled={showFeedback}
                 width="full"
-                defaultValue={userAnswers[currentStepIndex]?.toString()}
               >
                 <VStack spacing={3} align="flex-start" width="full">
                   {currentStep.options.map((option, idx) => (
@@ -784,12 +795,6 @@ Continue to the next sprint to learn about upper body musculature and its role i
                   ))}
                 </VStack>
               </RadioGroup>
-              
-              {!showFeedback && userAnswers[currentStepIndex] === undefined && (
-                <Text color="red.500" fontSize="sm" mt={2}>
-                  Please select an answer to continue
-                </Text>
-              )}
             </FormControl>
             
             {showFeedback && (
@@ -811,18 +816,11 @@ Continue to the next sprint to learn about upper body musculature and its role i
                     ? 'Good job! You\'ve got it right.'
                     : `The correct answer is: ${currentStep.options[currentStep.correctAnswer]}`}
                 </Text>
-                
-                <Button 
-                  onClick={handleNextStep}
-                  colorScheme={isCorrectAnswer(currentStepIndex) ? 'green' : 'purple'}
-                  size="sm"
-                  mt={2}
-                  rightIcon={<ChevronRightIcon />}
-                >
-                  Continue to Next Step
-                </Button>
               </Box>
             )}
+            
+            {/* Always render navigation buttons for quiz steps */}
+            {renderNextButton(currentStep)}
           </VStack>
         );
       case 'completion':
