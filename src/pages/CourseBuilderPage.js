@@ -56,9 +56,9 @@ import {
   CheckCircleIcon
 } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
+import { keyframes } from '@emotion/react';
 import geminiClient, { PROMPT_TEMPLATES, generateContent, stripCodeFences } from '../services/geminiClient';
 import supabaseClient from '../services/supabaseClient';
-import { keyframes } from '@chakra-ui/system';
 
 // Default course structure
 const defaultCourseForm = {
