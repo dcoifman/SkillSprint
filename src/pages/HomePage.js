@@ -1,32 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
-  Heading,
-  Container,
-  Text,
   Button,
+  Container,
+  Heading,
+  Text,
   Stack,
-  Icon,
-  useColorModeValue,
-  createIcon,
-  Flex,
-  SimpleGrid,
   Image,
+  useColorModeValue,
   VStack,
   HStack,
-  Badge,
-  Divider,
-  chakra,
-  Grid,
-  GridItem,
-  Card,
-  CardBody,
-  CardFooter,
-  Avatar,
-  IconButton,
-  Tooltip,
-  Spinner,
+  Icon,
+  SimpleGrid,
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { ChevronRightIcon, StarIcon, ChatIcon, TimeIcon, CheckCircleIcon } from '@chakra-ui/icons';
@@ -63,7 +49,6 @@ const bounceAnimation = keyframes`
 `;
 
 function HomePage() {
-  const pulseAnimation = `${pulse} 2s infinite`;
   const heroBg = useColorModeValue('white', 'gray.800');
   const cardBg = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.600');

@@ -42,9 +42,7 @@ function SprintPage() {
   const [userAnswers, setUserAnswers] = useState({});
   const [showFeedback, setShowFeedback] = useState(false);
   const toast = useToast();
-  // Add state variables to track model loading and errors
-  const [modelLoading, setModelLoading] = useState(false);
-  const [modelError, setModelError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Mock data - in a real app, this would be fetched from API
   const sprintData = {
@@ -487,27 +485,25 @@ Continue to the next sprint to learn about upper body musculature and its role i
     // Check if the current step involves a 3D model
     if (currentStep.useThreeDModel || (currentStep.type === 'interactive' && currentStep.componentType === 'anatomy')) {
       // Set loading state
-      setModelLoading(true);
+      setIsLoading(true);
       
       // Simulate model loading time with a timeout
       // Add a timeout limit to prevent infinite loading
       const timeoutId = setTimeout(() => {
-        setModelLoading(false);
+        setIsLoading(false);
       }, 3000); // Reduced from potentially longer times to ensure progress
       
       // Clear timeout on cleanup
       return () => clearTimeout(timeoutId);
     } else {
       // Reset states if no model is needed
-      setModelLoading(false);
-      setModelError(false);
+      setIsLoading(false);
     }
   }, [currentStep, currentStepIndex]);
   
   // Add handler for model loading errors
   const handleModelError = () => {
-    setModelError(true);
-    setModelLoading(false);
+    setIsLoading(false);
     
     // Show error message but don't block progress
     toast({
@@ -543,7 +539,7 @@ Continue to the next sprint to learn about upper body musculature and its role i
     // Check if we're at the last step
     if (currentStepIndex < currentSprintData.steps.length - 1) {
       // Reset any error states before moving to the next step
-      setModelError(false);
+      setIsLoading(false);
       setShowFeedback(false);
       
       // Move to the next step
@@ -642,7 +638,7 @@ Continue to the next sprint to learn about upper body musculature and its role i
                     <Text>Error loading the 3D model. You can still continue with the course.</Text>
                   </Box>
                 }>
-                  {modelLoading ? (
+                  {isLoading ? (
                     <Flex justify="center" align="center" height="300px">
                       <Spinner size="xl" color="purple.500" thickness="4px" />
                       <Text ml={4}>Loading 3D model...</Text>
@@ -699,13 +695,13 @@ Continue to the next sprint to learn about upper body musculature and its role i
                         mt={2} 
                         size="sm" 
                         colorScheme="purple" 
-                        onClick={() => setModelError(false)}
+                        onClick={() => setIsLoading(false)}
                       >
                         Try Again
                       </Button>
                     </Box>
                   }>
-                    {modelLoading ? (
+                    {isLoading ? (
                       <Flex justify="center" align="center" height="300px">
                         <Spinner size="xl" color="purple.500" thickness="4px" />
                         <Text ml={4}>Loading 3D model...</Text>

@@ -834,8 +834,8 @@ export const getCourseGenerationStatus = async (requestId) => {
   }
 };
 
-// Export all functions as a default object
-export default {
+// Create a named object for export
+const supabaseClient = {
   signUp,
   signIn,
   signOut,
@@ -860,3 +860,6 @@ export default {
   generateCourseContentBackend,
   getCourseGenerationStatus
 };
+
+// Export the named object
+export default supabaseClient;

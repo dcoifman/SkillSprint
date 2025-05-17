@@ -311,8 +311,12 @@ export function stripCodeFences(response) {
   return clean;
 }
 
-export default {
+// Create a named object for export
+const geminiClient = {
   generateContent,
   PROMPT_TEMPLATES,
   stripCodeFences
-}; 
+};
+
+// Export the named object
+export default geminiClient; 

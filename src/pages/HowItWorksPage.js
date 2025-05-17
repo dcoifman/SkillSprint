@@ -17,8 +17,6 @@ import {
   Divider,
   List,
   ListItem,
-  ListIcon,
-  chakra,
   Badge,
 } from '@chakra-ui/react';
 import { 
