@@ -1,59 +1,99 @@
+-- Add user_id column to instructors table if it doesn't exist
+DO $$ 
+BEGIN
+    RAISE NOTICE 'Checking for user_id column in instructors table...';
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'instructors' 
+        AND column_name = 'user_id'
+    ) THEN
+        RAISE NOTICE 'Adding user_id column to instructors table...';
+        ALTER TABLE public.instructors 
+        ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+        RAISE NOTICE 'Successfully added user_id column to instructors table';
+    ELSE
+        RAISE NOTICE 'user_id column already exists in instructors table';
+    END IF;
+END $$;
+
 -- Create instructors table
-CREATE TABLE instructors (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    title TEXT,
-    bio TEXT,
-    avatar TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+DO $$
+BEGIN
+    RAISE NOTICE 'Creating instructors table...';
+    CREATE TABLE IF NOT EXISTS public.instructors (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        title TEXT,
+        bio TEXT,
+        avatar TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+    RAISE NOTICE 'Instructors table created or already exists';
+END $$;
 
 -- Create learning_paths table
-CREATE TABLE learning_paths (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    title TEXT NOT NULL,
-    description TEXT,
-    category TEXT,
-    level TEXT,
-    image TEXT,
-    total_sprints INTEGER DEFAULT 0,
-    estimated_time TEXT,
-    rating DECIMAL(3,2),
-    review_count INTEGER DEFAULT 0,
-    students_count INTEGER DEFAULT 0,
-    tags TEXT[] DEFAULT '{}',
-    objectives TEXT[] DEFAULT '{}',
-    prerequisites TEXT[] DEFAULT '{}',
-    instructor_id UUID REFERENCES instructors(id),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+DO $$
+BEGIN
+    RAISE NOTICE 'Creating learning_paths table...';
+    CREATE TABLE IF NOT EXISTS public.learning_paths (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        title TEXT NOT NULL,
+        description TEXT,
+        category TEXT,
+        level TEXT,
+        image TEXT,
+        total_sprints INTEGER DEFAULT 0,
+        estimated_time TEXT,
+        rating DECIMAL(3,2),
+        review_count INTEGER DEFAULT 0,
+        students_count INTEGER DEFAULT 0,
+        tags TEXT[] DEFAULT '{}',
+        objectives TEXT[] DEFAULT '{}',
+        prerequisites TEXT[] DEFAULT '{}',
+        instructor_id UUID REFERENCES instructors(id),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+    RAISE NOTICE 'Learning paths table created or already exists';
+END $$;
 
 -- Create modules table
-CREATE TABLE modules (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    path_id UUID REFERENCES learning_paths(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    description TEXT,
-    order_index INTEGER NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+DO $$
+BEGIN
+    RAISE NOTICE 'Creating modules table...';
+    CREATE TABLE IF NOT EXISTS public.modules (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        path_id UUID REFERENCES learning_paths(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        description TEXT,
+        order_index INTEGER NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+    RAISE NOTICE 'Modules table created or already exists';
+END $$;
 
 -- Create sprints table
-CREATE TABLE sprints (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    module_id UUID REFERENCES modules(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    description TEXT,
-    content TEXT,
-    time TEXT,
-    order_index INTEGER NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+DO $$
+BEGIN
+    RAISE NOTICE 'Creating sprints table...';
+    CREATE TABLE IF NOT EXISTS public.sprints (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        module_id UUID REFERENCES modules(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        description TEXT,
+        content TEXT,
+        time TEXT,
+        order_index INTEGER NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+    RAISE NOTICE 'Sprints table created or already exists';
+END $$;
 
 -- Create user_paths table (for enrollments)
 CREATE TABLE user_paths (
@@ -78,41 +118,70 @@ CREATE TABLE user_progress (
 );
 
 -- Create RLS policies
-ALTER TABLE instructors ENABLE ROW LEVEL SECURITY;
-ALTER TABLE learning_paths ENABLE ROW LEVEL SECURITY;
-ALTER TABLE modules ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sprints ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_paths ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_progress ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+    RAISE NOTICE 'Setting up Row Level Security policies...';
+    
+    -- Enable RLS
+    ALTER TABLE instructors ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE learning_paths ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE modules ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE sprints ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE user_paths ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE user_progress ENABLE ROW LEVEL SECURITY;
+    
+    RAISE NOTICE 'Row Level Security enabled for all tables';
 
--- Public read access for instructors, learning_paths, modules, sprints
-CREATE POLICY "Allow public read access for instructors" 
-    ON instructors FOR SELECT USING (true);
+    -- Drop existing policies if they exist
+    DROP POLICY IF EXISTS "Allow public read access for instructors" ON instructors;
+    DROP POLICY IF EXISTS "Allow users to create their own instructor profile" ON instructors;
+    DROP POLICY IF EXISTS "Allow instructors to update their own profile" ON instructors;
+    DROP POLICY IF EXISTS "Allow public read access for learning_paths" ON learning_paths;
+    DROP POLICY IF EXISTS "Allow public read access for modules" ON modules;
+    DROP POLICY IF EXISTS "Allow public read access for sprints" ON sprints;
+    DROP POLICY IF EXISTS "Users can view their own enrollments" ON user_paths;
+    DROP POLICY IF EXISTS "Users can enroll themselves" ON user_paths;
+    DROP POLICY IF EXISTS "Users can view their own progress" ON user_progress;
+    DROP POLICY IF EXISTS "Users can insert their own progress" ON user_progress;
+    DROP POLICY IF EXISTS "Users can update their own progress records" ON user_progress;
 
-CREATE POLICY "Allow public read access for learning_paths" 
-    ON learning_paths FOR SELECT USING (true);
+    -- Create policies
+    CREATE POLICY "Allow public read access for instructors" 
+        ON instructors FOR SELECT USING (true);
 
-CREATE POLICY "Allow public read access for modules" 
-    ON modules FOR SELECT USING (true);
+    CREATE POLICY "Allow users to create their own instructor profile"
+        ON instructors FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Allow public read access for sprints" 
-    ON sprints FOR SELECT USING (true);
+    CREATE POLICY "Allow instructors to update their own profile"
+        ON instructors FOR UPDATE USING (auth.uid() = user_id);
 
--- User-specific policies for user_paths and user_progress
-CREATE POLICY "Users can view their own enrollments" 
-    ON user_paths FOR SELECT USING (auth.uid() = user_id);
+    CREATE POLICY "Allow public read access for learning_paths" 
+        ON learning_paths FOR SELECT USING (true);
 
-CREATE POLICY "Users can enroll themselves" 
-    ON user_paths FOR INSERT WITH CHECK (auth.uid() = user_id);
+    CREATE POLICY "Allow public read access for modules" 
+        ON modules FOR SELECT USING (true);
 
-CREATE POLICY "Users can view their own progress" 
-    ON user_progress FOR SELECT USING (auth.uid() = user_id);
+    CREATE POLICY "Allow public read access for sprints" 
+        ON sprints FOR SELECT USING (true);
 
-CREATE POLICY "Users can update their own progress" 
-    ON user_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
+    -- User-specific policies
+    CREATE POLICY "Users can view their own enrollments" 
+        ON user_paths FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can update their own progress" 
-    ON user_progress FOR UPDATE USING (auth.uid() = user_id);
+    CREATE POLICY "Users can enroll themselves" 
+        ON user_paths FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+    CREATE POLICY "Users can view their own progress" 
+        ON user_progress FOR SELECT USING (auth.uid() = user_id);
+
+    CREATE POLICY "Users can insert their own progress" 
+        ON user_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+    CREATE POLICY "Users can update their own progress records" 
+        ON user_progress FOR UPDATE USING (auth.uid() = user_id);
+        
+    RAISE NOTICE 'All policies created successfully';
+END $$;
 
 -- Create a function to update total_sprints count when sprints are added/removed
 CREATE OR REPLACE FUNCTION update_path_sprint_count()
@@ -209,4 +278,15 @@ CREATE TRIGGER on_invitation_acceptance
 AFTER UPDATE ON course_invitations
 FOR EACH ROW
 WHEN (NEW.status = 'accepted' AND (OLD.status IS NULL OR OLD.status <> 'accepted'))
-EXECUTE FUNCTION handle_invitation_acceptance(); 
+EXECUTE FUNCTION handle_invitation_acceptance();
+
+-- Final status check
+DO $$
+BEGIN
+    RAISE NOTICE '----------------------------------------';
+    RAISE NOTICE 'Schema setup completed successfully';
+    RAISE NOTICE 'Tables created: instructors, learning_paths, modules, sprints, user_paths, user_progress, course_invitations';
+    RAISE NOTICE 'RLS policies applied to all tables';
+    RAISE NOTICE 'Triggers and functions created';
+    RAISE NOTICE '----------------------------------------';
+END $$; 

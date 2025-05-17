@@ -1,25 +1,62 @@
 import axios from 'axios';
 
 const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
-const MODEL_NAME = process.env.REACT_APP_MODEL_NAME || 'gemini-2.0-flash';
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent`;
 
-// Rate limiting helper to stay within free tier (10 requests per minute)
-const queue = [];
-const MAX_REQUESTS_PER_MINUTE = 10;
-let requestsThisMinute = 0;
-let resetTimer = null;
-
-const resetRequestCount = () => {
-  requestsThisMinute = 0;
-  processQueue();
-  resetTimer = setTimeout(resetRequestCount, 60000);
+// Model configurations
+const MODELS = {
+  FLASH_25: {
+    name: 'gemini-2.5-flash-preview-04-17',
+    rpm: 10,
+    tpm: 250000
+  },
+  FLASH_20: {
+    name: 'gemini-2.0-flash',
+    rpm: 15,
+    tpm: 1000000
+  }
 };
 
-const processQueue = () => {
-  while (queue.length > 0 && requestsThisMinute < MAX_REQUESTS_PER_MINUTE) {
-    const { promiseResolve, promiseReject, requestFn } = queue.shift();
-    requestsThisMinute++;
+// Rate limiting state
+const rateLimit = {
+  FLASH_25: {
+    requestsThisMinute: 0,
+    tokensThisMinute: 0,
+    queue: [],
+    resetTimer: null
+  },
+  FLASH_20: {
+    requestsThisMinute: 0,
+    tokensThisMinute: 0,
+    queue: [],
+    resetTimer: null
+  }
+};
+
+// Reset rate limit counters for a model
+const resetRateLimits = (modelKey) => {
+  rateLimit[modelKey].requestsThisMinute = 0;
+  rateLimit[modelKey].tokensThisMinute = 0;
+  processQueue(modelKey);
+  rateLimit[modelKey].resetTimer = setTimeout(() => resetRateLimits(modelKey), 60000);
+};
+
+// Initialize timers
+Object.keys(MODELS).forEach(modelKey => {
+  rateLimit[modelKey].resetTimer = setTimeout(() => resetRateLimits(modelKey), 60000);
+});
+
+// Process queue for a model
+const processQueue = (modelKey) => {
+  const model = MODELS[modelKey];
+  const limits = rateLimit[modelKey];
+  
+  while (
+    limits.queue.length > 0 && 
+    limits.requestsThisMinute < model.rpm &&
+    limits.tokensThisMinute < model.tpm
+  ) {
+    const { promiseResolve, promiseReject, requestFn } = limits.queue.shift();
+    limits.requestsThisMinute++;
     
     requestFn()
       .then(promiseResolve)
@@ -27,15 +64,29 @@ const processQueue = () => {
   }
 };
 
-// Initialize timer
-resetTimer = setTimeout(resetRequestCount, 60000);
+// Estimate token count (rough approximation)
+const estimateTokens = (text) => Math.ceil(text.length / 4);
 
 /**
- * Generate content using Gemini API with rate limiting
+ * Generate content using Gemini API with automatic model selection and fallback
  */
 export const generateContent = async (prompt, temperature = 0.7) => {
+  // Try Gemini 2.5 Flash first
+  try {
+    return await generateWithModel('FLASH_25', prompt, temperature);
+  } catch (error) {
+    console.log('Falling back to Gemini 2.0 Flash due to:', error.message);
+    return await generateWithModel('FLASH_20', prompt, temperature);
+  }
+};
+
+const generateWithModel = async (modelKey, prompt, temperature) => {
+  const model = MODELS[modelKey];
+  const limits = rateLimit[modelKey];
+  const estimatedTokens = estimateTokens(prompt);
+  
   const requestFn = () => axios.post(
-    `${API_URL}?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model.name}:generateContent?key=${GEMINI_API_KEY}`,
     {
       contents: [
         {
@@ -73,24 +124,34 @@ export const generateContent = async (prompt, temperature = 0.7) => {
     }
   );
 
-  // If we haven't hit rate limit, process immediately, otherwise queue
-  if (requestsThisMinute < MAX_REQUESTS_PER_MINUTE) {
-    requestsThisMinute++;
+  // Check rate limits
+  if (
+    limits.requestsThisMinute < model.rpm &&
+    limits.tokensThisMinute + estimatedTokens < model.tpm
+  ) {
+    limits.requestsThisMinute++;
+    limits.tokensThisMinute += estimatedTokens;
+    
     try {
       const response = await requestFn();
       const text = response.data.candidates[0].content.parts[0].text;
-      console.log('Gemini Response:', text);
+      console.log(`${model.name} Response:`, text);
       return text;
     } catch (error) {
-      console.error('Error generating content with Gemini:', error);
+      console.error(`Error generating content with ${model.name}:`, error);
       throw error;
     }
   } else {
-    // Queue the request
+    // If primary model (2.5) hits rate limit, throw error to trigger fallback
+    if (modelKey === 'FLASH_25') {
+      throw new Error('Rate limit reached for Gemini 2.5 Flash');
+    }
+    
+    // Queue the request for secondary model
     return new Promise((resolve, reject) => {
-      queue.push({
+      limits.queue.push({
         promiseResolve: (response) => {
-          console.log('Gemini Response (from queue):', response);
+          console.log(`${model.name} Response (from queue):`, response);
           resolve(response);
         },
         promiseReject: reject,

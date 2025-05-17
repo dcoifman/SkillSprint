@@ -173,13 +173,35 @@ const STRUCTURE_DATA = {
 function useAnatomyModel(systemType) {
   const [modelError, setModelError] = useState(false);
   const [loadAttempted, setLoadAttempted] = useState(false);
+  const [isPlaceholder, setIsPlaceholder] = useState(false);
   
-  // Always call useGLTF unconditionally at the top level
-  const modelData = useGLTF(MODELS[systemType].path, undefined, 
+  // Get model configuration
+  const modelConfig = MODELS[systemType];
+  const modelPath = modelConfig?.path;
+  
+  // Try loading the model
+  const { scene, nodes, materials, animations } = useGLTF(modelPath, undefined, 
     (error) => {
       console.error(`Error loading ${systemType} model:`, error);
       setModelError(true);
       setLoadAttempted(true);
+      
+      // Try loading placeholder if main model fails
+      const placeholderPath = `/models/anatomy/${systemType}/placeholder.glb`;
+      useGLTF(placeholderPath, undefined, 
+        (placeholderError) => {
+          console.error(`Error loading placeholder for ${systemType}:`, placeholderError);
+          // Will use generated placeholder
+        },
+        () => {
+          setIsPlaceholder(true);
+          console.log(`Loaded placeholder for ${systemType}`);
+        }
+      );
+    },
+    () => {
+      setLoadAttempted(true);
+      console.log(`Successfully loaded ${systemType} model`);
     }
   );
   
@@ -191,23 +213,23 @@ function useAnatomyModel(systemType) {
     }
     
     // Cache successful loads
-    if (modelData.scene) {
-      modelCache.set(systemType, modelData);
-      console.log(`Preloaded ${systemType} model`);
+    if (scene && !isPlaceholder) {
+      modelCache.set(systemType, { scene, nodes, materials, animations });
+      console.log(`Cached ${systemType} model`);
     }
-  }, [systemType, modelData.scene]);
+  }, [systemType, scene, isPlaceholder, nodes, materials, animations]);
   
   // Apply model-specific transformations
   useEffect(() => {
-    if (!modelData.scene) return;
+    if (!scene) return;
     
     const config = MODELS[systemType];
-    modelData.scene.scale.set(config.scale, config.scale, config.scale);
-    modelData.scene.position.set(...config.position);
-    modelData.scene.rotation.set(...config.rotation);
+    scene.scale.set(config.scale, config.scale, config.scale);
+    scene.position.set(...config.position);
+    scene.rotation.set(...config.rotation);
     
     // Traverse the scene to enable shadows on all meshes
-    modelData.scene.traverse(object => {
+    scene.traverse(object => {
       if (object.isMesh) {
         object.castShadow = true;
         object.receiveShadow = true;
@@ -227,10 +249,11 @@ function useAnatomyModel(systemType) {
         }
       }
     });
-  }, [systemType, modelData.scene]);
+  }, [systemType, scene]);
   
-  // Return placeholder if model failed to load
-  if (modelError || !modelData.scene) {
+  // Return generated placeholder if both model and placeholder file failed
+  if (modelError && !scene) {
+    console.log(`Using generated placeholder for ${systemType}`);
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.MeshStandardMaterial({ 
       color: systemType === 'skeletal' ? '#f0e6d2' : '#a83232',
@@ -245,16 +268,12 @@ function useAnatomyModel(systemType) {
       scene: placeholderScene,
       nodes: {},
       materials: { default: material },
-      animations: []
+      animations: [],
+      isPlaceholder: true
     };
   }
   
-  return { 
-    scene: modelData.scene.clone(), 
-    nodes: modelData.nodes, 
-    materials: modelData.materials, 
-    animations: modelData.animations 
-  };
+  return { scene, nodes, materials, animations, isPlaceholder };
 }
 
 // Component to handle model selection and highlighting

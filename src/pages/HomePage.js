@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
@@ -26,9 +26,12 @@ import {
   Avatar,
   IconButton,
   Tooltip,
+  Spinner,
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { ChevronRightIcon, StarIcon, ChatIcon, TimeIcon, CheckCircleIcon } from '@chakra-ui/icons';
+import { fetchLearningPaths } from '../services/supabaseClient';
+import CourseCarousel from '../components/CourseCarousel';
 
 const pulse = keyframes`
   0% {
@@ -64,7 +67,28 @@ function HomePage() {
   const heroBg = useColorModeValue('white', 'gray.800');
   const cardBg = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
-  
+  const [courses, setCourses] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        const { data, error } = await fetchLearningPaths({});
+        if (error) {
+          console.error('Error loading courses:', error);
+        } else {
+          setCourses(data || []);
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCourses();
+  }, []);
+
   return (
     <Box>
       {/* Hero Section */}
@@ -233,6 +257,27 @@ function HomePage() {
               </Box>
             </Flex>
           </Stack>
+        </Container>
+      </Box>
+
+      {/* Featured Courses Section */}
+      <Box bg={useColorModeValue('gray.50', 'gray.900')} py={12}>
+        <Container maxW={'7xl'}>
+          <Heading
+            textAlign="center"
+            fontSize={{ base: '2xl', sm: '4xl' }}
+            fontWeight="bold"
+            mb={8}
+          >
+            Featured Courses
+          </Heading>
+          {isLoading ? (
+            <Flex justify="center" align="center" minH="400px">
+              <Spinner size="xl" color="primary.500" />
+            </Flex>
+          ) : (
+            <CourseCarousel courses={courses} />
+          )}
         </Container>
       </Box>
 
