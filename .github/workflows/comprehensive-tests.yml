@@ -6,9 +6,15 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+# Limit concurrent runs of this workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   code-quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
     - uses: actions/checkout@v3
     
@@ -18,8 +24,15 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    
     - name: Install dependencies
-      run: npm install --legacy-peer-deps
+      run: npm ci --legacy-peer-deps
     
     - name: Lint check
       run: npm run lint
@@ -35,6 +48,8 @@ jobs:
   
   unit-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: code-quality
     steps:
     - uses: actions/checkout@v3
     
@@ -44,8 +59,15 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    
     - name: Install dependencies
-      run: npm install --legacy-peer-deps
+      run: npm ci --legacy-peer-deps
     
     - name: Run unit tests with coverage
       run: npm run test:coverage
@@ -55,6 +77,8 @@ jobs:
       
   integration-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: unit-tests
     services:
       supabase:
         image: supabase/postgres:15.1.0.117
@@ -71,8 +95,15 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    
     - name: Install dependencies
-      run: npm install --legacy-peer-deps
+      run: npm ci --legacy-peer-deps
       
     - name: Run database migrations
       run: npm run db:migrate
@@ -88,6 +119,8 @@ jobs:
         
   e2e-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: integration-tests
     steps:
     - uses: actions/checkout@v3
     
@@ -97,14 +130,31 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.npm
+          ~/.cache/ms-playwright
+        key: npm-playwright-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          npm-playwright-
+          npm-
+    
     - name: Install dependencies
       run: |
-        npm install --legacy-peer-deps
+        npm ci --legacy-peer-deps
         npx playwright install --with-deps
     
     - name: Build project
       run: npm run build
       
+    - name: Cache build
+      uses: actions/cache@v3
+      with:
+        path: build
+        key: build-${{ github.sha }}
+    
     - name: Start local server
       run: npm run start & npx wait-on http://localhost:3000
       
@@ -120,6 +170,8 @@ jobs:
         
   accessibility:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: e2e-tests
     steps:
     - uses: actions/checkout@v3
     
@@ -129,20 +181,29 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    
     - name: Install dependencies
-      run: npm install --legacy-peer-deps
+      run: npm ci --legacy-peer-deps
     
     - name: Build project
       run: npm run build
       
     - name: Run accessibility tests
       run: |
-        npm install -g @axe-core/cli
+        npx @axe-core/cli@4.8.5
         npm run start & npx wait-on http://localhost:3000
-        axe http://localhost:3000 --exit
+        npx axe http://localhost:3000 --exit
         
   performance:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: accessibility
     steps:
     - uses: actions/checkout@v3
     
@@ -152,8 +213,15 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    
     - name: Install dependencies
-      run: npm install --legacy-peer-deps
+      run: npm ci --legacy-peer-deps
     
     - name: Build project
       run: npm run build
@@ -166,6 +234,8 @@ jobs:
         
   security:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: performance
     steps:
     - uses: actions/checkout@v3
     
@@ -175,11 +245,18 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    
     - name: Install dependencies
-      run: npm install --legacy-peer-deps
+      run: npm ci --legacy-peer-deps
       
     - name: Run security audit
-      run: npm audit
+      run: npm audit --production
       
     - name: Run SAST scan
       uses: github/codeql-action/init@v2
@@ -191,6 +268,8 @@ jobs:
       
   visual-regression:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: security
     steps:
     - uses: actions/checkout@v3
     
@@ -200,10 +279,15 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    
     - name: Install dependencies
-      run: |
-        npm install --legacy-peer-deps
-        npm install -g reg-cli
+      run: npm ci --legacy-peer-deps
         
     - name: Build Storybook
       run: npm run build-storybook
