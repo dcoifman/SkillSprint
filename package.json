@@ -45,7 +45,7 @@
     "slick-carousel": "^1.8.1",
     "styled-components": "^6.0.7",
     "swiper": "^11.2.6",
-    "three": "^0.164.1",
+    "three": "0.164.1",
     "three-stdlib": "^2.36.0",
     "tsparticles": "^3.8.1",
     "web-vitals": "^2.1.4",
@@ -88,6 +88,7 @@
     "three": "0.164.1"
   },
   "devDependencies": {
+    "typescript": "5.8.3",
     "npm-force-resolutions": "^0.0.10"
   }
 }
