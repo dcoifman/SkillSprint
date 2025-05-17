@@ -99,7 +99,7 @@ const generateWithModel = async (modelKey, prompt, temperature) => {
       ],
       generationConfig: {
         temperature,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 64000,
         topP: 0.95,
         topK: 64,
       },
