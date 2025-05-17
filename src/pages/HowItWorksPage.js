@@ -237,7 +237,7 @@ function HowItWorksPage() {
               order={{ base: 1, lg: 2 }}
             >
               <Image
-                src="https://images.unsplash.com/photo-1647585611385-615e098286b6?q=80&w=3570&auto=format&fit=crop"
+                src="https://images.unsplash.com/photo-1513258496099-48168024aec0?q=80&w=1200&auto=format&fit=crop"
                 alt="AI Adaptive Learning"
                 borderRadius="xl"
                 objectFit="cover"
