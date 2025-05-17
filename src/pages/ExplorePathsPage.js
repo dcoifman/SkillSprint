@@ -234,15 +234,13 @@ function ExplorePathsPage() {
   const [categories, setCategories] = useState([]);
   const [levels, setLevels] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeIndex, setActiveIndex] = useState(0);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef(null);
   const scrollRef = useRef(null);
   
-  const toast = useToast();
   const navigate = useNavigate();
   const { handleApiError } = useApiErrorHandler();
-  const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: true });
+  const { isOpen } = useDisclosure({ defaultIsOpen: true });
 
   // Fetch learning paths from Supabase
   useEffect(() => {
