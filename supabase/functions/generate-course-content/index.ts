@@ -1,10 +1,31 @@
+// @deno-types="https://deno.land/std@0.177.0/http/server.ts"
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.21.0";
+// @deno-types="npm:@supabase/supabase-js@2.21.0"
+import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2.21.0";
+// @deno-types="npm:axios"
 import axios from "npm:axios";
 
+// Declare Deno namespace
+declare global {
+  const Deno: {
+    env: {
+      get(key: string): string | undefined;
+    };
+  };
+}
+
+// Define fs interface
+interface FileSystem {
+  readFileSync(path: string, encoding?: string): string;
+  promises: {
+    readFile(path: string): Promise<string>;
+  };
+  existsSync(): boolean;
+  statSync(): { isFile(): boolean };
+}
+
 // Create a global fs stub to replace node:fs functionality
-// This is needed because Gemini API tries to use fs.readFileSync which isn't available in Deno
-const fs = {
+const fs: FileSystem = {
   readFileSync: (p: string, e = "utf-8") => {
     console.log(`Stub: Called readFileSync with path: ${p}, encoding: ${e}`);
     return p;
@@ -20,8 +41,15 @@ const fs = {
 };
 
 // Add fs to global scope
-// @ts-ignore - Adding fs to global scope to handle imports by Gemini API
-(globalThis as any).fs = fs;
+declare global {
+  interface Window {
+    fs: FileSystem;
+  }
+  let fs: FileSystem;
+}
+const globalThis = {
+  fs: fs
+};
 
 // Types
 interface CourseRequest {
@@ -37,21 +65,26 @@ interface GenerationRequest {
   courseRequest: CourseRequest;
 }
 
+interface RequestStatus {
+  status: string;
+  status_message?: string;
+  progress?: number;
+  error_message?: string;
+  course_data?: unknown;
+  updated_at: string;
+}
+
 // Configuration
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
 // Enhanced logging function
-async function logDebug(supabase: any, requestId: string, message: string, data?: any) {
+async function logDebug(supabase: SupabaseClient, requestId: string, message: string, data?: unknown) {
   console.log(`[DEBUG] RequestID ${requestId}: ${message}`, data ? JSON.stringify(data) : '');
   
-  // Also update the request with detailed status
-  const updates: {
-    status_message: string;
-    updated_at: string;
-    [key: string]: any;
-  } = {
+  const updates: RequestStatus = {
+    status: 'processing',
     status_message: `${message}${data ? ' - ' + JSON.stringify(data) : ''}`,
     updated_at: new Date().toISOString()
   };
@@ -223,7 +256,7 @@ function stripCodeFences(response: string): string {
 }
 
 // Generate content using Gemini API
-async function generateContent(supabase: any, requestId: string, prompt: string, temperature = 0.7): Promise<string> {
+async function generateContent(supabase: SupabaseClient, requestId: string, prompt: string, temperature = 0.7): Promise<string> {
   await logDebug(supabase, requestId, 'Checking GEMINI_API_KEY configuration');
   
   if (!GEMINI_API_KEY) {
@@ -307,7 +340,7 @@ async function generateContent(supabase: any, requestId: string, prompt: string,
 
 // Update the status of a course generation request
 async function updateRequestStatus(
-  supabase: any, 
+  supabase: SupabaseClient, 
   requestId: string, 
   status: string, 
   statusMessage?: string, 
@@ -315,15 +348,7 @@ async function updateRequestStatus(
   errorMessage?: string,
   courseData?: any
 ) {
-  const updates: {
-    status: string;
-    updated_at: string;
-    status_message?: string;
-    progress?: number;
-    error_message?: string;
-    course_data?: any;
-    content_generated?: boolean;
-  } = {
+  const updates: RequestStatus = {
     status,
     updated_at: new Date().toISOString()
   };
@@ -333,7 +358,6 @@ async function updateRequestStatus(
   if (errorMessage) updates.error_message = errorMessage;
   if (courseData) {
     updates.course_data = courseData;
-    updates.content_generated = true;
   }
   
   await logDebug(supabase, requestId, 'Updating request status', { updates });
@@ -352,7 +376,7 @@ async function updateRequestStatus(
 
 // Main generation logic for course content
 async function generateCourseContent(
-  supabase: any,
+  supabase: SupabaseClient,
   requestId: string,
   courseRequest: CourseRequest
 ): Promise<any> {
@@ -440,7 +464,7 @@ async function generateCourseContent(
     
     let processedSprints = 0;
     let failedSprints = 0;
-    let sprintErrors: { moduleIndex: number; sprintIndex: number; error: string }[] = [];
+    const sprintErrors: string[] = [];
     
     // Process sprints in smaller batches to manage memory
     const BATCH_SIZE = 2;
@@ -500,11 +524,7 @@ async function generateCourseContent(
                 // Create a simplified placeholder content if all parsing attempts fail
                 await logDebug(supabase, requestId, `Failed to parse JSON even after aggressive fix: ${finalError.message}`);
                 failedSprints++;
-                sprintErrors.push({
-                  moduleIndex,
-                  sprintIndex,
-                  error: finalError.message
-                });
+                sprintErrors.push(finalError.message);
                 
                 // Create placeholder content
                 sprintContent = {
@@ -539,20 +559,12 @@ async function generateCourseContent(
           } catch (storeError) {
             console.error(`Error storing sprint content for sprint ${moduleIndex}-${sprintIndex}:`, storeError);
             failedSprints++;
-            sprintErrors.push({
-              moduleIndex,
-              sprintIndex,
-              error: storeError.message
-            });
+            sprintErrors.push(storeError.message);
           }
         } catch (error) {
           console.error(`Error generating sprint content for ${moduleIndex}-${sprintIndex}:`, error);
           failedSprints++;
-          sprintErrors.push({
-            moduleIndex,
-            sprintIndex,
-            error: error.message
-          });
+          sprintErrors.push(error.message);
         }
         
         processedSprints++;
@@ -625,11 +637,11 @@ async function generateCourseContent(
   }
 }
 
-// Helper function to generate UUID v4
+// Fix UUID function with proper operator precedence
 function uuidv4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    const v = c === 'x' ? r : ((r & 0x3) | 0x8);
     return v.toString(16);
   });
 }

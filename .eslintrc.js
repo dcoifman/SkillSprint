@@ -46,7 +46,31 @@ module.exports = {
       files: ['**/*.ts', '**/*.tsx'],
       parser: '@typescript-eslint/parser',
       plugins: ['@typescript-eslint'],
-      extends: ['plugin:@typescript-eslint/recommended']
+      extends: ['plugin:@typescript-eslint/recommended'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'warn',
+        '@typescript-eslint/no-unused-vars': ['warn', { 
+          'argsIgnorePattern': '^_',
+          'varsIgnorePattern': '^_'
+        }],
+        'no-mixed-operators': ['error', {
+          'groups': [
+            ['&', '|', '^', '~', '<<', '>>', '>>>'],
+            ['==', '!=', '===', '!==', '>', '>=', '<', '<='],
+            ['&&', '||'],
+            ['in', 'instanceof']
+          ],
+          'allowSamePrecedence': true
+        }]
+      }
+    },
+    {
+      files: ['supabase/functions/**/*.ts'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        'no-mixed-operators': 'off',
+        '@typescript-eslint/no-unused-vars': 'warn'
+      }
     }
   ],
   settings: {
