@@ -181,21 +181,24 @@ function useAnatomyModel(systemType) {
   
   // Define fallback model paths for when the primary model fails
   const fallbackMap = {
-    'muscular': '/models/anatomy/skeletal/skeletal-system-gyozocz.glb',
-    'skull': '/models/anatomy/skeletal/skeleton-better.glb',
-    'nervous': '/models/anatomy/skeletal/skeletal-system-gyozocz.glb',
-    'brain': '/models/anatomy/skeletal/skeletal-system-gyozocz.glb',
-    'heart': '/models/anatomy/circulatory/vascular-system-gyozocz.glb',
-    'lungs': '/models/anatomy/skeletal/skeletal-system-gyozocz.glb',
-    'respiratory': '/models/anatomy/circulatory/vascular-system-gyozocz.glb',
-    'male_body': '/models/anatomy/skeletal/skeletal-system-gyozocz.glb',
-    'reproductive_male': '/models/anatomy/digestive/abdominal-organs-gyozocz.glb',
-    'reproductive_female': '/models/anatomy/digestive/abdominal-organs-gyozocz.glb',
-    'lymphatic': '/models/anatomy/circulatory/vascular-system-gyozocz.glb'
+    'muscular': '/models/anatomy/male_body/male_body.glb',
+    'skull': '/models/anatomy/male_body/male_body.glb',
+    'nervous': '/models/anatomy/male_body/male_body.glb',
+    'brain': '/models/anatomy/male_body/male_body.glb',
+    'heart': '/models/anatomy/male_body/male_body.glb',
+    'lungs': '/models/anatomy/male_body/male_body.glb',
+    'respiratory': '/models/anatomy/male_body/male_body.glb',
+    'reproductive_male': '/models/anatomy/male_body/male_body.glb',
+    'reproductive_female': '/models/anatomy/male_body/male_body.glb',
+    'lymphatic': '/models/anatomy/male_body/male_body.glb',
+    'skeletal': '/models/anatomy/male_body/male_body.glb',
+    'skeletal_alt': '/models/anatomy/male_body/male_body.glb',
+    'circulatory': '/models/anatomy/male_body/male_body.glb',
+    'digestive': '/models/anatomy/male_body/male_body.glb'
   };
   
   // Default placeholder that's known to exist
-  const placeholderPath = '/models/anatomy/skeletal/skeletal-system-gyozocz.glb';
+  const placeholderPath = '/models/anatomy/male_body/male_body.glb';
   const fallbackPath = fallbackMap[systemType] || placeholderPath;
   
   // Setup state for model loading
@@ -619,6 +622,9 @@ function EnhancedScene({
       {/* Selection outline effect */}
       <Selection>
         <EffectComposer multisampling={quality === 'high' ? 8 : quality === 'medium' ? 4 : 0} enabled={!performanceMode}>
+          {/* Add NormalPass - required for SSAO to work */}
+          <EffectComposer.NormalPass />
+          
           <Outline 
             selection={hoveredStructure || selectedStructure ? 1 : 0}
             selectionLayer={1}
@@ -637,6 +643,7 @@ function EnhancedScene({
                 radius={0.5} 
                 intensity={xRay ? 30 : 20}
                 luminanceInfluence={0.6}
+                normalPass={null} // Let it use the shared NormalPass
               />
               
               <Bloom
@@ -661,7 +668,6 @@ function EnhancedScene({
             <Noise
               premultiply
               blendFunction={BlendFunction.OVERLAY}
-              opacity={0.5}
             />
           )}
         </EffectComposer>
