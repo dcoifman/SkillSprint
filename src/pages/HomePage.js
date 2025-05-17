@@ -140,28 +140,24 @@ function HomePage() {
               >
                 <Button
                   size={'lg'}
-                  fontWeight={'bold'}
-                  px={6}
+                  fontWeight={'extrabold'}
+                  fontSize={'xl'}
+                  px={8}
                   py={7}
-                  variant="solid"
-                  bg={useColorModeValue('primary.500', 'primary.300')}
-                  color={useColorModeValue('white', 'gray.900')}
                   as={RouterLink}
                   to="/signup"
-                  position="relative"
-                  _after={{
-                    content: "''",
-                    width: '100%',
-                    height: '100%',
-                    position: 'absolute',
-                    borderRadius: '50px',
-                    zIndex: -1,
-                    animation: pulseAnimation,
-                  }}
+                  borderRadius="full"
+                  bgGradient="linear(to-r, primary.500, secondary.500)"
+                  color="white"
+                  boxShadow="0 4px 24px 0 rgba(98, 0, 234, 0.25)"
+                  rightIcon={<CheckCircleIcon boxSize={6} />}
                   _hover={{
-                    transform: 'translateY(-2px)',
-                    boxShadow: 'lg',
-                    bg: useColorModeValue('primary.600', 'primary.400'),
+                    transform: 'scale(1.05)',
+                    boxShadow: '0 6px 32px 0 rgba(98, 0, 234, 0.35)',
+                    bgGradient: 'linear(to-r, primary.600, secondary.400)',
+                  }}
+                  _active={{
+                    transform: 'scale(0.98)',
                   }}
                   transition="all 0.2s"
                 >
