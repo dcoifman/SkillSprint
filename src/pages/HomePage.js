@@ -143,7 +143,9 @@ function HomePage() {
                   fontWeight={'bold'}
                   px={6}
                   py={7}
-                  colorScheme={'primary'}
+                  variant="solid"
+                  bg={useColorModeValue('primary.500', 'primary.300')}
+                  color={useColorModeValue('white', 'gray.900')}
                   as={RouterLink}
                   to="/signup"
                   position="relative"
@@ -159,6 +161,7 @@ function HomePage() {
                   _hover={{
                     transform: 'translateY(-2px)',
                     boxShadow: 'lg',
+                    bg: useColorModeValue('primary.600', 'primary.400'),
                   }}
                   transition="all 0.2s"
                 >
@@ -177,7 +180,7 @@ function HomePage() {
                       d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"
                     />
                   </Icon>}
-                >
+                      >
                   Learn More
                 </Button>
               </Stack>
@@ -190,7 +193,7 @@ function HomePage() {
                   borderRadius="full"
                   objectFit="cover"
                   alt="Company A"
-                />
+                          />
                 <Image
                   src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?q=80&w=2073"
                   boxSize="30px"
@@ -204,7 +207,7 @@ function HomePage() {
                   borderRadius="full"
                   objectFit="cover"
                   alt="Company C"
-                />
+                          />
                 <Text fontSize="sm" color="gray.500">+ 10,000 professionals</Text>
               </HStack>
             </Stack>
@@ -311,12 +314,12 @@ function HomePage() {
                 15M+
               </Text>
               <Text fontWeight="medium">Sprints Completed</Text>
-            </VStack>
+                            </VStack>
             <VStack bg={cardBg} p={6} borderRadius="lg" boxShadow="md" spacing={2}
                     transition="all 0.3s" _hover={{ transform: 'translateY(-5px)', boxShadow: 'lg' }}>
               <Text fontSize="3xl" fontWeight="bold" color="primary.600">
                 93%
-              </Text>
+                </Text>
               <Text fontWeight="medium">Completion Rate</Text>
             </VStack>
           </SimpleGrid>
@@ -349,12 +352,12 @@ function HomePage() {
               icon={'🚀'}
               title={'Adaptive Micro-Learning'}
               text={'Short, engaging 5-15 minute sessions that adapt to your skill level in real-time.'}
-            />
+                />
             <Feature
               icon={'🧠'}
               title={'AI-Curated Pathways'}
               text={'Personalized learning roadmaps based on your goals, existing skills, and learning style.'}
-            />
+                />
             <Feature
               icon={'💬'}
               title={'24/7 AI Tutor'}
@@ -367,17 +370,17 @@ function HomePage() {
               icon={'🔄'}
               title={'Spaced Repetition'}
               text={'Automatically scheduled review sessions at optimal intervals for maximum retention.'}
-            />
+                />
             <Feature
               icon={'📊'}
               title={'Progress Tracking'}
               text={'Comprehensive visual analytics that track your skill mastery and identify areas for improvement.'}
-            />
+                />
             <Feature
               icon={'📱'}
               title={'Cross-Platform Access'}
               text={'Seamless learning across all your devices, with offline mode for on-the-go learning.'}
-            />
+                />
           </SimpleGrid>
         </Container>
       </Box>
