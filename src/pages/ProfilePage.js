@@ -218,17 +218,27 @@ function ProfilePage() {
                   
                   <Divider />
                   
-                  <Box>
+                  <Box mt={4}>
                     <Heading size="sm" mb={4}>Notifications</Heading>
-                    <VStack spacing={4} align="stretch">
-                      <Flex justify="space-between">
-                        <FormLabel htmlFor="daily-reminder" mb={0}>Daily learning reminders</FormLabel>
-                        <Switch id="daily-reminder" defaultChecked />
-                      </Flex>
-                      <Flex justify="space-between">
-                        <FormLabel htmlFor="new-content" mb={0}>New content recommendations</FormLabel>
-                        <Switch id="new-content" defaultChecked />
-                      </Flex>
+                    <VStack align="start" spacing={4}>
+                      <HStack width="100%" justify="space-between">
+                        <Box>
+                          <Text fontWeight="medium">Daily Reminder</Text>
+                          <Text fontSize="sm" color="gray.500">Get a daily reminder to practice your skills</Text>
+                        </Box>
+                        <FormControl display="flex" justifyContent="flex-end">
+                          <Switch id="daily-reminder" defaultChecked />
+                        </FormControl>
+                      </HStack>
+                      <HStack width="100%" justify="space-between">
+                        <Box>
+                          <Text fontWeight="medium">New Content</Text>
+                          <Text fontSize="sm" color="gray.500">Be notified when new courses are available</Text>
+                        </Box>
+                        <FormControl display="flex" justifyContent="flex-end">
+                          <Switch id="new-content" defaultChecked />
+                        </FormControl>
+                      </HStack>
                     </VStack>
                   </Box>
                   

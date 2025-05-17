@@ -248,7 +248,9 @@ export function LoginPage() {
             </FormControl>
             
             <HStack justify="space-between" width="100%">
-              <Checkbox>Remember me</Checkbox>
+              <FormControl display="flex" alignItems="center">
+                <Checkbox>Remember me</Checkbox>
+              </FormControl>
               <Link color="primary.600" fontSize="sm">Forgot password?</Link>
             </HStack>
             

@@ -26,6 +26,7 @@ import {
   Image,
   AspectRatio,
   useToast,
+  FormControl,
 } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import ReactMarkdown from 'react-markdown';
@@ -588,48 +589,50 @@ Continue to the next sprint to learn about upper body musculature and its role i
             <Heading size="md">{currentStep.title}</Heading>
             <Text fontWeight="medium">{currentStep.question}</Text>
             
-            <RadioGroup 
-              onChange={handleAnswer} 
-              value={userAnswers[currentStepIndex]?.toString()}
-              isDisabled={showFeedback}
-              width="full"
-            >
-              <VStack spacing={3} align="flex-start" width="full">
-                {currentStep.options.map((option, idx) => (
-                  <Box
-                    key={idx}
-                    p={3}
-                    borderWidth="1px"
-                    borderRadius="md"
-                    width="full"
-                    bg={
-                      showFeedback
-                        ? idx === currentStep.correctAnswer
-                          ? 'green.50'
-                          : idx === userAnswers[currentStepIndex]
-                          ? 'red.50'
+            <FormControl width="full">
+              <RadioGroup 
+                onChange={handleAnswer} 
+                value={userAnswers[currentStepIndex]?.toString()}
+                isDisabled={showFeedback}
+                width="full"
+              >
+                <VStack spacing={3} align="flex-start" width="full">
+                  {currentStep.options.map((option, idx) => (
+                    <Box
+                      key={idx}
+                      p={3}
+                      borderWidth="1px"
+                      borderRadius="md"
+                      width="full"
+                      bg={
+                        showFeedback
+                          ? idx === currentStep.correctAnswer
+                            ? 'green.50'
+                            : idx === userAnswers[currentStepIndex]
+                            ? 'red.50'
+                            : 'white'
                           : 'white'
-                        : 'white'
-                    }
-                    borderColor={
-                      showFeedback
-                        ? idx === currentStep.correctAnswer
-                          ? 'green.400'
-                          : idx === userAnswers[currentStepIndex]
-                          ? 'red.400'
+                      }
+                      borderColor={
+                        showFeedback
+                          ? idx === currentStep.correctAnswer
+                            ? 'green.400'
+                            : idx === userAnswers[currentStepIndex]
+                            ? 'red.400'
+                            : 'gray.200'
+                          : userAnswers[currentStepIndex] === idx
+                          ? 'purple.400'
                           : 'gray.200'
-                        : userAnswers[currentStepIndex] === idx
-                        ? 'purple.400'
-                        : 'gray.200'
-                    }
-                  >
-                    <Radio value={idx.toString()} width="full">
-                      {option}
-                    </Radio>
-                  </Box>
-                ))}
-              </VStack>
-            </RadioGroup>
+                      }
+                    >
+                      <Radio value={idx.toString()} width="full">
+                        {option}
+                      </Radio>
+                    </Box>
+                  ))}
+                </VStack>
+              </RadioGroup>
+            </FormControl>
             
             {showFeedback && (
               <Box 

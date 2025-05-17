@@ -31,6 +31,7 @@ import {
   PopoverBody,
   PopoverArrow,
   PopoverCloseButton,
+  FormControl,
 } from '@chakra-ui/react';
 import { AddIcon, MinusIcon, CheckCircleIcon, LockIcon, RepeatIcon, InfoIcon, ViewIcon } from '@chakra-ui/icons';
 
@@ -364,12 +365,14 @@ function InteractiveAnatomyModel({
             {/* Highlight controls */}
             <HStack justifyContent="center" spacing={4}>
               <Text fontSize="sm" fontWeight="medium">Highlight:</Text>
-              <RadioGroup value={highlightMode} onChange={setHighlightMode} size="sm">
-                <HStack spacing={4}>
-                  <Radio value="none">None</Radio>
-                  <Radio value="region">By Region</Radio>
-                </HStack>
-              </RadioGroup>
+              <FormControl>
+                <RadioGroup value={highlightMode} onChange={setHighlightMode} size="sm">
+                  <HStack spacing={4}>
+                    <Radio value="none">None</Radio>
+                    <Radio value="region">By Region</Radio>
+                  </HStack>
+                </RadioGroup>
+              </FormControl>
             </HStack>
           </VStack>
         </GridItem>
