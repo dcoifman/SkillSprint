@@ -16,10 +16,9 @@ import {
   Selection,
   Color,
   Fog,
-  AmbientLight,
-  Primitive
+  AmbientLight
 } from '@react-three/drei';
-import { Group, Mesh } from 'three';
+import { Group, Mesh, Object3D } from 'three';
 import { Box, VStack, Button, ButtonGroup, Badge, Text, Spinner, useColorModeValue, Flex, Tooltip, IconButton, Menu, MenuButton, MenuList, MenuItem, Image } from '@chakra-ui/react';
 import { EffectComposer, NormalPass, Outline, SSAO } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
@@ -368,7 +367,7 @@ const AnatomicalModel = React.forwardRef(({
   return (
     <Mesh ref={ref}>
       {scene && (
-        <Primitive 
+        <primitive 
           object={scene} 
           onClick={handleClick} 
           onPointerOver={handlePointerOver}

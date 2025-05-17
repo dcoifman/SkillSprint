@@ -218,19 +218,31 @@ function HomePage() {
                 direction={{ base: 'column', sm: 'row' }}
               >
                 <Button
-                  size={'lg'}
-                  fontWeight={'extrabold'}
-                  fontSize={'2xl'}
-                  px={10}
-                  py={8}
                   as={RouterLink}
                   to="/signup"
+                  size="lg"
+                  fontSize={{ base: "lg", md: "xl" }}
+                  px={8}
+                  py={6}
+                  bg="primary.600"
+                  color="white"
                   borderRadius="xl"
-                  bg={useColorModeValue('white', 'gray.800')}
-                  color={useColorModeValue('gray.900', 'white')}
-                  boxShadow="xl"
                   position="relative"
                   overflow="hidden"
+                  boxShadow="lg"
+                  _hover={{
+                    transform: 'translateY(-2px)',
+                    bg: 'primary.500',
+                    boxShadow: 'xl',
+                    _before: {
+                      opacity: 0.4,
+                    },
+                  }}
+                  _active={{
+                    transform: 'scale(0.98)',
+                    bg: 'primary.700',
+                  }}
+                  rightIcon={<CheckCircleIcon boxSize={5} />}
                   _before={{
                     content: '""',
                     position: 'absolute',
@@ -238,61 +250,41 @@ function HomePage() {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    bgGradient: 'linear(to-r, primary.500, secondary.500)',
-                    opacity: 0.9,
-                    zIndex: 0,
-                  }}
-                  _after={{
-                    content: '""',
-                    position: 'absolute',
-                    top: '1px',
-                    left: '1px',
-                    right: '1px',
-                    bottom: '1px',
-                    bg: useColorModeValue('white', 'gray.800'),
-                    borderRadius: 'xl',
-                    zIndex: 1,
-                  }}
-                  _hover={{
-                    transform: 'translateY(-2px)',
-                    _before: {
-                      opacity: 1,
-                    },
-                  }}
-                  _active={{
-                    transform: 'scale(0.98)',
+                    bg: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%)',
+                    opacity: 0.3,
+                    transition: 'opacity 0.2s',
                   }}
                 >
-                  <Box position="relative" zIndex={2}>
-                    <Text
-                      as="span"
-                      bgGradient="linear(to-r, primary.500, secondary.500)"
-                      bgClip="text"
-                      display="flex"
-                      alignItems="center"
-                      gap={2}
-                    >
-                      Start Learning Free
-                      <Icon as={CheckCircleIcon} w={8} h={8} />
-                    </Text>
-                  </Box>
+                  Start Learning Free
                 </Button>
 
                 {/* Learn More button with glass effect */}
                 <Button
                   as={RouterLink}
                   to="/how-it-works"
-                  size={'lg'}
-                  fontWeight={'bold'}
+                  size="lg"
+                  fontSize="md"
+                  px={8}
                   bg={useColorModeValue('whiteAlpha.800', 'whiteAlpha.200')}
                   backdropFilter="blur(8px)"
                   borderWidth="1px"
                   borderColor={useColorModeValue('gray.200', 'whiteAlpha.300')}
+                  borderRadius="xl"
+                  color={useColorModeValue('gray.700', 'white')}
                   _hover={{
                     bg: useColorModeValue('whiteAlpha.900', 'whiteAlpha.300'),
                     transform: 'translateY(-2px)',
                     boxShadow: 'lg',
                   }}
+                  _active={{
+                    transform: 'scale(0.98)',
+                  }}
+                  leftIcon={<Icon boxSize={5} viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"
+                    />
+                  </Icon>}
                 >
                   Learn More
                 </Button>
