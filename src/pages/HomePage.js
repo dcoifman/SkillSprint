@@ -55,6 +55,27 @@ const pulse = keyframes`
   100% { box-shadow: 0 0 0 0 rgba(98, 0, 234, 0); }
 `;
 
+// Loading spinner component
+const LoadingSpinner = () => (
+  <Flex justify="center" align="center" minH="400px">
+    <Box
+      width="50px"
+      height="50px"
+      borderRadius="full"
+      border="3px solid"
+      borderColor="transparent"
+      borderTopColor="primary.500"
+      animation="spin 1s linear infinite"
+      sx={{
+        '@keyframes spin': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' }
+        }
+      }}
+    />
+  </Flex>
+);
+
 function HomePage() {
   const heroBg = useColorModeValue('white', 'gray.800');
   const cardBg = useColorModeValue('white', 'gray.700');

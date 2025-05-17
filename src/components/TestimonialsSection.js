@@ -2,100 +2,197 @@ import React from 'react';
 import {
   Box,
   Container,
-  Heading,
+  SimpleGrid,
+  VStack,
+  HStack,
   Text,
-  Stack,
   Avatar,
   useColorModeValue,
-  SimpleGrid,
+  chakra,
 } from '@chakra-ui/react';
+import { motion } from 'framer-motion';
+
+const MotionBox = motion(Box);
 
 const testimonials = [
   {
-    name: 'Sarah Johnson',
-    role: 'Medical Student',
-    content: 'The anatomy learning modules are incredibly detailed and interactive. The 3D models helped me understand complex structures better than traditional textbooks.',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80',
+    name: 'Samantha Lee',
+    role: 'Marketing Specialist',
+    content: "The bite-sized learning approach is perfect for my busy schedule. I've learned more in 2 weeks with SkillSprint than in 2 months with traditional courses.",
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=2070',
+    color: 'purple'
   },
   {
-    name: 'Michael Chen',
+    name: 'David Rodriguez',
     role: 'Software Engineer',
-    content: 'The bite-sized learning approach fits perfectly into my busy schedule. I can learn new concepts during my breaks without feeling overwhelmed.',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80',
+    content: "The AI tutor is incredible! It answered all my questions and helped me understand complex programming concepts better than any human instructor ever has.",
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070',
+    color: 'blue'
   },
   {
-    name: 'Emily Rodriguez',
-    role: 'Biology Teacher',
-    content: 'As an educator, I appreciate how the platform breaks down complex topics into manageable chunks. The AI-powered adaptivity ensures my students learn at their own pace.',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80',
-  },
+    name: 'Alex Kumar',
+    role: 'Product Manager',
+    content: "SkillSprint's personalized pathways helped me fill specific knowledge gaps for my new role. The analytics showed me exactly where to focus my efforts.",
+    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=1974',
+    color: 'green'
+  }
 ];
-
-const TestimonialCard = ({ content, avatar, name, role }) => {
-  return (
-    <Stack
-      bg={useColorModeValue('white', 'gray.800')}
-      boxShadow={'lg'}
-      p={8}
-      rounded={'xl'}
-      align={'center'}
-      pos={'relative'}
-      _hover={{
-        transform: 'translateY(-5px)',
-        transition: 'all 0.3s ease',
-      }}
-    >
-      <Avatar
-        src={avatar}
-        mb={2}
-        size={'xl'}
-        pos={'relative'}
-      />
-      <Text
-        textAlign={'center'}
-        color={useColorModeValue('gray.600', 'gray.400')}
-        fontSize={'sm'}
-        mb={4}
-      >
-        {content}
-      </Text>
-      <Stack align={'center'} spacing={0}>
-        <Text fontWeight={600}>{name}</Text>
-        <Text fontSize={'sm'} color={useColorModeValue('gray.600', 'gray.400')}>
-          {role}
-        </Text>
-      </Stack>
-    </Stack>
-  );
-};
 
 const TestimonialsSection = () => {
   return (
-    <Box bg={useColorModeValue('gray.100', 'gray.700')} py={16}>
+    <Box bg={useColorModeValue('gray.50', 'gray.900')} py={20} position="relative">
+      {/* Decorative elements */}
+      <Box
+        position="absolute"
+        top="0"
+        left="0"
+        right="0"
+        height="200px"
+        bgGradient={useColorModeValue(
+          'linear(to-b, whiteAlpha.500, transparent)',
+          'linear(to-b, whiteAlpha.100, transparent)'
+        )}
+        pointerEvents="none"
+      />
+      <Box
+        position="absolute"
+        bottom="0"
+        left="0"
+        right="0"
+        height="200px"
+        bgGradient={useColorModeValue(
+          'linear(to-t, whiteAlpha.500, transparent)',
+          'linear(to-t, whiteAlpha.100, transparent)'
+        )}
+        pointerEvents="none"
+      />
+
       <Container maxW={'7xl'}>
-        <Stack spacing={0} align={'center'} mb={12}>
-          <Heading
-            fontSize={{ base: '3xl', md: '4xl' }}
-            textAlign={'center'}
-            mb={4}
+        <Box mb={16} textAlign="center">
+          <chakra.h2
+            fontSize={{ base: '2xl', sm: '3xl' }}
+            fontWeight="bold"
+            mb={5}
+            bgGradient="linear(to-r, primary.500, secondary.500)"
+            bgClip="text"
           >
-            What Our Users Say
-          </Heading>
+            What Our Learners Say
+          </chakra.h2>
           <Text
-            color={useColorModeValue('gray.600', 'gray.400')}
+            color={'gray.500'}
             maxW={'3xl'}
-            textAlign={'center'}
+            mx={'auto'}
           >
-            Join thousands of learners who have transformed their learning journey with SkillSprint
+            Join thousands of satisfied learners who have transformed their skills with SkillSprint.
           </Text>
-        </Stack>
-        <SimpleGrid
-          columns={{ base: 1, md: 2, lg: 3 }}
-          spacing={10}
-          px={{ base: 4, md: 8 }}
-        >
+        </Box>
+
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10}>
           {testimonials.map((testimonial, index) => (
-            <TestimonialCard key={index} {...testimonial} />
+            <MotionBox
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.2 }}
+            >
+              <VStack
+                spacing={4}
+                p={8}
+                borderWidth="1px"
+                borderRadius="xl"
+                bg={useColorModeValue('white', 'gray.800')}
+                borderColor={useColorModeValue('gray.200', 'gray.700')}
+                position="relative"
+                overflow="hidden"
+                _before={{
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  bg: useColorModeValue(
+                    `${testimonial.color}.50`,
+                    `${testimonial.color}.900`
+                  ),
+                  opacity: 0.1,
+                }}
+                _after={{
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backdropFilter: 'blur(8px)',
+                  borderRadius: 'xl',
+                  border: '1px solid',
+                  borderColor: useColorModeValue(
+                    `${testimonial.color}.200`,
+                    `${testimonial.color}.700`
+                  ),
+                }}
+                _hover={{
+                  transform: 'translateY(-4px)',
+                  boxShadow: 'xl',
+                  _before: {
+                    opacity: 0.15,
+                  },
+                }}
+                transition="all 0.3s"
+              >
+                <Box
+                  position="relative"
+                  zIndex={1}
+                  _before={{
+                    content: '"""',
+                    position: 'absolute',
+                    top: -2,
+                    left: -2,
+                    fontSize: '6xl',
+                    fontFamily: 'serif',
+                    color: useColorModeValue(
+                      `${testimonial.color}.200`,
+                      `${testimonial.color}.700`
+                    ),
+                    opacity: 0.3,
+                  }}
+                >
+                  <Text
+                    fontSize="md"
+                    color={useColorModeValue('gray.600', 'gray.300')}
+                    fontStyle="italic"
+                    pl={6}
+                  >
+                    {testimonial.content}
+                  </Text>
+                </Box>
+                
+                <HStack spacing={4} align="center" position="relative" zIndex={1}>
+                  <Avatar
+                    src={testimonial.avatar}
+                    name={testimonial.name}
+                    size="lg"
+                    boxShadow="lg"
+                    border="4px solid"
+                    borderColor={useColorModeValue('white', 'gray.800')}
+                  />
+                  <VStack align="start" spacing={0}>
+                    <Text
+                      fontWeight="bold"
+                      fontSize="lg"
+                      bgGradient={`linear(to-r, ${testimonial.color}.500, ${testimonial.color}.300)`}
+                      bgClip="text"
+                    >
+                      {testimonial.name}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      {testimonial.role}
+                    </Text>
+                  </VStack>
+                </HStack>
+              </VStack>
+            </MotionBox>
           ))}
         </SimpleGrid>
       </Container>
