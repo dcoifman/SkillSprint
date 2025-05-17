@@ -294,7 +294,7 @@ function TreePathCard({ path, index }) {
   };
   
   const categoryColor = categoryColors[path.category] || '#2F855A';
-  
+
   return (
     <MotionBox
       initial={{ opacity: 0, y: 20 }}
@@ -315,20 +315,20 @@ function TreePathCard({ path, index }) {
       }}
     >
       <Box 
-        bg={cardBg} 
+        bg={cardBg}
         p={4} 
         borderRadius="md" 
         boxShadow="md"
-        position="relative"
+            position="relative"
         ml={10}
         mb={4}
         borderLeft="4px solid"
         borderColor={categoryColor}
         _hover={{ transform: 'translateX(5px)', boxShadow: 'lg' }}
         transition="all 0.3s ease"
-      >
-        <Box 
-          position="absolute" 
+          >
+            <Box
+              position="absolute"
           left="-30px" 
           top="20px" 
           width="40px" 
@@ -346,7 +346,7 @@ function TreePathCard({ path, index }) {
           zIndex={1}
         >
           {path.level.charAt(0)}
-        </Box>
+            </Box>
         
         <VStack align="start" spacing={2}>
           <Heading size="md">{path.title}</Heading>
@@ -413,7 +413,7 @@ function ExplorePathsPage() {
   // Show panel on smaller screens, 3D view on larger screens
   const defaultView = useBreakpointValue({ base: 'panel', md: '3d' });
   const [viewMode, setViewMode] = useState(defaultView);
-  
+
   // Fetch learning paths from Supabase
   useEffect(() => {
     async function loadLearningPaths() {
@@ -526,7 +526,7 @@ function ExplorePathsPage() {
   const cardBg = useColorModeValue('white', 'gray.800');
   const forestBg = useColorModeValue('green.50', 'gray.900');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
-  
+
   return (
     <Box>
       {/* Forest 3D Canvas */}
@@ -565,7 +565,7 @@ function ExplorePathsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </InputGroup>
-            
+
             <HStack>
               <Select 
                 placeholder="Category"
@@ -576,7 +576,7 @@ function ExplorePathsPage() {
                   <option key={category} value={category}>{category}</option>
                 ))}
               </Select>
-              
+
               <Select 
                 placeholder="Level"
                 value={selectedLevel}
@@ -600,29 +600,29 @@ function ExplorePathsPage() {
               </Button>
               
               <Tooltip label={isDay ? 'Switch to night mode' : 'Switch to day mode'}>
-                <IconButton
+                  <IconButton
                   icon={isDay ? <MoonIcon /> : <SunIcon />}
                   onClick={toggleDayNight}
                   size="sm"
                   variant="outline"
                   aria-label="Toggle day/night"
-                />
-              </Tooltip>
+                  />
+                </Tooltip>
               
               <Tooltip label={viewMode === '3d' ? 'Show paths list' : 'Show 3D forest'}>
-                <IconButton
+                  <IconButton
                   icon={viewMode === '3d' ? <ViewIcon /> : <ViewIcon />}
                   onClick={() => setViewMode(viewMode === '3d' ? 'panel' : '3d')}
                   size="sm"
                   variant="outline"
                   aria-label="Toggle view mode"
                   display={{ base: 'flex', md: 'none' }}
-                />
-              </Tooltip>
+                  />
+                </Tooltip>
             </HStack>
           </VStack>
         </Box>
-        
+
         {/* Stats summary */}
         <Box 
           position={{ base: 'relative', md: 'absolute' }}
@@ -652,7 +652,7 @@ function ExplorePathsPage() {
             </Stat>
           </Flex>
         </Box>
-        
+
         {/* 3D Canvas */}
         {(viewMode === '3d' || viewMode === 'panel') && (
           <Box height="100%" width="100%">
@@ -669,9 +669,9 @@ function ExplorePathsPage() {
                 maxPolarAngle={Math.PI / 2} 
               />
             </Canvas>
-          </Box>
+              </Box>
         )}
-        
+
         {/* Hover instructions for desktop */}
         <Flex 
           position="absolute"
@@ -706,10 +706,10 @@ function ExplorePathsPage() {
             <MotionVStack
               spacing={0}
               align="stretch"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
               {filteredPaths.map((path, index) => (
                 <TreePathCard key={path.id} path={path} index={index} />
               ))}
@@ -727,12 +727,12 @@ function ExplorePathsPage() {
                 <Heading size="md" mb={2}>No trees found in this forest section</Heading>
                 <Text mb={4} textAlign="center" maxW="md">
                   Try adjusting your search criteria to discover more learning paths.
-                </Text>
+            </Text>
                 <Button colorScheme="green" onClick={handleReset}>
-                  Reset Filters
-                </Button>
-              </Center>
-            )}
+                Reset Filters
+              </Button>
+          </Center>
+        )}
           </VStack>
         </Container>
       )}
@@ -814,8 +814,8 @@ function ExplorePathsPage() {
                 </HStack>
                 
                 <Button 
-                  colorScheme="purple" 
-                  size="lg" 
+              colorScheme="purple"
+              size="lg"
                   rightIcon={<ArrowForwardIcon />}
                   onClick={() => navigate(`/path/${selectedPath.id}`)}
                   mt={4}

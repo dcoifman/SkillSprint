@@ -385,7 +385,7 @@ const NAV_ITEMS = [
   },
   {
     label: 'Create',
-    href: '/course-builder',
+        href: '/course-builder',
   },
   {
     label: 'Community',
