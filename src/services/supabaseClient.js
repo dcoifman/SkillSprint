@@ -358,6 +358,40 @@ export const updateSprintProgress = async (sprintId, isCompleted) => {
   return { data, error };
 };
 
+export const updateSprintStarted = async (sprintId, isStarted) => {
+  const { user } = await getCurrentUser();
+  
+  if (!user) {
+    return { error: { message: 'User not authenticated' } };
+  }
+  
+  // Get the path_id and module_id for this sprint
+  const { data: sprintData, error: sprintError } = await supabase
+    .from('sprints')
+    .select('*, module:module_id (path_id)')
+    .eq('id', sprintId)
+    .single();
+  
+  if (sprintError) {
+    return { error: sprintError };
+  }
+  
+  // Update or insert progress
+  const { data, error } = await supabase
+    .from('user_progress')
+    .upsert([
+      {
+        user_id: user.id,
+        path_id: sprintData.module.path_id,
+        module_id: sprintData.module_id,
+        sprint_id: sprintId,
+        is_started: isStarted
+      }
+    ]);
+  
+  return { data, error };
+};
+
 export const createLearningPath = async (pathData, moduleData) => {
   try {
     const { user } = await getCurrentUser();
@@ -654,6 +688,128 @@ export const debugDatabase = async () => {
   console.log('Sample instructor:', sampleInstructor?.[0]);
 };
 
+export const generateCourseContentBackend = async (courseRequest, onProgress) => {
+  try {
+    const { user } = await getCurrentUser();
+    
+    if (!user) {
+      return { error: { message: 'You must be logged in to generate course content' } };
+    }
+    
+    // Create a course generation request in Supabase
+    const { data: requestData, error: requestError } = await supabase
+      .from('course_generation_requests')
+      .insert([
+        {
+          user_id: user.id,
+          status: 'pending',
+          request_data: courseRequest,
+          content_generated: false
+        }
+      ])
+      .select('id')
+      .single();
+    
+    if (requestError) {
+      console.error('Error creating course generation request:', requestError);
+      return { error: requestError };
+    }
+    
+    // Set up real-time subscription to track progress
+    const channel = supabase
+      .channel(`course-gen-${requestData.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'course_generation_requests',
+        filter: `id=eq.${requestData.id}`
+      }, (payload) => {
+        // Call progress callback with updated status
+        if (onProgress && typeof onProgress === 'function') {
+          onProgress({
+            status: payload.new.status,
+            progress: payload.new.progress || 0,
+            message: payload.new.status_message,
+            isComplete: payload.new.content_generated,
+            error: payload.new.error_message
+          });
+        }
+        
+        // If generation is complete, clean up the subscription
+        if (payload.new.status === 'completed' || payload.new.status === 'failed') {
+          channel.unsubscribe();
+        }
+      })
+      .subscribe();
+    
+    // Trigger Edge Function to handle the generation process asynchronously
+    const { data: functionData, error: functionError } = await supabase.functions.invoke('generate-course-content', {
+      body: { 
+        requestId: requestData.id,
+        courseRequest
+      }
+    });
+    
+    if (functionError) {
+      console.error('Error invoking Edge Function:', functionError);
+      
+      // Update the request status to failed
+      await supabase
+        .from('course_generation_requests')
+        .update({
+          status: 'failed',
+          error_message: functionError.message || 'Failed to start course generation',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', requestData.id);
+      
+      return { error: functionError };
+    }
+    
+    return { 
+      data: { 
+        requestId: requestData.id,
+        message: 'Course generation started successfully'
+      }, 
+      error: null 
+    };
+  } catch (err) {
+    console.error('Exception during course generation:', err);
+    return { error: err };
+  }
+};
+
+// Return the request status for a course generation
+export const getCourseGenerationStatus = async (requestId) => {
+  try {
+    const { data, error } = await supabase
+      .from('course_generation_requests')
+      .select('*')
+      .eq('id', requestId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching course generation status:', error);
+      return { error };
+    }
+    
+    return { 
+      data: {
+        status: data.status,
+        progress: data.progress || 0,
+        message: data.status_message,
+        isComplete: data.content_generated,
+        error: data.error_message,
+        courseData: data.course_data
+      }, 
+      error: null 
+    };
+  } catch (err) {
+    console.error('Exception fetching course generation status:', err);
+    return { error: err };
+  }
+};
+
 // Export all functions as a default object
 export default {
   signUp,
@@ -664,6 +820,7 @@ export default {
   fetchPathDetail,
   enrollUserInPath,
   updateSprintProgress,
+  updateSprintStarted,
   createLearningPath,
   sendCourseToStudent,
   getInstructorByUserId,
@@ -675,5 +832,7 @@ export default {
   debugDatabase,
   formatError,
   safeJsonParse,
-  supabase
+  supabase,
+  generateCourseContentBackend,
+  getCourseGenerationStatus
 };

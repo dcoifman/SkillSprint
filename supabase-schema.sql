@@ -280,12 +280,72 @@ FOR EACH ROW
 WHEN (NEW.status = 'accepted' AND (OLD.status IS NULL OR OLD.status <> 'accepted'))
 EXECUTE FUNCTION handle_invitation_acceptance();
 
+-- Table for course generation requests
+CREATE TABLE IF NOT EXISTS public.course_generation_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  status_message TEXT,
+  progress INTEGER DEFAULT 0,
+  request_data JSONB NOT NULL,
+  course_data JSONB,
+  content_generated BOOLEAN NOT NULL DEFAULT FALSE,
+  error_message TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+);
+
+-- Grant permissions for authenticated users to access their own requests
+ALTER TABLE public.course_generation_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own course generation requests"
+  ON public.course_generation_requests
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own course generation requests"
+  ON public.course_generation_requests
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- Index for faster lookups by user and status
+CREATE INDEX IF NOT EXISTS idx_course_generation_user_id ON public.course_generation_requests (user_id);
+CREATE INDEX IF NOT EXISTS idx_course_generation_status ON public.course_generation_requests (status);
+
+-- Create a function to handle course generation requests via webhook
+-- Triggered when a new record is inserted into course_generation_requests
+CREATE OR REPLACE FUNCTION notify_course_generation_request()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- Notify external service about the new request
+  -- This allows for real-time updates without polling
+  PERFORM pg_notify(
+    'course_generation_requests',
+    json_build_object(
+      'id', NEW.id,
+      'user_id', NEW.user_id,
+      'request_data', NEW.request_data
+    )::text
+  );
+  RETURN NEW;
+END;
+$$;
+
+-- Trigger the notification function when a new course generation request is created
+CREATE TRIGGER course_generation_request_trigger
+AFTER INSERT ON public.course_generation_requests
+FOR EACH ROW
+EXECUTE FUNCTION notify_course_generation_request();
+
 -- Final status check
 DO $$
 BEGIN
     RAISE NOTICE '----------------------------------------';
     RAISE NOTICE 'Schema setup completed successfully';
-    RAISE NOTICE 'Tables created: instructors, learning_paths, modules, sprints, user_paths, user_progress, course_invitations';
+    RAISE NOTICE 'Tables created: instructors, learning_paths, modules, sprints, user_paths, user_progress, course_invitations, course_generation_requests';
     RAISE NOTICE 'RLS policies applied to all tables';
     RAISE NOTICE 'Triggers and functions created';
     RAISE NOTICE '----------------------------------------';

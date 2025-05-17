@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -45,6 +45,9 @@ import {
   TagLabel,
   Tooltip,
   Progress,
+  Switch,
+  FormHelperText,
+  useInterval,
 } from '@chakra-ui/react';
 import { 
   AddIcon, 
@@ -131,9 +134,97 @@ function CourseBuilderPage() {
   const sprintRef = useRef(null);
   const [suggestedObjectives, setSuggestedObjectives] = useState([]);
   const [isGeneratingObjectives, setIsGeneratingObjectives] = useState(false);
+  const [useBackendGeneration, setUseBackendGeneration] = useState(false);
+  const [generationRequestId, setGenerationRequestId] = useState(null);
+  const [generationStatus, setGenerationStatus] = useState(null);
+  const [pollingActive, setPollingActive] = useState(false);
   
   // Rate limit warning threshold (8 out of 10 free requests)
   const RATE_LIMIT_WARNING = 8;
+
+  // Poll for generation status if we're using backend generation
+  useEffect(() => {
+    let interval;
+    if (generationRequestId && pollingActive) {
+      interval = setInterval(async () => {
+        await checkGenerationStatus();
+      }, 5000); // Check every 5 seconds
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [generationRequestId, pollingActive]);
+  
+  // Function to check the status of a backend generation request
+  const checkGenerationStatus = async () => {
+    if (!generationRequestId) return;
+    
+    try {
+      const { data, error } = await supabaseClient.getCourseGenerationStatus(generationRequestId);
+      
+      if (error) {
+        console.error('Error checking generation status:', error);
+        toast({
+          title: "Error",
+          description: "Failed to check generation status.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        setPollingActive(false);
+        return;
+      }
+      
+      setGenerationStatus(data);
+      
+      // Update progress UI based on status
+      if (data.isComplete) {
+        setPollingActive(false);
+        setIsGenerating(false);
+        
+        if (data.courseData) {
+          // Process the course data
+          setGeneratedCourse(data.courseData.course);
+          setSprintContent(data.courseData.sprints || {});
+          
+          toast({
+            title: "Course generated",
+            description: "Your course has been generated successfully.",
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+          
+          // Move to the next tab
+          setSelectedTab(1);
+        } else {
+          toast({
+            title: "Error",
+            description: data.error || "Failed to generate course content.",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+        }
+      } else if (data.status === 'failed') {
+        setPollingActive(false);
+        setIsGenerating(false);
+        
+        toast({
+          title: "Generation failed",
+          description: data.error || "Course generation failed. Please try again.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+      
+    } catch (err) {
+      console.error('Exception checking generation status:', err);
+      setPollingActive(false);
+    }
+  };
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -248,7 +339,7 @@ function CourseBuilderPage() {
     }
   };
 
-  // Generate course outline using Gemini API
+  // Generate course outline using Gemini API or Backend
   const generateCourseOutline = async () => {
     // Validate form
     if (!courseForm.topic || !courseForm.audience || !courseForm.goals) {
@@ -265,54 +356,100 @@ function CourseBuilderPage() {
     setIsGenerating(true);
     
     try {
-      // Replace template placeholders with actual values
-      const filledPrompt = PROMPT_TEMPLATES.COURSE_OUTLINE
-        .replace('{topic}', courseForm.topic)
-        .replace('{audience}', courseForm.audience)
-        .replace('{level}', courseForm.level)
-        .replace('{duration}', courseForm.duration)
-        .replace('{goals}', courseForm.goals);
-      
-      // Generate content
-      const response = await generateContent(filledPrompt, 0.7);
-      setRequestCount(prevCount => prevCount + 1);
-      
-      try {
-        // Parse the JSON response
-        const courseData = JSON.parse(stripCodeFences(response));
-        setGeneratedCourse(courseData);
+      if (useBackendGeneration) {
+        // Backend generation through Supabase
+        const courseRequest = {
+          topic: courseForm.topic,
+          audience: courseForm.audience,
+          level: courseForm.level,
+          duration: courseForm.duration,
+          goals: courseForm.goals
+        };
         
-        // Success message
-        toast({
-          title: "Course outline generated",
-          description: "Your course outline has been created successfully.",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
+        const { data, error } = await supabaseClient.generateCourseContentBackend(
+          courseRequest,
+          (progressData) => {
+            // Update local state with progress updates from real-time subscription
+            setGenerationStatus(progressData);
+          }
+        );
         
-        // Move to the next tab
-        setSelectedTab(1);
-        
-        // Check rate limit
-        if (requestCount + 1 >= RATE_LIMIT_WARNING) {
+        if (error) {
+          console.error('Error starting backend generation:', error);
           toast({
-            title: "Approaching rate limit",
-            description: "You're nearing your free tier rate limit. Consider spacing out your requests.",
-            status: "warning",
+            title: "Error",
+            description: "Failed to start course generation. Please try again.",
+            status: "error",
             duration: 5000,
             isClosable: true,
           });
+          setIsGenerating(false);
+          return;
         }
-      } catch (parseError) {
-        console.error('Error parsing JSON response:', parseError);
+        
+        // Store the request ID for status polling
+        setGenerationRequestId(data.requestId);
+        setPollingActive(true);
+        
         toast({
-          title: "Error parsing response",
-          description: "The AI generated an invalid response. Please try again.",
-          status: "error",
+          title: "Generation started",
+          description: "Your course is being generated in the background. You'll be notified when it's ready.",
+          status: "info",
           duration: 5000,
           isClosable: true,
         });
+        
+      } else {
+        // Frontend generation using Gemini API (existing code)
+        const filledPrompt = PROMPT_TEMPLATES.COURSE_OUTLINE
+          .replace('{topic}', courseForm.topic)
+          .replace('{audience}', courseForm.audience)
+          .replace('{level}', courseForm.level)
+          .replace('{duration}', courseForm.duration)
+          .replace('{goals}', courseForm.goals);
+        
+        // Generate content
+        const response = await generateContent(filledPrompt, 0.7);
+        setRequestCount(prevCount => prevCount + 1);
+        
+        try {
+          // Parse the JSON response
+          const courseData = JSON.parse(stripCodeFences(response));
+          setGeneratedCourse(courseData);
+          
+          // Success message
+          toast({
+            title: "Course outline generated",
+            description: "Your course outline has been created successfully.",
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+          
+          // Move to the next tab
+          setSelectedTab(1);
+          
+          // Check rate limit
+          if (requestCount + 1 >= RATE_LIMIT_WARNING) {
+            toast({
+              title: "Approaching rate limit",
+              description: "You're nearing your free tier rate limit. Consider spacing out your requests.",
+              status: "warning",
+              duration: 5000,
+              isClosable: true,
+            });
+          }
+        } catch (parseError) {
+          console.error('Error parsing JSON response:', parseError);
+          toast({
+            title: "Error parsing response",
+            description: "The AI generated an invalid response. Please try again.",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+          setIsGenerating(false);
+        }
       }
     } catch (error) {
       console.error('Error generating course outline:', error);
@@ -323,7 +460,6 @@ function CourseBuilderPage() {
         duration: 5000,
         isClosable: true,
       });
-    } finally {
       setIsGenerating(false);
     }
   };
@@ -883,16 +1019,62 @@ function CourseBuilderPage() {
                       </Card>
                     )}
                     
+                    <FormControl display="flex" alignItems="center">
+                      <FormLabel htmlFor="use-backend" mb="0">
+                        Use backend generation
+                      </FormLabel>
+                      <Switch
+                        id="use-backend"
+                        isChecked={useBackendGeneration}
+                        onChange={(e) => setUseBackendGeneration(e.target.checked)}
+                      />
+                    </FormControl>
+                    <FormHelperText>
+                      {useBackendGeneration 
+                        ? "Course will be generated on the server (more reliable for large courses)" 
+                        : "Course will be generated in the browser (faster for simple courses)"}
+                    </FormHelperText>
+                    
                     <Button
                       colorScheme="purple"
                       size="lg"
-                      onClick={generateCourseOutline}
+                      leftIcon={<AddIcon />}
                       isLoading={isGenerating}
                       loadingText="Generating..."
-                      rightIcon={<ChevronRightIcon />}
+                      onClick={generateCourseOutline}
+                      mt={4}
                     >
                       Generate Course Outline
                     </Button>
+                    
+                    {/* Display generation status if using backend generation */}
+                    {useBackendGeneration && generationStatus && (
+                      <Box mt={4} p={4} borderWidth={1} borderRadius="md">
+                        <VStack align="stretch" spacing={3}>
+                          <HStack justify="space-between">
+                            <Text fontWeight="bold">Generation Status:</Text>
+                            <Badge colorScheme={
+                              generationStatus.isComplete ? "green" : 
+                              generationStatus.status === 'failed' ? "red" : "blue"
+                            }>
+                              {generationStatus.status}
+                            </Badge>
+                          </HStack>
+                          
+                          {generationStatus.progress > 0 && (
+                            <Progress 
+                              value={generationStatus.progress} 
+                              size="sm" 
+                              colorScheme="purple" 
+                            />
+                          )}
+                          
+                          {generationStatus.message && (
+                            <Text fontSize="sm">{generationStatus.message}</Text>
+                          )}
+                        </VStack>
+                      </Box>
+                    )}
                   </VStack>
                 </Box>
                 
