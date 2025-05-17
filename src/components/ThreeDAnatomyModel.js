@@ -203,10 +203,16 @@ function useAnatomyModel(systemType) {
   
   // Setup state for model loading
   const [modelPath1, setModelPath1] = useState(modelPath);
-  const [modelPath2, setModelPath2] = useState(fallbackPath);
+  
+  // Try to get model from cache first
+  const cachedModel = modelCache.get(systemType);
   
   // Custom error handling loader
   const useGLTFSafe = (path) => {
+    if (cachedModel) {
+      return { model: cachedModel, error: null };
+    }
+    
     try {
       // Try to load the model
       const model = useGLTF(path);
@@ -225,22 +231,14 @@ function useAnatomyModel(systemType) {
   
   // Load models with error handling
   const { model: primaryModel, error: primaryError } = useGLTFSafe(modelPath1);
-  const { model: fallbackModel, error: fallbackError } = useGLTFSafe(modelPath2);
   
   // Effect to handle model loading flow
   useEffect(() => {
     // If main model failed but we haven't tried fallback yet
     if (primaryError && modelPath1 !== fallbackPath) {
       console.log(`[Error] Error preloading ${systemType} model: – ${primaryError}`);
-      // First try the mapped fallback if available
+      // Try the mapped fallback
       setModelPath1(fallbackPath);
-    }
-    
-    // If both main model and fallback failed
-    if (primaryError && modelPath1 === fallbackPath) {
-      console.log(`[Error] Fallback also failed for ${systemType} model: – ${primaryError}`);
-      // If all else fails, use a generic placeholder
-      setModelPath1(placeholderPath);
       setIsPlaceholder(true);
     }
     
@@ -252,14 +250,14 @@ function useAnatomyModel(systemType) {
     }
     
     // Cache successful model loads
-    if (!primaryError && !isPlaceholder && !modelCache.has(systemType)) {
+    if (!primaryError && !isPlaceholder && primaryModel && !modelCache.has(systemType)) {
       modelCache.set(systemType, primaryModel);
       console.log(`Cached ${systemType} model`);
     }
-  }, [systemType, primaryModel, primaryError, modelPath1, fallbackPath, placeholderPath, modelConfig]);
+  }, [systemType, primaryModel, primaryError, modelPath1, fallbackPath, modelConfig, isPlaceholder]);
   
   // Get the appropriate model
-  const model = primaryModel || fallbackModel || null;
+  const model = primaryModel || null;
   
   // If we still have no model after all attempts
   useEffect(() => {
@@ -298,7 +296,6 @@ function useAnatomyModel(systemType) {
         if (object.material) {
           object.material.roughness = 0.7;
           object.material.metalness = 0.2;
-          // Don't set colorSpace directly on materials as it causes warnings
           
           // Convert colors to linear space for correct lighting
           if (systemType === 'skeletal') {
@@ -437,12 +434,14 @@ function AnatomicalModel({ systemType, onSelectStructure, selectedStructure, hov
   
   return (
     <group ref={groupRef}>
-      <primitive 
-        object={scene} 
-        onClick={handleClick} 
-        onPointerOver={handlePointerOver}
-        onPointerOut={handlePointerOut}
-      />
+      {scene && (
+        <primitive 
+          object={scene} 
+          onClick={handleClick} 
+          onPointerOver={handlePointerOver}
+          onPointerOut={handlePointerOut}
+        />
+      )}
       
       {/* Labels for selected structures */}
       {(selectedStructure || hoveredStructure) && (
@@ -477,6 +476,7 @@ function EnhancedScene({
 }) {
   const controlsRef = useRef();
   const spotLightRef = useRef();
+  const normalPassRef = useRef();
   const { camera, gl } = useThree();
   const [performanceMode, setPerformanceMode] = useState(false);
   
@@ -623,7 +623,7 @@ function EnhancedScene({
       <Selection>
         <EffectComposer multisampling={quality === 'high' ? 8 : quality === 'medium' ? 4 : 0} enabled={!performanceMode}>
           {/* Add NormalPass - required for SSAO to work */}
-          <EffectComposer.NormalPass />
+          <EffectComposer.NormalPass ref={normalPassRef} />
           
           <Outline 
             selection={hoveredStructure || selectedStructure ? 1 : 0}
@@ -643,7 +643,7 @@ function EnhancedScene({
                 radius={0.5} 
                 intensity={xRay ? 30 : 20}
                 luminanceInfluence={0.6}
-                normalPass={null} // Let it use the shared NormalPass
+                normalPass={normalPassRef}
               />
               
               <Bloom
@@ -988,14 +988,28 @@ Object.keys(MODELS).forEach(type => {
   dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
   loader.setDRACOLoader(dracoLoader);
   
+  // For initial preloading, prioritize the male_body model as it's our reliable fallback
+  const modelToLoad = type === 'male_body' 
+    ? MODELS[type].path 
+    : modelCache.has('male_body') // Only try loading others if we have a fallback cached
+      ? MODELS[type].path
+      : MODELS['male_body'].path;
+  
   loader.load(
-    MODELS[type].path,
+    modelToLoad,
     (gltf) => {
-      modelCache.set(type, gltf);
-      console.log(`Preloaded ${type} model`);
+      if (gltf && gltf.scene) {
+        modelCache.set(type, gltf);
+        console.log(`Preloaded ${type} model`);
+      } else {
+        console.error(`Invalid model format for ${type}`);
+      }
     },
     undefined,
-    (error) => console.error(`Error preloading ${type} model:`, error)
+    (error) => {
+      console.error(`Error preloading ${type} model:`, error);
+      // Don't try to cache failed models
+    }
   );
 });
 
