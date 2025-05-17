@@ -296,6 +296,18 @@ export function stripCodeFences(response) {
   } else if (clean.startsWith('```')) {
     clean = clean.replace(/^```/, '').replace(/```$/, '').trim();
   }
+  
+  // Fix common JSON formatting issues
+  clean = clean.replace(/\},(\s*)\}/g, '}$1]'); // Fix array closing brackets
+  clean = clean.replace(/\\"/g, '"'); // Fix escaped quotes
+  
+  // Validate JSON structure
+  try {
+    JSON.parse(clean);
+  } catch (e) {
+    console.warn('JSON validation failed:', e.message);
+  }
+  
   return clean;
 }
 
