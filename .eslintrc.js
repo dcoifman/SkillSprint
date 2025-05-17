@@ -4,7 +4,13 @@ module.exports = {
     'react-app/jest',
     'plugin:testing-library/react'
   ],
-  plugins: ['testing-library'],
+  plugins: [
+    'testing-library',
+    'react',
+    'react-hooks',
+    'jsx-a11y',
+    'import'
+  ],
   rules: {
     'no-unused-vars': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
     'react-hooks/exhaustive-deps': 'warn',
@@ -15,14 +21,37 @@ module.exports = {
     'testing-library/prefer-explicit-assert': 'error',
     'testing-library/prefer-find-by': 'error',
     'import/no-anonymous-default-export': 'warn',
-    'no-useless-escape': 'warn'
+    'no-useless-escape': 'warn',
+    'no-mixed-operators': 'warn'
   },
   overrides: [
+    {
+      files: ['e2e/**/*.js', 'e2e/**/*.ts'],
+      rules: {
+        'testing-library/prefer-screen-queries': 'off',
+        'testing-library/no-render-in-setup': 'off',
+        'testing-library/no-wait-for-empty-callback': 'off',
+        'testing-library/prefer-presence-queries': 'off',
+        'testing-library/prefer-explicit-assert': 'off',
+        'testing-library/prefer-find-by': 'off'
+      }
+    },
     {
       files: ['**/*.stories.*'],
       rules: {
         'import/no-anonymous-default-export': 'off'
       }
+    },
+    {
+      files: ['**/*.ts', '**/*.tsx'],
+      parser: '@typescript-eslint/parser',
+      plugins: ['@typescript-eslint'],
+      extends: ['plugin:@typescript-eslint/recommended']
     }
-  ]
+  ],
+  settings: {
+    react: {
+      version: 'detect'
+    }
+  }
 }; 
