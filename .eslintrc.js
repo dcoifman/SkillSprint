@@ -22,7 +22,10 @@ module.exports = {
     'testing-library/prefer-find-by': 'error',
     'import/no-anonymous-default-export': 'warn',
     'no-useless-escape': 'warn',
-    'no-mixed-operators': 'warn'
+    'no-mixed-operators': 'warn',
+    'react/jsx-no-undef': 'error',
+    'react/jsx-uses-react': 'error',
+    'react/jsx-uses-vars': 'error'
   },
   overrides: [
     {

@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Box, Alert, AlertIcon, AlertTitle, AlertDescription, Code, Button, VStack, Heading, Text } from '@chakra-ui/react';
+import { Box, Alert, AlertIcon, AlertTitle, AlertDescription, Button, VStack } from '@chakra-ui/react';
 import { WarningTwoIcon, RepeatIcon } from '@chakra-ui/icons';
 
 class ErrorBoundary extends Component {

@@ -4,17 +4,14 @@ import {
   Box,
   IconButton,
   useBreakpointValue,
-  Stack,
   Heading,
   Text,
-  Container,
   Badge,
   HStack,
   Card,
   CardBody,
   Image,
   VStack,
-  Button,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { BiLeftArrowAlt, BiRightArrowAlt } from 'react-icons/bi';
