@@ -44,4 +44,37 @@ CREATE POLICY "Allow anonymous access to sprint_contents"
 ON public.sprint_contents
 FOR ALL
 USING (true)
-WITH CHECK (true); 
+WITH CHECK (true);
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Users can view their own progress" ON user_progress;
+DROP POLICY IF EXISTS "Users can insert their own progress" ON user_progress;
+DROP POLICY IF EXISTS "Users can update their own progress records" ON user_progress;
+DROP POLICY IF EXISTS "Allow anonymous access to sprint_contents" ON sprint_contents;
+
+-- Enable RLS
+ALTER TABLE user_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sprint_contents ENABLE ROW LEVEL SECURITY;
+
+-- Create new policies for user_progress
+CREATE POLICY "Enable read access for authenticated users"
+ON user_progress FOR SELECT
+USING (auth.uid() = user_id OR auth.uid() IS NOT NULL);
+
+CREATE POLICY "Enable insert for authenticated users"
+ON user_progress FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Enable update for authenticated users"
+ON user_progress FOR UPDATE
+USING (auth.uid() = user_id);
+
+-- Create new policies for sprint_contents
+CREATE POLICY "Enable read access for all users"
+ON sprint_contents FOR SELECT
+USING (true);
+
+-- Add indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_user_progress_user_id ON user_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_progress_sprint_id ON user_progress(sprint_id);
+CREATE INDEX IF NOT EXISTS idx_sprint_contents_request_id ON sprint_contents(request_id); 

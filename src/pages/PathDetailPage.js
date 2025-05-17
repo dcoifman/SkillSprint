@@ -35,8 +35,8 @@ import {
   AlertIcon,
 } from '@chakra-ui/react';
 import { ChevronLeftIcon, StarIcon, CheckCircleIcon, TimeIcon, LockIcon } from '@chakra-ui/icons';
-import { fetchPathDetail, enrollUserInPath } from '../services/supabaseClient';
-import { useAuth } from '../contexts/AuthContext';
+import { fetchPathDetail, enrollUserInPath } from '../services/supabaseClient.js';
+import { useAuth } from '../contexts/AuthContext.js';
 
 function PathDetailPage() {
   const { pathId } = useParams();

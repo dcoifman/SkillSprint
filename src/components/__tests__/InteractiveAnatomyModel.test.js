@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import InteractiveAnatomyModel from '../InteractiveAnatomyModel';
+import InteractiveAnatomyModel from '../InteractiveAnatomyModel.js';
 
 // Mock Chakra UI's useColorModeValue
 jest.mock('@chakra-ui/react', () => {

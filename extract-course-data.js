@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const fs = require('fs');
+import fs from 'fs';
 
 // Read from stdin or file
 let input = '';

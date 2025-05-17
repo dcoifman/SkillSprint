@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import {
   Box,
   Button,
@@ -33,14 +33,14 @@ import {
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { ChevronRightIcon, StarIcon, ChatIcon, TimeIcon, CheckCircleIcon } from '@chakra-ui/icons';
-import { fetchLearningPaths } from '../services/supabaseClient';
-import CourseCarousel from '../components/CourseCarousel';
-import LoadingSkeleton from '../components/LoadingSkeleton';
+import { fetchLearningPaths } from '../services/supabaseClient.js';
+import CourseCarousel from '../components/CourseCarousel.js';
+import LoadingSkeleton from '../components/LoadingSkeleton.js';
 import { css } from '@emotion/react';
 
 // Lazy load below-the-fold components
-const CommunitySpotlight = lazy(() => import('../components/CommunitySpotlight'));
-const TestimonialsSection = lazy(() => import('../components/TestimonialsSection'));
+const CommunitySpotlight = lazy(() => import('../components/CommunitySpotlight.js'));
+const TestimonialsSection = lazy(() => import('../components/TestimonialsSection.js'));
 
 // Add these animations
 const float = keyframes`
@@ -92,6 +92,7 @@ function HomePage() {
       if (fetchError) {
         throw new Error(fetchError.message);
       }
+      console.log('Fetched courses:', data);
       setCourses(data || []);
     } catch (err) {
       console.error('Error loading courses:', err);
@@ -182,14 +183,14 @@ function HomePage() {
               <Heading
                 as="h1"
                 lineHeight={1.1}
-                fontWeight={600}
+                fontWeight={700}
                 fontSize={{ base: '3xl', sm: '4xl', md: '5xl', lg: '6xl' }}
+                color={useColorModeValue('gray.900', 'white')}
               >
                 <Text
                   as={'span'}
                   position={'relative'}
-                  bgGradient="linear(to-r, primary.600, secondary.600)"
-                  bgClip="text"
+                  color={useColorModeValue('primary.700', 'primary.300')}
                   _after={{
                     content: "''",
                     width: 'full',
@@ -197,7 +198,7 @@ function HomePage() {
                     position: 'absolute',
                     bottom: 0,
                     left: 0,
-                    bg: useColorModeValue('secondary.100', 'secondary.900'),
+                    bg: useColorModeValue('primary.100', 'primary.900'),
                     zIndex: -1,
                   }}>
                   Short bursts.
@@ -205,8 +206,7 @@ function HomePage() {
                 <br />
                 <Text 
                   as={'span'} 
-                  bgGradient="linear(to-r, primary.500, secondary.500)"
-                  bgClip="text"
+                  color={useColorModeValue('primary.700', 'primary.300')}
                 >
                   Big skills.
                 </Text>
@@ -221,18 +221,20 @@ function HomePage() {
                   as={RouterLink}
                   to="/signup"
                   size="lg"
-                  fontSize={{ base: "lg", md: "xl" }}
+                  fontSize={{ base: "md", md: "lg" }}
+                  fontWeight={700}
+                  letterSpacing="0.02em"
                   px={8}
                   py={6}
-                  bg="primary.600"
-                  color="white"
+                  bg={useColorModeValue('gray.900', 'white')}
+                  color={useColorModeValue('white', 'gray.900')}
                   borderRadius="xl"
                   position="relative"
                   overflow="hidden"
                   boxShadow="lg"
                   _hover={{
                     transform: 'translateY(-2px)',
-                    bg: 'primary.500',
+                    bg: useColorModeValue('black', 'gray.100'),
                     boxShadow: 'xl',
                     _before: {
                       opacity: 0.4,
@@ -240,7 +242,7 @@ function HomePage() {
                   }}
                   _active={{
                     transform: 'scale(0.98)',
-                    bg: 'primary.700',
+                    bg: useColorModeValue('gray.800', 'gray.200'),
                   }}
                   rightIcon={<CheckCircleIcon boxSize={5} />}
                   _before={{
@@ -263,16 +265,16 @@ function HomePage() {
                   as={RouterLink}
                   to="/how-it-works"
                   size="lg"
-                  fontSize="md"
+                  fontSize={{ base: "md", md: "lg" }}
+                  fontWeight={600}
                   px={8}
-                  bg={useColorModeValue('whiteAlpha.800', 'whiteAlpha.200')}
-                  backdropFilter="blur(8px)"
+                  bg={useColorModeValue('white', 'whiteAlpha.200')}
+                  color={useColorModeValue('gray.800', 'white')}
                   borderWidth="1px"
                   borderColor={useColorModeValue('gray.200', 'whiteAlpha.300')}
                   borderRadius="xl"
-                  color={useColorModeValue('gray.700', 'white')}
                   _hover={{
-                    bg: useColorModeValue('whiteAlpha.900', 'whiteAlpha.300'),
+                    bg: useColorModeValue('gray.50', 'whiteAlpha.300'),
                     transform: 'translateY(-2px)',
                     boxShadow: 'lg',
                   }}
@@ -292,15 +294,14 @@ function HomePage() {
 
               {/* Trusted By section with enhanced design */}
               <Box
-                bg={useColorModeValue('whiteAlpha.800', 'whiteAlpha.200')}
-                backdropFilter="blur(8px)"
+                bg={useColorModeValue('white', 'whiteAlpha.200')}
                 borderRadius="2xl"
                 p={4}
                 borderWidth="1px"
                 borderColor={useColorModeValue('gray.200', 'whiteAlpha.300')}
               >
                 <HStack spacing={4} aria-label="Trusted by companies">
-                  <Text fontSize="sm" fontWeight="medium" color="gray.500">
+                  <Text fontSize="sm" fontWeight={600} color={useColorModeValue('gray.700', 'white')}>
                     Trusted by:
                   </Text>
                   <HStack spacing={3}>
@@ -331,12 +332,12 @@ function HomePage() {
                   </HStack>
                   <Text
                     fontSize="sm"
-                    color="gray.500"
-                    fontWeight="medium"
+                    fontWeight={500}
+                    color={useColorModeValue('gray.700', 'white')}
                     px={3}
                     py={1}
                     borderRadius="full"
-                    bg={useColorModeValue('blackAlpha.50', 'whiteAlpha.100')}
+                    bg={useColorModeValue('gray.100', 'whiteAlpha.200')}
                   >
                     +10,000 professionals
                   </Text>
@@ -535,7 +536,10 @@ function HomePage() {
               </AlertDescription>
             </Alert>
           ) : (
-            <CourseCarousel courses={courses} />
+            <>
+              {console.log('Rendering courses:', courses)}
+              <CourseCarousel courses={courses} />
+            </>
           )}
         </Container>
       </Box>

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const fs = require('fs');
+import fs from 'fs';
 
 // Use the request ID from command line argument or default
 const requestId = process.argv[2] || '24bd4369-7e7a-41c8-af5c-1b4c2f50c5bf';

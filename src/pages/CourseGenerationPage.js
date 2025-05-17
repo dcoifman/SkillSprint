@@ -46,7 +46,7 @@ import {
   FiAlertCircle,
   FiPlayCircle
 } from 'react-icons/fi';
-import { supabase } from '../services/supabaseClient';
+import { supabase } from '../services/supabaseClient.js';
 import { formatRelative } from 'date-fns';
 
 // Status badge component with appropriate colors

@@ -54,10 +54,10 @@ import {
   AtSignIcon,
   RepeatIcon
 } from '@chakra-ui/icons';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext.js';
 import { motion } from 'framer-motion';
-import CourseInvitationsComponent from '../components/CourseInvitationsComponent';
-import { getInstructorProfile } from '../services/supabaseClient';
+import CourseInvitationsComponent from '../components/CourseInvitationsComponent.js';
+import { getInstructorProfile } from '../services/supabaseClient.js';
 
 // Motion components for animations
 const MotionBox = motion(Box);
@@ -407,7 +407,7 @@ function DashboardPage() {
           <Heading size="lg">Your Learning Paths</Heading>
           <Button 
             as={RouterLink} 
-            to="/explore-paths" 
+            to="/explore" 
             variant="ghost" 
             colorScheme="purple"
             rightIcon={<ArrowForwardIcon />}

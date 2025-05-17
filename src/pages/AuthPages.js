@@ -29,8 +29,8 @@ import {
   AlertDescription,
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
-import { signIn, signUp, supabase } from '../services/supabaseClient';
-import { useAuth } from '../contexts/AuthContext';
+import { signIn, signUp, supabase } from '../services/supabaseClient.js';
+import { useAuth } from '../contexts/AuthContext.js';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');

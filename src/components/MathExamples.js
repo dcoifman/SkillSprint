@@ -17,7 +17,7 @@ import {
   Container,
 } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
-import MarkdownWithMath from './MarkdownWithMath';
+import MarkdownWithMath from './MarkdownWithMath.js';
 
 // Example math assignments and content
 const MATH_EXAMPLES = [

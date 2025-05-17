@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize the Supabase client
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+// Initialize the Supabase client with environment variables
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 // Check if required environment variables are set
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -49,17 +49,31 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     headers: {
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-Client-Info': 'skillsprint-web'
+    }
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
     }
   }
 });
 
-// Helper function to handle API responses
+// Helper function to handle API responses with proper error handling
 const handleApiResponse = async (promise) => {
   try {
     const { data, error } = await promise;
     if (error) {
       console.error('API Error:', error);
+      // Handle specific error cases
+      if (error.status === 406) {
+        return { data: null, error: { message: 'Invalid request format' } };
+      }
+      if (error.status === 400) {
+        return { data: null, error: { message: 'Invalid request parameters' } };
+      }
       return { data: null, error };
     }
     return { data, error: null };
@@ -164,6 +178,7 @@ export const getCurrentUser = async () => {
 // Database helper functions for learning paths
 export const fetchLearningPaths = async ({ category = null, level = null, search = null }) => {
   try {
+    console.log('Fetching learning paths with params:', { category, level, search });
     let query = supabase
       .from('learning_paths')
       .select(`
@@ -188,6 +203,8 @@ export const fetchLearningPaths = async ({ category = null, level = null, search
     
     if (error) {
       console.error('Error fetching learning paths:', error);
+    } else {
+      console.log('Successfully fetched learning paths:', data);
     }
     
     return { data, error };

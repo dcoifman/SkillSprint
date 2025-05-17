@@ -33,8 +33,8 @@ import {
   ChevronRightIcon,
   BellIcon,
 } from '@chakra-ui/icons';
-import { useAuth } from '../../contexts/AuthContext';
-import { signOut } from '../../services/supabaseClient';
+import { useAuth } from '../../contexts/AuthContext.js';
+import { signOut } from '../../services/supabaseClient.js';
 
 function Header() {
   const { isOpen, onToggle } = useDisclosure();

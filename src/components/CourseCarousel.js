@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   IconButton,
@@ -13,148 +13,149 @@ import {
   Image,
   VStack,
   useColorModeValue,
+  Flex,
+  Stack,
 } from '@chakra-ui/react';
 import { BiLeftArrowAlt, BiRightArrowAlt } from 'react-icons/bi';
 import { useNavigate } from 'react-router-dom';
-import Slider from 'react-slick';
-
-// Import slick carousel styles
-import 'slick-carousel/slick/slick.css';
-import 'slick-carousel/slick/slick-theme.css';
 
 const CourseCarousel = ({ courses = [] }) => {
-  const [slider, setSlider] = useState(null);
+  const [currentIndex, setCurrentIndex] = React.useState(0);
   const navigate = useNavigate();
 
-  // Responsive settings
-  const top = useBreakpointValue({ base: '90%', md: '50%' });
-  const side = useBreakpointValue({ base: '30%', md: '40px' });
-
-  // Slider settings
-  const settings = {
-    dots: true,
-    arrows: false,
-    infinite: true,
-    autoplay: true,
-    speed: 500,
-    autoplaySpeed: 5000,
-    slidesToShow: 3,
-    slidesToScroll: 1,
-    responsive: [
-      {
-        breakpoint: 1024,
-        settings: {
-          slidesToShow: 2,
-          slidesToScroll: 1,
-        },
-      },
-      {
-        breakpoint: 768,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-        },
-      },
-    ],
-  };
+  console.log('CourseCarousel received courses:', courses);
 
   // Colors
   const cardBg = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
+  if (!Array.isArray(courses)) {
+    console.error('Courses is not an array:', courses);
+    return null;
+  }
+
+  if (courses.length === 0) {
+    return (
+      <Box textAlign="center" p={8}>
+        <Text>No courses available</Text>
+      </Box>
+    );
+  }
+
+  const slidesPerView = useBreakpointValue({ base: 1, md: 2, lg: 3 }) || 1;
+  const totalSlides = Math.ceil(courses.length / slidesPerView);
+
+  const nextSlide = () => {
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % totalSlides);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prevIndex) => (prevIndex - 1 + totalSlides) % totalSlides);
+  };
+
+  const visibleCourses = courses.slice(
+    currentIndex * slidesPerView,
+    (currentIndex * slidesPerView) + slidesPerView
+  );
+
   return (
     <Box position="relative" width="full" overflow="hidden" px={{ base: 4, md: 12 }} py={8}>
-      {/* CSS files for react-slick */}
-      <link
-        rel="stylesheet"
-        type="text/css"
-        href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.6.0/slick.min.css"
-      />
-      <link
-        rel="stylesheet"
-        type="text/css"
-        href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.6.0/slick-theme.min.css"
-      />
+      <Flex direction="row" alignItems="center">
+        <IconButton
+          aria-label="Previous slide"
+          icon={<BiLeftArrowAlt size="40px" />}
+          variant="ghost"
+          onClick={prevSlide}
+          isDisabled={currentIndex === 0}
+          mr={4}
+        />
 
-      {/* Left Icon */}
-      <IconButton
-        aria-label="left-arrow"
-        variant="ghost"
-        position="absolute"
-        left={side}
-        top={top}
-        transform={'translate(0%, -50%)'}
-        zIndex={2}
-        onClick={() => slider?.slickPrev()}
-      >
-        <BiLeftArrowAlt size="40px" />
-      </IconButton>
-
-      {/* Right Icon */}
-      <IconButton
-        aria-label="right-arrow"
-        variant="ghost"
-        position="absolute"
-        right={side}
-        top={top}
-        transform={'translate(0%, -50%)'}
-        zIndex={2}
-        onClick={() => slider?.slickNext()}
-      >
-        <BiRightArrowAlt size="40px" />
-      </IconButton>
-
-      {/* Slider */}
-      <Slider {...settings} ref={(slider) => setSlider(slider)}>
-        {courses.map((course, index) => (
-          <Box key={index} px={4}>
-            <Card
-              bg={cardBg}
-              borderWidth="1px"
-              borderColor={borderColor}
-              borderRadius="lg"
-              overflow="hidden"
-              _hover={{
-                transform: 'translateY(-4px)',
-                shadow: 'lg',
-                transition: 'all 0.2s',
-              }}
-              cursor="pointer"
-              onClick={() => navigate(`/path/${course.id}`)}
+        <Stack
+          direction="row"
+          spacing={8}
+          width="full"
+          overflowX="hidden"
+        >
+          {visibleCourses.map((course, index) => (
+            <Box
+              key={index}
+              flex="1"
+              minWidth={`${100 / slidesPerView}%`}
+              px={2}
             >
-              <Image
-                src={course.image || 'https://images.unsplash.com/photo-1522881193457-37ae97c905bf?q=80&w=2070'}
-                alt={course.title}
-                height="200px"
-                objectFit="cover"
-              />
-              <CardBody>
-                <VStack align="start" spacing={3}>
-                  <Heading size="md" noOfLines={2}>
-                    {course.title}
-                  </Heading>
-                  <Text color="gray.500" noOfLines={2}>
-                    {course.description}
-                  </Text>
-                  <HStack spacing={2}>
-                    <Badge colorScheme="purple">{course.level}</Badge>
-                    <Badge colorScheme="green">{course.category}</Badge>
-                    <Badge colorScheme="blue">{course.total_sprints} sprints</Badge>
-                  </HStack>
-                  {course.instructor && (
+              <Card
+                bg={cardBg}
+                borderWidth="1px"
+                borderColor={borderColor}
+                borderRadius="lg"
+                overflow="hidden"
+                _hover={{
+                  transform: 'translateY(-4px)',
+                  shadow: 'lg',
+                  transition: 'all 0.2s',
+                }}
+                cursor="pointer"
+                onClick={() => navigate(`/path/${course.id}`)}
+                height="full"
+              >
+                <Image
+                  src={course.image || 'https://images.unsplash.com/photo-1522881193457-37ae97c905bf?q=80&w=2070'}
+                  alt={course.title}
+                  height="200px"
+                  objectFit="cover"
+                />
+                <CardBody>
+                  <VStack align="start" spacing={3}>
+                    <Heading size="md" noOfLines={2}>
+                      {course.title}
+                    </Heading>
+                    <Text color="gray.500" noOfLines={2}>
+                      {course.description}
+                    </Text>
                     <HStack spacing={2}>
-                      <Text fontSize="sm">Instructor:</Text>
-                      <Text fontSize="sm" fontWeight="bold">
-                        {course.instructor.name}
-                      </Text>
+                      <Badge colorScheme="purple">{course.level}</Badge>
+                      <Badge colorScheme="green">{course.category}</Badge>
+                      <Badge colorScheme="blue">{course.total_sprints} sprints</Badge>
                     </HStack>
-                  )}
-                </VStack>
-              </CardBody>
-            </Card>
-          </Box>
+                    {course.instructor && (
+                      <HStack spacing={2}>
+                        <Text fontSize="sm">Instructor:</Text>
+                        <Text fontSize="sm" fontWeight="bold">
+                          {course.instructor.name}
+                        </Text>
+                      </HStack>
+                    )}
+                  </VStack>
+                </CardBody>
+              </Card>
+            </Box>
+          ))}
+        </Stack>
+
+        <IconButton
+          aria-label="Next slide"
+          icon={<BiRightArrowAlt size="40px" />}
+          variant="ghost"
+          onClick={nextSlide}
+          isDisabled={currentIndex === totalSlides - 1}
+          ml={4}
+        />
+      </Flex>
+
+      {/* Pagination dots */}
+      <HStack justify="center" mt={4} spacing={2}>
+        {Array.from({ length: totalSlides }).map((_, index) => (
+          <Box
+            key={index}
+            w={2}
+            h={2}
+            borderRadius="full"
+            bg={index === currentIndex ? 'primary.500' : 'gray.300'}
+            cursor="pointer"
+            onClick={() => setCurrentIndex(index)}
+          />
         ))}
-      </Slider>
+      </HStack>
     </Box>
   );
 };

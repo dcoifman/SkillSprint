@@ -27,7 +27,7 @@ import {
   useColorModeValue,
   Flex,
 } from '@chakra-ui/react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext.js';
 
 function ProfilePage() {
   const { user } = useAuth();

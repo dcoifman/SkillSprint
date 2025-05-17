@@ -36,13 +36,13 @@ import {
   FormErrorMessage,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext.js';
 import { 
   getInstructorProfile, 
   updateInstructorProfile, 
   getMyInstructorCourses,
   sendCourseToStudent
-} from '../services/supabaseClient';
+} from '../services/supabaseClient.js';
 
 function InstructorProfilePage() {
   const { user } = useAuth();

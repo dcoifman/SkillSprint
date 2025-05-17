@@ -12,21 +12,17 @@ import {
   PerformanceMonitor,
   AccumulativeShadows,
   RandomizedLight,
-  BakeShadows,
-  Selection,
-  Color,
-  Fog,
-  AmbientLight
+  BakeShadows
 } from '@react-three/drei';
-import { Group, Mesh, Object3D } from 'three';
+import { Group, Mesh, Object3D, AmbientLight } from 'three';
 import { Box, VStack, Button, ButtonGroup, Badge, Text, Spinner, useColorModeValue, Flex, Tooltip, IconButton, Menu, MenuButton, MenuList, MenuItem, Image } from '@chakra-ui/react';
-import { EffectComposer, NormalPass, Outline, SSAO } from '@react-three/postprocessing';
+import { EffectComposer, Outline, SSAO } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import * as THREE from 'three';
 import { ChevronDownIcon, DownloadIcon, ViewIcon } from '@chakra-ui/icons';
-import ErrorBoundary from './ErrorBoundary';
+import ErrorBoundary from './ErrorBoundary.js';
 import { SRGBColorSpace } from 'three';
 import PropTypes from 'prop-types';
 
@@ -446,19 +442,26 @@ function EnhancedScene({
     }
   }, [view, camera]);
 
+  useEffect(() => {
+    gl.physicallyCorrectLights = true;
+    gl.outputColorSpace = THREE.SRGBColorSpace;
+  }, [gl]);
+
+  useEffect(() => {
+    if (scene) {
+      scene.fog = new THREE.Fog('#03080f', 5, 20);
+    }
+  }, [scene]);
+
   return (
     <>
       {/* Performance monitoring */}
       <PerformanceMonitor onDecline={() => setPerformanceMode(true)} onIncline={() => setPerformanceMode(false)} />
       
       {/* Scene environment */}
-      <Color attach="background" args={['#03080f']} />
-      <Fog attach="fog" args={['#03080f', 5, 20]} />
+      <AmbientLight intensity={0.5} />
       
       {/* Enhanced lighting setup */}
-      <AmbientLight intensity={0.3} />
-      
-      {/* Key light */}
       <SpotLight 
         ref={spotLightRef}
         position={[5, 5, 5]} 
@@ -509,7 +512,6 @@ function EnhancedScene({
       
       {/* Model container with bounds for auto-fitting */}
       <Bounds fit clip observe damping={0.2} margin={1.2}>
-        <Selection>
           <AnatomicalModel 
             ref={anatomicalModelRef}
             systemType={systemType} 
@@ -518,7 +520,6 @@ function EnhancedScene({
             hoveredStructure={hoveredStructure}
             setHoveredStructure={setHoveredStructure}
           />
-        </Selection>
       </Bounds>
       
       {/* Advanced ground reflection */}
@@ -558,14 +559,13 @@ function EnhancedScene({
       </AccumulativeShadows>
       
       {/* Environment map for reflections */}
-      <Environment preset="city" background={false} />
+      <Environment preset="city" />
       
       {/* Shadow optimization */}
       <BakeShadows />
       
       {/* Post-processing effects */}
         <EffectComposer multisampling={quality === 'high' ? 8 : quality === 'medium' ? 4 : 0} enabled={!performanceMode}>
-        <NormalPass ref={normalPassRef} />
           <Outline 
             selection={hoveredStructure || selectedStructure ? 1 : 0}
             selectionLayer={1}
@@ -594,10 +594,11 @@ const ThreeDAnatomyModel = ({
   fallbackImage,
 }) => {
   const [view, setView] = useState(initialView);
-  const [quality, setQuality] = useState('medium');
-  const [xRay, setXRay] = useState(false);
+  const [performanceMode, setPerformanceMode] = useState(false);
+  const [quality] = useState('high');
+  const [xRay] = useState(false);
   const [hoveredStructure, setHoveredStructure] = useState(null);
-  const [sliceView, setSliceView] = useState(false);
+  const [sliceView] = useState('none');
   const canvasRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [currentSystem, setCurrentSystem] = useState(systemType);
@@ -696,32 +697,17 @@ const ThreeDAnatomyModel = ({
   }
 
   return (
-    <Box
-      position="relative"
-          width="100%" 
-      height="600px"
-      bg={bgColor}
-      borderRadius="lg"
-      overflow="hidden"
-      borderWidth="1px"
-      borderColor={borderColor}
-    >
-      <ErrorBoundary onError={handleModelError}>
+    <ErrorBoundary>
+      <Box position="relative" width="100%" height="100%" minHeight="400px">
         <Canvas 
-          ref={canvasRef}
           shadows 
-          camera={{ position: [0, 0, 5], fov: 45 }}
-          gl={{ 
-            preserveDrawingBuffer: true,
-            powerPreference: "high-performance",
-            antialias: true,
-          }}
+          camera={{ position: [0, 0, 5], fov: 50 }}
           onCreated={({ gl }) => {
             gl.physicallyCorrectLights = true;
-            gl.outputEncoding = THREE.sRGBEncoding;
+            gl.outputColorSpace = THREE.SRGBColorSpace;
           }}
         >
-          <Suspense fallback={null}>
+          <Suspense fallback={<Html center><Spinner size="xl" /></Html>}>
             <EnhancedScene 
               systemType={currentSystem} 
               onSelectStructure={onSelectStructure} 
@@ -737,79 +723,8 @@ const ThreeDAnatomyModel = ({
             />
           </Suspense>
         </Canvas>
+      </Box>
       </ErrorBoundary>
-      
-      {loading && (
-      <Box 
-        position="absolute" 
-          top="0"
-          left="0"
-          right="0"
-          bottom="0"
-          bg="rgba(0, 0, 0, 0.1)"
-          backdropFilter="blur(2px)"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <VStack spacing={4}>
-            <Spinner size="xl" color="purple.500" thickness="4px" />
-            <Text>Loading {getModelName(currentSystem)} Model...</Text>
-          </VStack>
-        </Box>
-      )}
-      
-      {/* Controls */}
-      <VStack
-        position="absolute" 
-        top={4}
-        right={4}
-        spacing={2}
-      >
-        <Menu>
-          <MenuButton
-            as={Button}
-            rightIcon={<ChevronDownIcon />}
-            colorScheme="purple"
-            size="sm"
-            isDisabled={loading}
-          >
-            {getModelName(currentSystem)}
-          </MenuButton>
-          <MenuList>
-            {Object.keys(MODELS).map((modelType) => (
-              <MenuItem 
-                key={modelType}
-                onClick={() => handleModelChange(modelType)}
-              >
-                {getModelName(modelType)}
-              </MenuItem>
-            ))}
-          </MenuList>
-        </Menu>
-
-        <ButtonGroup size="sm" isAttached variant="outline">
-          <Tooltip label="Anterior View">
-            <Button
-              onClick={() => setView('anterior')}
-              colorScheme={view === 'anterior' ? 'purple' : 'gray'}
-              isDisabled={loading}
-            >
-              Front
-            </Button>
-          </Tooltip>
-          <Tooltip label="Posterior View">
-            <Button
-              onClick={() => setView('posterior')}
-              colorScheme={view === 'posterior' ? 'purple' : 'gray'}
-              isDisabled={loading}
-            >
-              Back
-            </Button>
-          </Tooltip>
-        </ButtonGroup>
-      </VStack>
-    </Box>
   );
 };
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, VStack, Heading, Text, Select, Button, HStack, Tabs, TabList, TabPanels, Tab, TabPanel } from '@chakra-ui/react';
-import ThreeDAnatomyModel from './ThreeDAnatomyModel';
+import ThreeDAnatomyModel from './ThreeDAnatomyModel.js';
 
 export default {
   title: 'Components/ThreeDAnatomyModel',

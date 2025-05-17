@@ -17,7 +17,7 @@ import {
   useToast
 } from '@chakra-ui/react';
 import { StarIcon } from '@chakra-ui/icons';
-import { isValidUUID } from '../utils/uuid';
+import { isValidUUID } from '../utils/uuid.js';
 
 function PathCard({ path }) {
   const navigate = useNavigate();

@@ -25,8 +25,8 @@ import {
   SmallCloseIcon,
   CopyIcon
 } from '@chakra-ui/icons';
-import MathRenderer from './MathRenderer';
-import MarkdownWithMath from './MarkdownWithMath';
+import MathRenderer from './MathRenderer.js';
+import MarkdownWithMath from './MarkdownWithMath.js';
 
 // Common LaTeX symbols and templates for quick insertion
 const LATEX_SHORTCUTS = [

@@ -53,7 +53,7 @@ import {
   CheckCircleIcon,
   ExternalLinkIcon,
 } from '@chakra-ui/icons';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext.js';
 
 function CommunityPage() {
   const { isAuthenticated, user } = useAuth();
@@ -270,17 +270,106 @@ function CommunityPage() {
   return (
     <Box minH="100vh">
       {/* Hero Section */}
-      <Box bg="primary.600" color="white" py={12}>
-        <Container maxW="7xl">
-          <VStack spacing={6} align="start">
-            <Heading as="h1" size="2xl">
+      <Box 
+        position="relative"
+        overflow="hidden"
+        py={16}
+        _before={{
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          bgGradient: 'linear(to-br, purple.600, primary.500, secondary.400)',
+          opacity: 0.95,
+          zIndex: 0,
+        }}
+        _after={{
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: 
+            'radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 40%), ' +
+            'radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.15) 0%, transparent 40%)',
+          zIndex: 1,
+        }}
+      >
+        {/* Animated gradient orbs */}
+        <Box
+          position="absolute"
+          top="-20%"
+          left="-10%"
+          width="40%"
+          height="40%"
+          borderRadius="full"
+          bg="pink.400"
+          filter="blur(80px)"
+          opacity="0.15"
+          animation="float 8s ease-in-out infinite"
+          zIndex={1}
+        />
+        <Box
+          position="absolute"
+          bottom="-10%"
+          right="-5%"
+          width="30%"
+          height="30%"
+          borderRadius="full"
+          bg="blue.400"
+          filter="blur(80px)"
+          opacity="0.15"
+          animation="float 6s ease-in-out infinite"
+          zIndex={1}
+        />
+        
+        <Container maxW="7xl" position="relative" zIndex={2}>
+          <VStack spacing={8} align="start">
+            <Heading 
+              as="h1" 
+              size="2xl"
+              bgGradient="linear(to-r, white, whiteAlpha.800)"
+              bgClip="text"
+              letterSpacing="tight"
+              filter="drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
+            >
               SkillSprint Community
             </Heading>
-            <Text fontSize="xl" maxW="2xl">
+            <Text 
+              fontSize="xl" 
+              maxW="2xl"
+              color="whiteAlpha.900"
+              lineHeight="tall"
+              fontWeight="medium"
+              textShadow="0 2px 4px rgba(0,0,0,0.1)"
+            >
               Connect with fellow learners, share your achievements, join events, and grow together. Our community helps you learn faster and build lasting connections.
             </Text>
             {!isAuthenticated && (
-              <Button size="lg" colorScheme="white" variant="outline" leftIcon={<AddIcon />}>
+              <Button 
+                size="lg" 
+                bg="rgba(255, 255, 255, 0.9)"
+                color="gray.800"
+                _hover={{
+                  bg: 'white',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 12px 24px rgba(0,0,0,0.2)',
+                }}
+                _active={{
+                  bg: 'whiteAlpha.800',
+                  transform: 'scale(0.98)',
+                }}
+                fontWeight="bold"
+                px={8}
+                py={6}
+                leftIcon={<AddIcon />}
+                boxShadow="0 8px 16px rgba(0,0,0,0.1)"
+                backdropFilter="blur(8px)"
+                transition="all 0.2s"
+              >
                 Join Community
               </Button>
             )}

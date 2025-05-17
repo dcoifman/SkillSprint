@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import ThreeDAnatomyModel from '../ThreeDAnatomyModel';
+import ThreeDAnatomyModel from '../ThreeDAnatomyModel.js';
 
 // Mock Three.js and related libraries
 jest.mock('@react-three/fiber', () => ({
