@@ -32,10 +32,11 @@ jobs:
       run: npm test
       
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v3.1.3
       with:
         name: build-artifacts
         path: build/
+        if-no-files-found: error
         
   deploy-storybook:
     needs: build-and-test
