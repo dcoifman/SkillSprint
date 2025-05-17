@@ -78,7 +78,9 @@ export const generateContent = async (prompt, temperature = 0.7) => {
     requestsThisMinute++;
     try {
       const response = await requestFn();
-      return response.data.candidates[0].content.parts[0].text;
+      const text = response.data.candidates[0].content.parts[0].text;
+      console.log('Gemini Response:', text);
+      return text;
     } catch (error) {
       console.error('Error generating content with Gemini:', error);
       throw error;
@@ -87,7 +89,10 @@ export const generateContent = async (prompt, temperature = 0.7) => {
     // Queue the request
     return new Promise((resolve, reject) => {
       queue.push({
-        promiseResolve: resolve,
+        promiseResolve: (response) => {
+          console.log('Gemini Response (from queue):', response);
+          resolve(response);
+        },
         promiseReject: reject,
         requestFn
       });
