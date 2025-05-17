@@ -445,9 +445,6 @@ function EnhancedScene({
     }
   }, [view, camera]);
 
-  // Debug light helper when in development
-  useHelper(process.env.NODE_ENV === 'development' && spotLightRef, THREE.SpotLightHelper, 'cyan');
-
   return (
     <>
       {/* Performance monitoring */}
