@@ -158,19 +158,19 @@ class ErrorBoundary extends Component {
           <VStack spacing={3} align="stretch">
             {this.renderErrorMessage()}
             
-            <Button
-              leftIcon={<RepeatIcon />}
+              <Button
+                leftIcon={<RepeatIcon />}
               colorScheme="purple"
               size="sm"
-              onClick={() => {
-                this.setState({ hasError: false, error: null, errorInfo: null });
+                onClick={() => {
+                  this.setState({ hasError: false, error: null, errorInfo: null });
                 if (this.props.onReset && typeof this.props.onReset === 'function') {
                   this.props.onReset();
                 }
-              }}
-            >
+                }}
+              >
               Try Again
-            </Button>
+              </Button>
           </VStack>
         </Box>
       );

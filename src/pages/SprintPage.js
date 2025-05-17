@@ -489,10 +489,11 @@ Continue to the next sprint to learn about upper body musculature and its role i
       // Set loading state
       setModelLoading(true);
       
-      // Simulate model loading time (this would happen naturally with real models)
+      // Simulate model loading time with a timeout
+      // Add a timeout limit to prevent infinite loading
       const timeoutId = setTimeout(() => {
         setModelLoading(false);
-      }, 1500);
+      }, 3000); // Reduced from potentially longer times to ensure progress
       
       // Clear timeout on cleanup
       return () => clearTimeout(timeoutId);
@@ -507,31 +508,46 @@ Continue to the next sprint to learn about upper body musculature and its role i
   const handleModelError = () => {
     setModelError(true);
     setModelLoading(false);
+    
+    // Show error message but don't block progress
     toast({
       title: "Model loading error",
       description: "There was a problem loading the 3D model. You can still continue with the course.",
-      status: "error",
+      status: "warning",
       duration: 5000,
       isClosable: true,
     });
   };
 
   const handleAnswer = (value) => {
+    // Parse the string value to an integer and store it
+    const answer = parseInt(value, 10);
+    
+    // Set user answer in state
     setUserAnswers({
       ...userAnswers,
-      [currentStepIndex]: parseInt(value),
+      [currentStepIndex]: answer,
     });
+    
+    // Log for debugging
+    console.log(`Set answer for question ${currentStepIndex} to ${answer}`);
   };
 
   const handleNextStep = () => {
+    // For quiz steps, toggle feedback first before advancing
     if (currentStep.type === 'quiz' && !showFeedback) {
       setShowFeedback(true);
       return;
     }
     
+    // Check if we're at the last step
     if (currentStepIndex < currentSprintData.steps.length - 1) {
-      setCurrentStepIndex(currentStepIndex + 1);
+      // Reset any error states before moving to the next step
+      setModelError(false);
       setShowFeedback(false);
+      
+      // Move to the next step
+      setCurrentStepIndex(currentStepIndex + 1);
     }
   };
 
@@ -567,7 +583,7 @@ Continue to the next sprint to learn about upper body musculature and its role i
     }
 
     return (
-      <Flex justify="space-between">
+      <Flex justify="space-between" width="100%" mt={4}>
         <Button
           onClick={handlePrevStep}
           leftIcon={<ChevronLeftIcon />}
@@ -586,6 +602,7 @@ Continue to the next sprint to learn about upper body musculature and its role i
           }
           // Add data-testid for easier debugging
           data-testid="next-button"
+          rightIcon={<ChevronRightIcon />}
         >
           {currentStep.type === 'quiz' && !showFeedback ? 'Check Answer' : 'Next'}
         </Button>
@@ -723,12 +740,13 @@ Continue to the next sprint to learn about upper body musculature and its role i
             <Heading size="md">{currentStep.title}</Heading>
             <Text fontWeight="medium">{currentStep.question}</Text>
             
-            <FormControl width="full">
+            <FormControl width="full" isRequired={!showFeedback}>
               <RadioGroup 
                 onChange={handleAnswer} 
                 value={userAnswers[currentStepIndex]?.toString()}
                 isDisabled={showFeedback}
                 width="full"
+                defaultValue={userAnswers[currentStepIndex]?.toString()}
               >
                 <VStack spacing={3} align="flex-start" width="full">
                   {currentStep.options.map((option, idx) => (
@@ -745,6 +763,8 @@ Continue to the next sprint to learn about upper body musculature and its role i
                             : idx === userAnswers[currentStepIndex]
                             ? 'red.50'
                             : 'white'
+                          : userAnswers[currentStepIndex] === idx
+                          ? 'purple.50'
                           : 'white'
                       }
                       borderColor={
@@ -758,6 +778,8 @@ Continue to the next sprint to learn about upper body musculature and its role i
                           ? 'purple.400'
                           : 'gray.200'
                       }
+                      cursor={showFeedback ? 'default' : 'pointer'}
+                      onClick={() => !showFeedback && handleAnswer(idx.toString())}
                     >
                       <Radio value={idx.toString()} width="full">
                         {option}
@@ -766,6 +788,12 @@ Continue to the next sprint to learn about upper body musculature and its role i
                   ))}
                 </VStack>
               </RadioGroup>
+              
+              {!showFeedback && userAnswers[currentStepIndex] === undefined && (
+                <Text color="red.500" fontSize="sm" mt={2}>
+                  Please select an answer to continue
+                </Text>
+              )}
             </FormControl>
             
             {showFeedback && (
@@ -774,15 +802,29 @@ Continue to the next sprint to learn about upper body musculature and its role i
                 bg={isCorrectAnswer(currentStepIndex) ? 'green.50' : 'red.50'} 
                 borderRadius="md"
                 width="full"
+                boxShadow="md"
               >
-                <Text fontWeight="bold" color={isCorrectAnswer(currentStepIndex) ? 'green.600' : 'red.600'}>
-                  {isCorrectAnswer(currentStepIndex) ? 'Correct!' : 'Not quite right'}
-                </Text>
-                <Text>
+                <Flex justify="space-between" align="center" mb={2}>
+                  <Text fontWeight="bold" color={isCorrectAnswer(currentStepIndex) ? 'green.600' : 'red.600'}>
+                    {isCorrectAnswer(currentStepIndex) ? 'Correct!' : 'Not quite right'}
+                  </Text>
+                </Flex>
+                
+                <Text mb={3}>
                   {isCorrectAnswer(currentStepIndex)
                     ? 'Good job! You\'ve got it right.'
                     : `The correct answer is: ${currentStep.options[currentStep.correctAnswer]}`}
                 </Text>
+                
+                <Button 
+                  onClick={handleNextStep}
+                  colorScheme={isCorrectAnswer(currentStepIndex) ? 'green' : 'purple'}
+                  size="sm"
+                  mt={2}
+                  rightIcon={<ChevronRightIcon />}
+                >
+                  Continue to Next Step
+                </Button>
               </Box>
             )}
           </VStack>

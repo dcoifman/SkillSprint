@@ -21,18 +21,27 @@ import {
   Center,
   IconButton,
   Tooltip,
-  Grid,
-  GridItem,
   ScaleFade,
-  useDisclosure,
   ButtonGroup,
-  Stack,
-  AspectRatio,
-  Wrap,
-  WrapItem,
+  Drawer,
+  DrawerBody,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  useDisclosure,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  Divider,
   useBreakpointValue,
-  Skeleton,
-  SkeletonText,
+  Image,
 } from '@chakra-ui/react';
 import {
   SearchIcon,
@@ -44,9 +53,15 @@ import {
   InfoOutlineIcon,
   ArrowUpIcon,
   ArrowForwardIcon,
+  ChevronRightIcon,
+  SunIcon,
+  MoonIcon,
 } from '@chakra-ui/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { keyframes } from '@emotion/react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, useGLTF, Html, useTexture, Sky, Cloud, Stars, Environment } from '@react-three/drei';
+import * as THREE from 'three';
 import { fetchLearningPaths } from '../services/supabaseClient';
 import PathCard from '../components/PathCard';
 import useApiErrorHandler from '../hooks/useApiErrorHandler';
@@ -54,7 +69,8 @@ import ThreeDAnatomyModel from '../components/ThreeDAnatomyModel';
 
 // Create animated components with framer-motion
 const MotionBox = motion(Box);
-const MotionGrid = motion(Grid);
+const MotionFlex = motion(Flex);
+const MotionVStack = motion(VStack);
 
 // Define animations
 const pulseAnimation = keyframes`
@@ -62,162 +78,312 @@ const pulseAnimation = keyframes`
   100% { box-shadow: 0 0 0 20px rgba(124, 58, 237, 0); }
 `;
 
+const growAnimation = keyframes`
+  0% { transform: scale(0, 0); transform-origin: bottom; }
+  100% { transform: scale(1, 1); transform-origin: bottom; }
+`;
+
+const sway = keyframes`
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(1deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(-1deg); }
+  100% { transform: rotate(0deg); }
+`;
+
 const pulse = `${pulseAnimation} 2s infinite`;
+const grow = `${growAnimation} 1.5s ease-out`;
+const treeSway = `${sway} 5s ease-in-out infinite`;
 
-function FeaturedPathCard({ path, index }) {
-  const navigate = useNavigate();
-  const isEven = index % 2 === 0;
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const hoverBg = useColorModeValue('purple.50', 'purple.900');
-  const initialY = isEven ? 50 : -50;
-
+// Tree geometry creation function
+function Tree({ path, position, scale = 1.0, onClick, isHovered, setHovered }) {
+  const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.4, 2, 8);
+  const leavesGeometry = new THREE.ConeGeometry(1.5, 3, 8);
+  
+  // Use path level to determine tree properties
+  const treeHeight = path.level === 'Beginner' ? 3 : path.level === 'Intermediate' ? 4 : 5;
+  const branchDensity = path.level === 'Beginner' ? 1 : path.level === 'Intermediate' ? 2 : 3;
+  
+  // Color based on category
+  const categoryColors = {
+    'Anatomy': '#2F855A', // Green
+    'Medicine': '#3182CE', // Blue
+    'Healthcare': '#D53F8C', // Pink
+    'Biology': '#805AD5', // Purple
+    'Physiology': '#DD6B20', // Orange
+  };
+  
+  const leavesColor = categoryColors[path.category] || '#2F855A';
+  const [meshGrown, setMeshGrown] = useState(false);
+  
+  // Reference to trunk for animation
+  const trunkRef = useRef();
+  const leavesRef = useRef();
+  
+  // Animation for growing tree
+  useFrame(({ clock }) => {
+    if (trunkRef.current && !meshGrown) {
+      const time = clock.getElapsedTime();
+      const growth = Math.min(time / 2, 1);
+      
+      trunkRef.current.scale.y = growth;
+      trunkRef.current.position.y = (treeHeight * 0.5) * growth - (treeHeight * 0.5) * (1 - growth);
+      
+      if (leavesRef.current) {
+        leavesRef.current.scale.set(growth, growth, growth);
+        leavesRef.current.position.y = treeHeight - 1 + growth;
+        
+        // Animate leaves color slightly to simulate wind
+        leavesRef.current.material.color.offsetHSL(0, 0, Math.sin(time * 2) * 0.01);
+      }
+      
+      if (growth === 1) {
+        setMeshGrown(true);
+      }
+    }
+    
+    // Gentle swaying animation when hovered
+    if (trunkRef.current && isHovered && meshGrown) {
+      const time = clock.getElapsedTime();
+      trunkRef.current.rotation.z = Math.sin(time) * 0.05;
+      if (leavesRef.current) {
+        leavesRef.current.rotation.z = Math.sin(time) * 0.08;
+      }
+    }
+  });
+  
   return (
-    <MotionBox
-      initial={{ opacity: 0, y: initialY }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.2, duration: 0.5 }}
-      whileHover={{ scale: 1.02 }}
-      onClick={() => navigate(`/path/${path.id}`)}
-      cursor="pointer"
+    <group 
+      position={position} 
+      scale={[scale, scale, scale]}
+      onClick={onClick}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
     >
-      <Grid
-        templateColumns={{ base: "1fr", md: "5fr 7fr" }}
-        gap={6}
-        bg={cardBg}
-        p={6}
-        borderRadius="xl"
-        boxShadow="xl"
-        overflow="hidden"
-        _hover={{ bg: hoverBg }}
-        height="100%"
+      {/* Trunk */}
+      <mesh 
+        ref={trunkRef} 
+        geometry={trunkGeometry}
+        position={[0, treeHeight * 0.5, 0]}
       >
-        <AspectRatio ratio={1} w="100%" maxH="300px">
-          <Box
-            bgImage={`url(${path.image})`}
-            bgSize="cover"
-            bgPosition="center"
-            borderRadius="lg"
-            position="relative"
-            overflow="hidden"
+        <meshStandardMaterial color="#8B4513" roughness={0.8} />
+      </mesh>
+      
+      {/* Leaves */}
+      <mesh 
+        ref={leavesRef} 
+        geometry={leavesGeometry}
+        position={[0, treeHeight, 0]}
+      >
+        <meshStandardMaterial 
+          color={leavesColor} 
+          roughness={0.7}
+        />
+      </mesh>
+      
+      {/* Tooltip */}
+      {isHovered && (
+        <Html position={[0, treeHeight + 2, 0]} center>
+          <Box 
+            bg="white" 
+            p={2} 
+            borderRadius="md" 
+            boxShadow="lg" 
+            minW="150px"
+            textAlign="center"
           >
-            <Box
-              position="absolute"
-              top={0}
-              left={0}
-              right={0}
-              bottom={0}
-              bg="blackAlpha.500"
-              backdropFilter="blur(2px)"
-              opacity={0}
-              transition="all 0.3s"
-              _groupHover={{ opacity: 1 }}
-            >
-              <Center h="100%">
-                <Button
-                  colorScheme="purple"
-                  rightIcon={<ArrowForwardIcon />}
-                  fontSize="lg"
-                  size="lg"
-                >
-                  View Path
-                </Button>
-              </Center>
-            </Box>
-          </Box>
-        </AspectRatio>
-        <VStack align="start" spacing={4} justifyContent="center">
-          <HStack>
-            <Badge colorScheme="purple" fontSize="md" px={3} py={1}>FEATURED</Badge>
-            <Badge colorScheme={path.level === 'Beginner' ? 'green' : path.level === 'Intermediate' ? 'blue' : 'purple'} px={2}>
+            <Text fontWeight="bold">{path.title}</Text>
+            <Badge colorScheme={path.level === 'Beginner' ? 'green' : path.level === 'Intermediate' ? 'blue' : 'purple'}>
               {path.level}
             </Badge>
-          </HStack>
-          
-          <Heading size="lg">{path.title}</Heading>
-          
-          <Text fontSize="lg" noOfLines={3} color="gray.500">
-            {path.description}
-          </Text>
-          
-          <HStack spacing={4} mt={2}>
-            <HStack>
-              <StarIcon color="yellow.400" />
-              <Text fontWeight="semibold">{path.rating || '4.8'}</Text>
-            </HStack>
-            <HStack>
-              <TimeIcon color="blue.400" />
-              <Text>{path.estimated_time}</Text>
-            </HStack>
-            <Text>{path.total_sprints || '12'} sprints</Text>
-          </HStack>
-          
-          <Wrap spacing={2} mt={2}>
-            {path.tags && path.tags.map((tag, i) => (
-              <WrapItem key={i}>
-                <Tag colorScheme="purple" variant="subtle">
-                  {tag}
-                </Tag>
-              </WrapItem>
-            ))}
-          </Wrap>
-          
-          <Flex width="100%" justifyContent="space-between" alignItems="center" mt={2}>
-            <HStack>
-              <Avatar src={path.instructor?.avatar} name={path.instructor?.name} />
-              <Text fontWeight="medium">{path.instructor?.name || 'Expert Instructor'}</Text>
-            </HStack>
-            <Button
-              variant="outline" 
-              colorScheme="purple"
-              _hover={{ bg: 'purple.500', color: 'white' }}
-              size="sm"
-            >
-              Enroll Now
-            </Button>
-          </Flex>
-        </VStack>
-      </Grid>
-    </MotionBox>
+          </Box>
+        </Html>
+      )}
+    </group>
   );
 }
 
-function CategoryBadge({ category, isSelected, onClick }) {
-  const isMobile = useBreakpointValue({ base: true, md: false });
-  const badgeBg = useColorModeValue(
-    isSelected ? 'purple.500' : 'purple.50',
-    isSelected ? 'purple.500' : 'gray.700'
-  );
+// Forest scene component
+function Forest({ paths, onSelectPath, isDay }) {
+  const [hoveredTree, setHoveredTree] = useState(null);
+  const { camera } = useThree();
   
-  const textColor = useColorModeValue(
-    isSelected ? 'white' : 'purple.700',
-    isSelected ? 'white' : 'purple.100'
+  // Arrange trees in a forest pattern
+  const treePlacements = paths.map((path, index) => {
+    // Arrange in a grid-like pattern
+    const row = Math.floor(index / 4);
+    const col = index % 4;
+    
+    // Add slight randomization to positions
+    const xOffset = (Math.random() - 0.5) * 2;
+    const zOffset = (Math.random() - 0.5) * 2;
+    
+    return {
+      path,
+      position: [col * 6 - 9 + xOffset, 0, row * 6 - 6 + zOffset],
+      scale: 0.8 + Math.random() * 0.4
+    };
+  });
+  
+  // Adjust camera to view all trees
+  useEffect(() => {
+    camera.position.set(0, 10, 20);
+    camera.lookAt(0, 5, 0);
+  }, [camera]);
+  
+  return (
+    <>
+      {/* Sky and environment */}
+      <Sky sunPosition={[0, 1, 0]} />
+      <Stars radius={100} depth={50} count={1000} factor={4} />
+      <Cloud position={[-10, 15, -10]} speed={0.2} opacity={0.4} />
+      <Cloud position={[10, 15, -5]} speed={0.2} opacity={0.3} />
+      
+      {/* Ground plane */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
+        <planeGeometry args={[100, 100]} />
+        <meshStandardMaterial color="#538a4e" roughness={1} />
+      </mesh>
+      
+      {/* Trees */}
+      {treePlacements.map((item, index) => (
+        <Tree 
+          key={index}
+          path={item.path}
+          position={item.position}
+          scale={item.scale}
+          onClick={() => onSelectPath(item.path)}
+          isHovered={hoveredTree === index}
+          setHovered={(isHovered) => setHoveredTree(isHovered ? index : null)}
+        />
+      ))}
+      
+      {/* Ambient light */}
+      <ambientLight intensity={0.4} />
+      
+      {/* Directional light (sun) */}
+      <directionalLight 
+        position={[10, 20, 10]} 
+        intensity={1} 
+        castShadow 
+        shadow-mapSize-width={1024} 
+        shadow-mapSize-height={1024}
+      />
+    </>
   );
+}
+
+// Tree-inspired path card for the side panel
+function TreePathCard({ path, index }) {
+  const navigate = useNavigate();
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const leafColor = useColorModeValue('green.100', 'green.900');
+  const branchColor = useColorModeValue('brown.300', 'brown.700');
+  
+  const categoryColors = {
+    'Anatomy': '#2F855A', // Green
+    'Medicine': '#3182CE', // Blue
+    'Healthcare': '#D53F8C', // Pink
+    'Biology': '#805AD5', // Purple
+    'Physiology': '#DD6B20', // Orange
+  };
+  
+  const categoryColor = categoryColors[path.category] || '#2F855A';
   
   return (
     <MotionBox
-      initial={{ scale: 0.9, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      transition={{ duration: 0.2 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1, duration: 0.5 }}
+      onClick={() => navigate(`/path/${path.id}`)}
+      cursor="pointer"
+      position="relative"
+      _before={{
+        content: '""',
+        position: 'absolute',
+        left: '24px',
+        top: 0,
+        bottom: 0,
+        width: '4px',
+        bg: branchColor,
+        zIndex: 0
+      }}
     >
-      <Box
-        px={4}
-        py={2}
-        borderRadius="full"
-        bg={badgeBg}
-        color={textColor}
-        fontWeight="semibold"
-        cursor="pointer"
-        boxShadow={isSelected ? 'md' : 'none'}
-        onClick={onClick}
-        transition="all 0.2s"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        minW={isMobile ? "90px" : "120px"}
+      <Box 
+        bg={cardBg} 
+        p={4} 
+        borderRadius="md" 
+        boxShadow="md"
+        position="relative"
+        ml={10}
+        mb={4}
+        borderLeft="4px solid"
+        borderColor={categoryColor}
+        _hover={{ transform: 'translateX(5px)', boxShadow: 'lg' }}
+        transition="all 0.3s ease"
       >
-        {category}
+        <Box 
+          position="absolute" 
+          left="-30px" 
+          top="20px" 
+          width="40px" 
+          height="40px" 
+          borderRadius="full" 
+          bg={leafColor}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          color={categoryColor}
+          fontWeight="bold"
+          animation={treeSway}
+          border="3px solid"
+          borderColor={categoryColor}
+          zIndex={1}
+        >
+          {path.level.charAt(0)}
+        </Box>
+        
+        <VStack align="start" spacing={2}>
+          <Heading size="md">{path.title}</Heading>
+          
+          <Text noOfLines={2} fontSize="sm" color="gray.500">
+            {path.description}
+          </Text>
+          
+          <HStack>
+            <Badge colorScheme={path.level === 'Beginner' ? 'green' : path.level === 'Intermediate' ? 'blue' : 'purple'}>
+              {path.level}
+            </Badge>
+            <Badge>{path.category}</Badge>
+            <Badge>{path.estimated_time}</Badge>
+          </HStack>
+          
+          <HStack spacing={4}>
+            <HStack spacing={1}>
+              <TimeIcon color="gray.500" />
+              <Text fontSize="xs">{path.total_sprints || '12'} sprints</Text>
+            </HStack>
+            <HStack spacing={1}>
+              <StarIcon color="yellow.500" />
+              <Text fontSize="xs">{path.rating || '4.8'}</Text>
+            </HStack>
+          </HStack>
+          
+          <Flex align="center" justify="space-between" width="100%">
+            <HStack>
+              <Avatar size="xs" src={path.instructor.avatar} name={path.instructor.name} />
+              <Text fontSize="xs">{path.instructor.name}</Text>
+            </HStack>
+            
+            <Button
+              size="xs"
+              colorScheme="purple"
+              rightIcon={<ChevronRightIcon />}
+            >
+              Explore
+            </Button>
+          </Flex>
+        </VStack>
       </Box>
     </MotionBox>
   );
@@ -228,20 +394,20 @@ function ExplorePathsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('');
-  const [viewMode, setViewMode] = useState('grid');
   const [learningPaths, setLearningPaths] = useState([]);
-  const [featuredPaths, setFeaturedPaths] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [levels, setLevels] = useState([]);
+  const [selectedPath, setSelectedPath] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const searchInputRef = useRef(null);
+  const [isDay, setIsDay] = useState(true);
   const scrollRef = useRef(null);
   
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
   const { handleApiError } = useApiErrorHandler();
-  const { isOpen } = useDisclosure({ defaultIsOpen: true });
-
+  
+  // Show panel on smaller screens, 3D view on larger screens
+  const defaultView = useBreakpointValue({ base: 'panel', md: '3d' });
+  const [viewMode, setViewMode] = useState(defaultView);
+  
   // Fetch learning paths from Supabase
   useEffect(() => {
     async function loadLearningPaths() {
@@ -262,21 +428,6 @@ function ExplorePathsPage() {
         // Add local demo paths if empty data
         const pathsData = data && data.length > 0 ? data : generateDemoPaths();
         setLearningPaths(pathsData);
-        
-        // Set featured paths (top rated or specially marked)
-        const featured = pathsData
-          .filter(path => path.rating >= 4.5 || path.featured)
-          .slice(0, 3);
-        setFeaturedPaths(featured);
-        
-        // Extract unique categories and levels
-        if (pathsData.length > 0) {
-          const uniqueCategories = [...new Set(pathsData.map(path => path.category).filter(Boolean))];
-          const uniqueLevels = [...new Set(pathsData.map(path => path.level).filter(Boolean))];
-          
-          setCategories(uniqueCategories.length > 0 ? uniqueCategories : getDemoCategories());
-          setLevels(uniqueLevels.length > 0 ? uniqueLevels : ['Beginner', 'Intermediate', 'Advanced']);
-        }
       } catch (error) {
         handleApiError(error);
       } finally {
@@ -326,342 +477,340 @@ function ExplorePathsPage() {
     }));
   };
   
-  const getDemoCategories = () => {
-    return ['Anatomy', 'Medicine', 'Healthcare', 'Biology', 'Physiology'];
-  };
-  
-  // Handle scroll to top
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-  
-  // Handle category selection
-  const handleCategorySelect = (category) => {
-    setSelectedCategory(selectedCategory === category ? '' : category);
+  const handlePathSelect = (path) => {
+    setSelectedPath(path);
+    onOpen();
   };
   
   const handleReset = () => {
     setSearchQuery('');
     setSelectedCategory('');
     setSelectedLevel('');
-    if (searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
   };
-
+  
+  const toggleDayNight = () => {
+    setIsDay(!isDay);
+  };
+  
+  const filteredPaths = learningPaths.filter(path => {
+    const matchesCategory = selectedCategory ? path.category === selectedCategory : true;
+    const matchesLevel = selectedLevel ? path.level === selectedLevel : true;
+    const matchesSearch = searchQuery 
+      ? path.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        path.description.toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
+    
+    return matchesCategory && matchesLevel && matchesSearch;
+  });
+  
+  const categories = [...new Set(learningPaths.map(path => path.category))];
+  const levels = [...new Set(learningPaths.map(path => path.level))];
+  
+  // Background and styling
   const cardBg = useColorModeValue('white', 'gray.800');
-  const heroBg = useColorModeValue('purple.50', 'gray.800');
+  const forestBg = useColorModeValue('green.50', 'gray.900');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const accentColor = useColorModeValue('purple.500', 'purple.300');
-  const searchBg = useColorModeValue('white', 'gray.700');
-  const searchFocusBg = useColorModeValue('white', 'gray.600');
-
+  
   return (
     <Box>
-      {/* Hero Section with 3D Model */}
-      <Box bg={heroBg} position="relative" overflow="hidden">
-        <Container maxW="7xl" py={12} position="relative" zIndex={2}>
-          <Grid templateColumns={{ base: "1fr", lg: "6fr 6fr" }} gap={8} alignItems="center">
-            <GridItem>
-              <MotionBox
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8 }}
-              >
-                <Heading 
-                  as="h1" 
-                  size="3xl" 
-                  mb={4}
-                  bgGradient="linear(to-r, purple.500, pink.500)"
-                  bgClip="text"
-                  fontWeight="extrabold"
-                >
-                  Master New Skills Through Interactive Learning
-                </Heading>
-                <Text fontSize="xl" color="gray.600" maxW="32rem" mb={8}>
-                  Explore our cutting-edge learning paths with 3D anatomical models, adaptive AI-powered lessons, and micro-sprints designed for maximum retention and engagement.
-                </Text>
-                <ButtonGroup spacing={4}>
-                  <Button 
-                    size="lg" 
-                    colorScheme="purple" 
-                    rightIcon={<ArrowForwardIcon />}
-                    onClick={() => scrollRef.current.scrollIntoView({ behavior: 'smooth' })}
-                    _hover={{ transform: 'translateY(-2px)' }}
-                    animation={pulse}
-                  >
-                    Explore Paths
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    colorScheme="purple"
-                    onClick={() => navigate('/course-generation')}
-                  >
-                    Create Custom Path
-                  </Button>
-                </ButtonGroup>
-              </MotionBox>
-            </GridItem>
-            <GridItem display={{ base: "none", lg: "block" }}>
-              <MotionBox
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-              >
-                <AspectRatio ratio={1} width="100%" maxH="500px">
-                  <ThreeDAnatomyModel systemType="skeletal" />
-                </AspectRatio>
-              </MotionBox>
-            </GridItem>
-          </Grid>
-        </Container>
-
-        {/* Abstract background shapes */}
-        <Box
-          position="absolute"
-          width="full"
-          height="full"
-          top={0}
-          left={0}
-          bg="transparent"
-          zIndex={1}
-          opacity={0.4}
-          backgroundImage="url('data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%239F7AEA' fill-opacity='0.4' d='M0,224L48,213.3C96,203,192,181,288,186.7C384,192,480,224,576,234.7C672,245,768,235,864,202.7C960,171,1056,117,1152,117.3C1248,117,1344,171,1392,197.3L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E')"
-          backgroundSize="cover"
-          backgroundPosition="center"
-        />
-      </Box>
-
-      <Container maxW="7xl" py={12} ref={scrollRef}>
-        {/* Featured Paths Slider */}
-        <VStack spacing={8} align="start" mb={12}>
-          <Heading size="xl" fontWeight="bold">
-            Featured Learning Paths
-          </Heading>
-          <Stack spacing={8} w="full">
-            <AnimatePresence>
-              {featuredPaths.map((path, index) => (
-                <FeaturedPathCard key={`featured-${path.id}`} path={path} index={index} />
-              ))}
-            </AnimatePresence>
-          </Stack>
-        </VStack>
-
-        {/* Search and Filters */}
-        <MotionBox
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          mb={8}
-          p={6}
-          bg={cardBg}
-          borderRadius="xl"
-          boxShadow="xl"
+      {/* Forest 3D Canvas */}
+      <Box 
+        height={{ base: '40vh', md: 'calc(100vh - 60px)' }} 
+        bg={forestBg}
+        position="relative"
+        overflowX="hidden"
+      >
+        {/* Floating search and filter controls */}
+        <Box 
+          position={{ base: 'relative', md: 'absolute' }}
+          top="20px"
+          left="20px"
+          zIndex={10}
+          width={{ base: '100%', md: '350px' }}
+          p={4}
         >
-          <VStack spacing={6}>
-            <InputGroup size="lg">
+          <VStack 
+            spacing={4}
+            bg={cardBg}
+            p={4}
+            borderRadius="lg"
+            boxShadow="xl"
+            align="stretch"
+          >
+            <Heading size="md">Explore Learning Forest</Heading>
+            
+            <InputGroup>
               <InputLeftElement pointerEvents="none">
-                <SearchIcon color={isSearchFocused ? accentColor : "gray.400"} />
+                <SearchIcon color="gray.400" />
               </InputLeftElement>
               <Input 
-                ref={searchInputRef}
-                placeholder="Search for a specific skill or topic..."
+                placeholder="Search paths..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                bg={isSearchFocused ? searchFocusBg : searchBg}
-                borderColor={isSearchFocused ? accentColor : borderColor}
-                borderWidth={isSearchFocused ? "2px" : "1px"}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
-                _focus={{
-                  boxShadow: `0 0 0 1px ${accentColor}`
-                }}
-                fontSize="lg"
               />
             </InputGroup>
-
-            <Flex direction={{ base: "column", md: "row" }} width="full" gap={4} align="center">
+            
+            <HStack>
               <Select 
-                placeholder="Select Category"
+                placeholder="Category"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                bg={cardBg}
-                borderColor={borderColor}
-                size="lg"
-                flex={{ md: 1 }}
               >
                 {categories.map(category => (
                   <option key={category} value={category}>{category}</option>
                 ))}
               </Select>
-
+              
               <Select 
-                placeholder="Select Level"
+                placeholder="Level"
                 value={selectedLevel}
                 onChange={(e) => setSelectedLevel(e.target.value)}
-                bg={cardBg}
-                borderColor={borderColor}
-                size="lg"
-                flex={{ md: 1 }}
               >
                 {levels.map(level => (
                   <option key={level} value={level}>{level}</option>
                 ))}
               </Select>
-
-              <HStack spacing={2} width={{ base: "full", md: "auto" }}>
-                <Tooltip label="Reset filters">
-                  <IconButton
-                    icon={<RepeatIcon />}
-                    colorScheme="gray"
-                    onClick={handleReset}
-                    size="lg"
-                  />
-                </Tooltip>
-                <Tooltip label={viewMode === 'grid' ? 'List view' : 'Grid view'}>
-                  <IconButton
-                    icon={viewMode === 'grid' ? <ViewIcon /> : <GridItem />}
-                    colorScheme="gray"
-                    onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                    size="lg"
-                  />
-                </Tooltip>
             </HStack>
-          </Flex>
-          </VStack>
-        </MotionBox>
-
-        {/* Category Tabs */}
-        <Box mb={8} overflowX="auto" css={{ scrollbarWidth: 'none' }}>
-          <Flex gap={3} pb={2} className="no-scrollbar">
-            <CategoryBadge 
-              category="All" 
-              isSelected={selectedCategory === ''} 
-              onClick={() => setSelectedCategory('')}
-            />
             
-            {categories.map(category => (
-              <CategoryBadge
-                key={category} 
-                category={category}
-                isSelected={selectedCategory === category}
-                onClick={() => handleCategorySelect(category)}
-              />
-            ))}
+            <HStack>
+              <Button 
+                leftIcon={<RepeatIcon />} 
+                onClick={handleReset}
+                size="sm"
+                variant="outline"
+                flex={1}
+              >
+                Reset
+              </Button>
+              
+              <Tooltip label={isDay ? 'Switch to night mode' : 'Switch to day mode'}>
+                <IconButton
+                  icon={isDay ? <MoonIcon /> : <SunIcon />}
+                  onClick={toggleDayNight}
+                  size="sm"
+                  variant="outline"
+                  aria-label="Toggle day/night"
+                />
+              </Tooltip>
+              
+              <Tooltip label={viewMode === '3d' ? 'Show paths list' : 'Show 3D forest'}>
+                <IconButton
+                  icon={viewMode === '3d' ? <ViewIcon /> : <ViewIcon />}
+                  onClick={() => setViewMode(viewMode === '3d' ? 'panel' : '3d')}
+                  size="sm"
+                  variant="outline"
+                  aria-label="Toggle view mode"
+                  display={{ base: 'flex', md: 'none' }}
+                />
+              </Tooltip>
+            </HStack>
+          </VStack>
+        </Box>
+        
+        {/* Stats summary */}
+        <Box 
+          position={{ base: 'relative', md: 'absolute' }}
+          top="20px"
+          right="20px"
+          zIndex={10}
+          p={4}
+          display={{ base: 'none', md: 'block' }}
+        >
+          <Flex 
+            bg={cardBg}
+            p={4}
+            borderRadius="lg"
+            boxShadow="xl"
+            gap={4}
+          >
+            <Stat>
+              <StatLabel>Paths</StatLabel>
+              <StatNumber>{filteredPaths.length}</StatNumber>
+            </Stat>
+            
+            <Divider orientation="vertical" />
+            
+            <Stat>
+              <StatLabel>Categories</StatLabel>
+              <StatNumber>{categories.length}</StatNumber>
+            </Stat>
           </Flex>
         </Box>
-
-        {/* Loading State */}
-        {isLoading && (
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Box key={i} borderRadius="lg" overflow="hidden">
-                <Skeleton height="200px" />
-                <Box p={6}>
-                  <SkeletonText mt={4} noOfLines={4} spacing={4} />
-                </Box>
-              </Box>
-            ))}
-          </SimpleGrid>
-        )}
-
-        {/* Results Count and Sort Option */}
-        {!isLoading && (
-        <Flex justify="space-between" align="center" mb={6}>
-            <HStack>
-              <Badge colorScheme="purple" px={2} py={1} borderRadius="md" fontSize="md">
-                {learningPaths.length}
-              </Badge>
-          <Text fontWeight="medium">
-                {learningPaths.length === 1 ? 'Path' : 'Paths'} Found
-          </Text>
-            </HStack>
-          <Select 
-              width="auto"
-            size="sm" 
-              defaultValue="popular"
-              borderColor={borderColor}
-            bg={cardBg}
-          >
-              <option value="popular">Most Popular</option>
-            <option value="newest">Newest First</option>
-              <option value="rating">Highest Rated</option>
-              <option value="duration">Shortest First</option>
-          </Select>
-        </Flex>
-        )}
-
-        {/* Learning Paths Grid or List */}
-        {!isLoading && learningPaths.length > 0 && (
-          <MotionGrid
-            templateColumns={viewMode === 'grid' 
-              ? { base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" } 
-              : "1fr"
-            }
-            gap={8}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <AnimatePresence>
-              {learningPaths.map((path, index) => (
-                <GridItem key={path.id}>
-                  <MotionBox
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05, duration: 0.4 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                  >
-                    <PathCard path={path} />
-                  </MotionBox>
-                </GridItem>
-          ))}
-            </AnimatePresence>
-          </MotionGrid>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && learningPaths.length === 0 && (
-          <Center py={16} flexDirection="column">
-            <InfoOutlineIcon boxSize={12} color="gray.400" mb={4} />
-            <Heading size="lg" mb={2} textAlign="center">No paths found</Heading>
-            <Text mb={8} textAlign="center" maxW="md">
-              We couldn't find any learning paths matching your search criteria. Try adjusting your filters or create a custom path.
-            </Text>
-            <ButtonGroup spacing={4}>
-              <Button colorScheme="purple" onClick={handleReset}>
-                Reset Filters
-              </Button>
-            <Button 
-                leftIcon={<AddIcon />}
-                variant="outline"
-                onClick={() => navigate('/course-generation')}
-              >
-                Create Custom Path
-            </Button>
-            </ButtonGroup>
-          </Center>
-        )}
-
-        {/* Back to top button - appears when scrolling down */}
-        <Box position="fixed" bottom="20px" right="20px" zIndex={10}>
-          <ScaleFade in={true}>
-            <IconButton
-              aria-label="Scroll to top"
-              icon={<ArrowUpIcon />}
-              colorScheme="purple"
-              rounded="full"
-              size="lg"
-              onClick={scrollToTop}
-              opacity={0.8}
-              _hover={{ opacity: 1 }}
-              boxShadow="lg"
-            />
-          </ScaleFade>
+        
+        {/* 3D Canvas */}
+        {(viewMode === '3d' || viewMode === 'panel') && (
+          <Box height="100%" width="100%">
+            <Canvas shadows camera={{ position: [0, 10, 20], fov: 60 }}>
+              <Forest 
+                paths={filteredPaths} 
+                onSelectPath={handlePathSelect} 
+                isDay={isDay}
+              />
+              <OrbitControls 
+                enableZoom={true} 
+                enablePan={true} 
+                minPolarAngle={Math.PI / 6} 
+                maxPolarAngle={Math.PI / 2} 
+              />
+            </Canvas>
           </Box>
-      </Container>
+        )}
+        
+        {/* Hover instructions for desktop */}
+        <Flex 
+          position="absolute"
+          bottom="20px"
+          left="50%"
+          transform="translateX(-50%)"
+          bg="blackAlpha.700"
+          color="white"
+          px={4}
+          py={2}
+          borderRadius="md"
+          fontSize="sm"
+          zIndex={10}
+          display={{ base: 'none', md: 'flex' }}
+        >
+          <Text>Hover over trees to see details • Click to explore</Text>
+        </Flex>
+      </Box>
+      
+      {/* Mobile view - Scrollable list of paths */}
+      {viewMode === 'panel' && (
+        <Container maxW="container.xl" py={8}>
+          <VStack spacing={6} align="stretch">
+            <Heading size="lg" textAlign="center" mb={4}>
+              Learning Paths Forest
+            </Heading>
+            
+            <Text textAlign="center" maxW="container.md" mx="auto" mb={4}>
+              Each path is represented as a tree in our knowledge forest. Explore, learn, and grow your skills through these carefully crafted learning journeys.
+            </Text>
+            
+            <MotionVStack
+              spacing={0}
+              align="stretch"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              {filteredPaths.map((path, index) => (
+                <TreePathCard key={path.id} path={path} index={index} />
+              ))}
+            </MotionVStack>
+            
+            {filteredPaths.length === 0 && (
+              <Center py={12} flexDirection="column">
+                <Image 
+                  src="https://source.unsplash.com/random/400x300?forest,empty" 
+                  alt="Empty forest" 
+                  borderRadius="lg" 
+                  maxW="300px"
+                  mb={4} 
+                />
+                <Heading size="md" mb={2}>No trees found in this forest section</Heading>
+                <Text mb={4} textAlign="center" maxW="md">
+                  Try adjusting your search criteria to discover more learning paths.
+                </Text>
+                <Button colorScheme="green" onClick={handleReset}>
+                  Reset Filters
+                </Button>
+              </Center>
+            )}
+          </VStack>
+        </Container>
+      )}
+      
+      {/* Path Detail Drawer */}
+      <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="md">
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader borderBottomWidth="1px">
+            {selectedPath?.title}
+          </DrawerHeader>
+          
+          <DrawerBody>
+            {selectedPath && (
+              <VStack spacing={6} align="stretch">
+                <Image
+                  src={selectedPath.image}
+                  alt={selectedPath.title}
+                  borderRadius="md"
+                  objectFit="cover"
+                  height="200px"
+                />
+                
+                <Flex justify="space-between" wrap="wrap" gap={2}>
+                  <Badge colorScheme={selectedPath.level === 'Beginner' ? 'green' : selectedPath.level === 'Intermediate' ? 'blue' : 'purple'} p={1}>
+                    {selectedPath.level}
+                  </Badge>
+                  <Badge colorScheme="teal" p={1}>{selectedPath.category}</Badge>
+                  <Badge colorScheme="gray" p={1}>{selectedPath.estimated_time}</Badge>
+                </Flex>
+                
+                <Text>{selectedPath.description}</Text>
+                
+                <Heading size="sm">What You'll Learn</Heading>
+                <VStack align="start" spacing={2}>
+                  <HStack>
+                    <Box w="8px" h="8px" borderRadius="full" bg="green.500" />
+                    <Text>Master essential {selectedPath.category.toLowerCase()} concepts</Text>
+                  </HStack>
+                  <HStack>
+                    <Box w="8px" h="8px" borderRadius="full" bg="green.500" />
+                    <Text>Practice through interactive exercises</Text>
+                  </HStack>
+                  <HStack>
+                    <Box w="8px" h="8px" borderRadius="full" bg="green.500" />
+                    <Text>Apply knowledge in practical scenarios</Text>
+                  </HStack>
+                </VStack>
+                
+                <Heading size="sm">Course Details</Heading>
+                <SimpleGrid columns={2} spacing={4}>
+                  <Stat>
+                    <StatLabel>Duration</StatLabel>
+                    <StatNumber>{selectedPath.estimated_time}</StatNumber>
+                  </Stat>
+                  <Stat>
+                    <StatLabel>Sprints</StatLabel>
+                    <StatNumber>{selectedPath.total_sprints || '12'}</StatNumber>
+                  </Stat>
+                  <Stat>
+                    <StatLabel>Rating</StatLabel>
+                    <StatNumber>{selectedPath.rating}</StatNumber>
+                    <StatHelpText>{selectedPath.review_count} reviews</StatHelpText>
+                  </Stat>
+                  <Stat>
+                    <StatLabel>Students</StatLabel>
+                    <StatNumber>{selectedPath.students_count}</StatNumber>
+                  </Stat>
+                </SimpleGrid>
+                
+                <Heading size="sm">Instructor</Heading>
+                <HStack>
+                  <Avatar src={selectedPath.instructor.avatar} name={selectedPath.instructor.name} size="lg" />
+                  <VStack align="start" spacing={0}>
+                    <Text fontWeight="bold">{selectedPath.instructor.name}</Text>
+                    <Text fontSize="sm">Expert in {selectedPath.category}</Text>
+                  </VStack>
+                </HStack>
+                
+                <Button 
+                  colorScheme="purple" 
+                  size="lg" 
+                  rightIcon={<ArrowForwardIcon />}
+                  onClick={() => navigate(`/path/${selectedPath.id}`)}
+                  mt={4}
+                >
+                  Start Learning
+                </Button>
+              </VStack>
+            )}
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </Box>
   );
 }

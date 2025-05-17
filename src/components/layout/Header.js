@@ -384,20 +384,8 @@ const NAV_ITEMS = [
     href: '/dashboard',
   },
   {
-    label: 'Learning Paths',
-    href: '/explore',
-    children: [
-      {
-        label: 'Course Builder',
-        subLabel: 'Create your own learning path',
-        href: '/course-builder',
-      },
-      {
-        label: 'Course Generation',
-        subLabel: 'Monitor AI-generated courses',
-        href: '/course-generation',
-      },
-    ],
+    label: 'Create',
+    href: '/course-builder',
   },
   {
     label: 'Community',
