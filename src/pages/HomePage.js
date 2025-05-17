@@ -566,6 +566,24 @@ function HomePage() {
     });
   };
 
+  // Add variables for useColorModeValue used in callbacks
+  const whiteAlpha900_blackAlpha700 = useColorModeValue('whiteAlpha.900', 'blackAlpha.700');
+  const gray600_gray400 = useColorModeValue('gray.600', 'gray.400');
+  const gray200_gray700 = useColorModeValue('gray.200', 'gray.700');
+  const gray50_gray700 = useColorModeValue('gray.50', 'gray.700');
+  const white_gray600 = useColorModeValue('white', 'gray.600');
+  const blackAlpha800_gray800 = useColorModeValue('blackAlpha.800', 'gray.800');
+  const white_gray800 = useColorModeValue('white', 'gray.800');
+  const gray50_gray800 = useColorModeValue('gray.50', 'gray.800');
+  const primary50_primary900 = useColorModeValue('primary.50', 'primary.900');
+  const secondary50_secondary900 = useColorModeValue('secondary.50', 'secondary.900');
+  const grayscaleFilter = useColorModeValue('grayscale(100%)', 'grayscale(100%) brightness(1.5)');
+  const purple50_purple900 = useColorModeValue('purple.50', 'purple.900');
+  const blue50_blue900 = useColorModeValue('blue.50', 'blue.900');
+  const opacityPurple = useColorModeValue(0.3, 0.1);
+  const opacityBlue = useColorModeValue(0.4, 0.1);
+  // ... add more as needed for all useColorModeValue calls inside callbacks ...
+
   return (
     <ParallaxProvider>
       <Box position="relative" overflow="hidden">
@@ -890,7 +908,7 @@ function HomePage() {
                       overflow="hidden"
                       bg={glassEffect}
                       borderWidth="1px"
-                      borderColor={useColorModeValue('gray.200', 'gray.700')}
+                      borderColor={gray200_gray700}
                       backdropFilter="blur(10px)"
                       zIndex={3}
                       as={motion.div}
@@ -951,7 +969,7 @@ function HomePage() {
                       left="0"
                       width="300px"
                       p={4}
-                      bg={useColorModeValue('blackAlpha.800', 'gray.800')}
+                      bg={blackAlpha800_gray800}
                       color="white"
                       borderRadius="xl"
                       boxShadow="xl"
@@ -989,12 +1007,12 @@ function HomePage() {
                   bottom="20px"
                       right="40px"
                       width="250px"
-                      bg={useColorModeValue('white', 'gray.800')}
+                      bg={white_gray800}
                   borderRadius="lg"
                       boxShadow="xl"
                       p={3}
                       borderWidth="1px"
-                      borderColor={useColorModeValue('gray.200', 'gray.700')}
+                      borderColor={gray200_gray700}
                       zIndex={3}
                       as={motion.div}
                       whileHover={{ y: -5 }}
@@ -1037,28 +1055,28 @@ function HomePage() {
                   alt="Microsoft"
                   maxH="35px"
                   mx="auto"
-                  filter={useColorModeValue("grayscale(100%)", "grayscale(100%) brightness(1.5)")}
+                  filter={grayscaleFilter}
                 />
                 <Image
                   src="https://cdn.worldvectorlogo.com/logos/google-2015.svg"
                   alt="Google"
                   maxH="35px"
                   mx="auto"
-                  filter={useColorModeValue("grayscale(100%)", "grayscale(100%) brightness(1.5)")}
+                  filter={grayscaleFilter}
                 />
                 <Image
                   src="https://cdn.worldvectorlogo.com/logos/amazon-2.svg"
                   alt="Amazon"
                   maxH="35px"
                   mx="auto"
-                  filter={useColorModeValue("grayscale(100%)", "grayscale(100%) brightness(1.5)")}
+                  filter={grayscaleFilter}
                 />
                 <Image
                   src="https://cdn.worldvectorlogo.com/logos/salesforce-2.svg"
                   alt="Salesforce"
                   maxH="35px"
                   mx="auto"
-                  filter={useColorModeValue("grayscale(100%)", "grayscale(100%) brightness(1.5)")}
+                  filter={grayscaleFilter}
                 />
                 <Image
                   src="https://cdn.worldvectorlogo.com/logos/adobe-2.svg"
@@ -1080,7 +1098,7 @@ function HomePage() {
       </Box>
 
       {/* Featured Courses Section */}
-        <Box position="relative" py={20} bg={useColorModeValue('gray.50', 'gray.800')}>
+        <Box position="relative" py={20} bg={gray50_gray800}>
           {/* Background decoration */}
           <Box
             position="absolute"
@@ -1088,8 +1106,8 @@ function HomePage() {
             right="0"
             height="300px"
             width="300px"
-            bg={useColorModeValue('primary.50', 'primary.900')}
-            opacity="0.4"
+            bg={primary50_primary900}
+            opacity={opacityPurple}
             filter="blur(70px)"
             borderRadius="full"
             zIndex={1}
@@ -1100,8 +1118,8 @@ function HomePage() {
             left="0"
             height="200px"
             width="200px"
-            bg={useColorModeValue('secondary.50', 'secondary.900')}
-            opacity="0.3"
+            bg={secondary50_secondary900}
+            opacity={opacityBlue}
             filter="blur(60px)"
             borderRadius="full"
             zIndex={1}
@@ -1224,7 +1242,7 @@ function HomePage() {
                                 position="absolute" 
                                 top={3} 
                                 right={3}
-                                bg={useColorModeValue('whiteAlpha.900', 'blackAlpha.700')}
+                                bg={whiteAlpha900_blackAlpha700}
                                 borderRadius="full"
                                 py={1}
                                 px={2}
@@ -1263,7 +1281,7 @@ function HomePage() {
                               
                               <Text 
                                 fontSize="sm" 
-                                color={useColorModeValue('gray.600', 'gray.400')}
+                                color={gray600_gray400}
                                 noOfLines={3}
                                 mb={3}
                               >
@@ -1285,10 +1303,10 @@ function HomePage() {
                             
                             <CardFooter
                               borderTop="1px"
-                              borderColor={useColorModeValue('gray.200', 'gray.700')}
+                              borderColor={gray200_gray700}
                               py={3}
                               px={5}
-                              bg={useColorModeValue('gray.50', 'gray.700')}
+                              bg={gray50_gray700}
                             >
                               <Button
                                 colorScheme="primary"
@@ -1405,7 +1423,7 @@ function HomePage() {
                           ].map((section, i) => (
                             <AccordionItem key={i} border="1px" borderColor="gray.200" mb={2} borderRadius="md">
                               <h2>
-                                <AccordionButton py={4} _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }}>
+                                <AccordionButton py={4} _hover={{ bg: gray50_gray700 }}>
                                   <Box flex="1" textAlign="left" fontWeight="semibold">
                                     {section.title}
                                   </Box>
@@ -1417,10 +1435,10 @@ function HomePage() {
                                   </HStack>
                                 </AccordionButton>
                               </h2>
-                              <AccordionPanel pb={4} bg={useColorModeValue('gray.50', 'gray.700')}>
+                              <AccordionPanel pb={4} bg={gray50_gray700}>
                                 <VStack align="stretch" spacing={2}>
                                   {[...Array(section.lessons)].map((_, j) => (
-                                    <HStack key={j} p={2} borderRadius="md" bg={useColorModeValue('white', 'gray.600')}>
+                                    <HStack key={j} p={2} borderRadius="md" bg={white_gray600}>
                                       <Icon as={j === 0 ? UnlockIcon : LockIcon} color={j === 0 ? "green.500" : "gray.500"} />
                                       <Text fontWeight={j === 0 ? "medium" : "normal"}>
                                         Lesson {j + 1}: {section.title.replace(/s$/, '')} {j + 1}
@@ -1672,96 +1690,13 @@ function HomePage() {
             </VStack>
         </Container>
       </Box>
-        
-        {/* Animated Stat Card Component */}
-        const StatCard = ({ icon, accentColor, value, suffix, label, delay, isVisible }) => (
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-            transition={{ duration: 0.7, delay }}
-          >
-            <VStack 
-              p={8} 
-              borderRadius="xl" 
-              bg="whiteAlpha.100"
-              backdropFilter="blur(8px)"
-              border="1px solid"
-              borderColor="whiteAlpha.200"
-              spacing={4}
-              height="100%"
-              boxShadow="0 10px 30px -5px rgba(0, 0, 0, 0.1)"
-              transition="transform 0.3s, box-shadow 0.3s"
-              _hover={{ transform: "translateY(-5px)", boxShadow: "xl" }}
-            >
-              <Circle 
-                size={14} 
-                bg={accentColor} 
-                color="white" 
-                opacity={0.9}
-              >
-                <Icon as={icon} boxSize={6} />
-              </Circle>
-              
-              <Box textAlign="center">
-                <HStack justify="center" fontSize={{ base: '3xl', md: '4xl' }} fontWeight="bold" color="white">
-                  <VisibilitySensor partialVisibility offset={{ bottom: 50 }}>
-                    {({ isVisible: isCounterVisible }) => (
-                      <Text display="flex" alignItems="baseline">
-                        <CountUp 
-                          start={0} 
-                          end={isVisible && isCounterVisible ? value : 0}
-                          duration={2.5}
-                          separator=","
-                          decimals={value < 100 ? 1 : 0}
-                          decimal="."
-                        />
-                        <Text as="span" ml={1}>{suffix}</Text>
-                      </Text>
-                    )}
-                  </VisibilitySensor>
-                </HStack>
-                <Text mt={1} color="whiteAlpha.800" fontWeight="medium">{label}</Text>
-              </Box>
-            </VStack>
-          </motion.div>
-        );
-        
-        // Achievement Component
-        const Achievement = ({ icon, title, description, delay, isVisible }) => (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-            transition={{ duration: 0.6, delay }}
-          >
-            <HStack 
-              align="start" 
-              spacing={4} 
-              bg="whiteAlpha.100" 
-              p={5} 
-              borderRadius="lg"
-              border="1px solid"
-              borderColor="whiteAlpha.200"
-              backdropFilter="blur(8px)"
-              transition="transform 0.3s"
-              _hover={{ transform: "translateY(-5px)" }}
-            >
-              <Circle size={10} bg="whiteAlpha.300" color="white">
-                <Icon as={icon} boxSize={5} />
-              </Circle>
-              <Box>
-                <Text color="white" fontWeight="bold" fontSize="lg" mb={1}>{title}</Text>
-                <Text color="whiteAlpha.800" fontSize="sm">{description}</Text>
-              </Box>
-            </HStack>
-          </motion.div>
-        );
 
       {/* Features Section */}
         <Box 
           py={24} 
           position="relative" 
           overflow="hidden" 
-          bg={useColorModeValue('white', 'gray.900')}
+          bg={white_gray800}
           ref={featuresRef}
         >
           {/* Background decoration */}
@@ -1772,8 +1707,8 @@ function HomePage() {
             width="600px"
             height="600px"
             borderRadius="full"
-            bg={useColorModeValue('purple.50', 'purple.900')}
-            opacity={useColorModeValue('0.3', '0.1')}
+            bg={purple50_purple900}
+            opacity={opacityPurple}
             filter="blur(80px)"
             zIndex={1}
           />
@@ -1784,8 +1719,8 @@ function HomePage() {
             width="400px"
             height="400px"
             borderRadius="full"
-            bg={useColorModeValue('blue.50', 'blue.900')}
-            opacity={useColorModeValue('0.4', '0.1')}
+            bg={blue50_blue900}
+            opacity={opacityBlue}
             filter="blur(80px)"
             zIndex={1}
           />
@@ -1882,7 +1817,7 @@ function HomePage() {
                 />
               </Grid>
               
-              <FeatureShowcase isVisible={featuresVisible} />
+              <FeatureShowcase isVisible={featuresVisible} floatAnimation={floatAnimation} />
             </VStack>
         </Container>
       </Box>
@@ -2333,168 +2268,176 @@ const Testimonial = ({ name, role, content, avatar }) => {
 };
 
 // Feature Card Component
-const FeatureCard = ({ icon, title, description, gradient, delay, isVisible }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 30 }}
-    animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-    transition={{ duration: 0.7, delay }}
-    style={{ height: '100%' }}
-  >
-    <Box
-      p={8}
-      borderRadius="2xl"
-      boxShadow="xl"
-      bg={useColorModeValue('white', 'gray.800')}
-      borderWidth="1px"
-      borderColor={useColorModeValue('gray.100', 'gray.700')}
-      position="relative"
-      overflow="hidden"
-      height="100%"
-      transition="transform 0.3s, box-shadow 0.3s"
-      _hover={{ transform: "translateY(-10px)", boxShadow: "2xl" }}
+const FeatureCard = ({ icon, title, description, gradient, delay, isVisible }) => {
+  const white_gray800 = useColorModeValue('white', 'gray.800');
+  const gray100_gray700 = useColorModeValue('gray.100', 'gray.700');
+  const gray600_gray400 = useColorModeValue('gray.600', 'gray.400');
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+      transition={{ duration: 0.7, delay }}
+      style={{ height: '100%' }}
     >
-      <Box 
-        position="absolute" 
-        top="-20px" 
-        left="-20px" 
-        width="120px" 
-        height="120px" 
-        bgGradient={gradient} 
-        opacity="0.2" 
-        borderRadius="full" 
-        zIndex={1} 
-      />
-      <Box position="relative" zIndex={2}>
-        <Circle 
-          size={14} 
+      <Box
+        p={8}
+        borderRadius="2xl"
+        boxShadow="xl"
+        bg={white_gray800}
+        borderWidth="1px"
+        borderColor={gray100_gray700}
+        position="relative"
+        overflow="hidden"
+        height="100%"
+        transition="transform 0.3s, box-shadow 0.3s"
+        _hover={{ transform: "translateY(-10px)", boxShadow: "2xl" }}
+      >
+        <Box 
+          position="absolute" 
+          top="-20px" 
+          left="-20px" 
+          width="120px" 
+          height="120px" 
           bgGradient={gradient} 
-          color="white" 
-          mb={5}
-        >
-          <Icon as={icon} boxSize={6} />
-        </Circle>
-        <Heading size="md" fontWeight="bold" mb={4}>{title}</Heading>
-        <Text color={useColorModeValue('gray.600', 'gray.400')}>{description}</Text>
+          opacity="0.2" 
+          borderRadius="full" 
+          zIndex={1} 
+        />
+        <Box position="relative" zIndex={2}>
+          <Circle 
+            size={14} 
+            bgGradient={gradient} 
+            color="white" 
+            mb={5}
+          >
+            <Icon as={icon} boxSize={6} />
+          </Circle>
+          <Heading size="md" fontWeight="bold" mb={4}>{title}</Heading>
+          <Text color={gray600_gray400}>{description}</Text>
+        </Box>
       </Box>
-    </Box>
-  </motion.div>
-);
+    </motion.div>
+  );
+};
 
 // Feature Showcase Component
-const FeatureShowcase = ({ isVisible }) => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
-    transition={{ duration: 1.2, delay: 0.8 }}
-    style={{ width: '100%' }}
-  >
-    <Box
-      p={{ base: 4, md: 10 }}
-      borderRadius="2xl"
-      bg={useColorModeValue('gray.50', 'gray.800')}
-      borderWidth="1px"
-      borderColor={useColorModeValue('gray.200', 'gray.700')}
-      boxShadow="xl"
-      overflow="hidden"
-      position="relative"
+const FeatureShowcase = ({ isVisible, floatAnimation }) => {
+  const gray50_gray800 = useColorModeValue('gray.50', 'gray.800');
+  const gray200_gray700 = useColorModeValue('gray.200', 'gray.700');
+  const white_gray700 = useColorModeValue('white', 'gray.700');
+  const gray600_gray400 = useColorModeValue('gray.600', 'gray.400');
+  const white_gray800 = useColorModeValue('white', 'gray.800');
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
+      transition={{ duration: 1.2, delay: 0.8 }}
+      style={{ width: '100%' }}
     >
-      <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={8} alignItems="center">
-        <GridItem>
-          <VStack align="start" spacing={6}>
-            <Heading 
-              size="lg" 
-              bgGradient="linear(to-r, primary.500, secondary.500)"
-              bgClip="text"
-            >
-              Learn Faster with AI-Powered Recommendations
-            </Heading>
-            <Text color={useColorModeValue('gray.600', 'gray.400')} fontSize="lg">
-              Our AI analyzes your learning patterns and adapts content in real-time to match your 
-              optimal learning style. Experience personalized education like never before.
-            </Text>
-            <List spacing={3}>
-              {[
-                'Customized learning paths based on your progress',
-                'Adaptive difficulty level that grows with you',
-                'Focus on areas where you need the most improvement',
-                'Learning strategies optimized for your cognitive style'
-              ].map((item, i) => (
-                <ListItem key={i}>
-                  <HStack align="start">
-                    <ListIcon as={CheckCircleIcon} color="primary.500" mt={1} />
-                    <Text>{item}</Text>
-                  </HStack>
-                </ListItem>
-              ))}
-            </List>
-            <Button
-              as={motion.button}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              size="lg"
-              colorScheme="primary"
-              rightIcon={<ArrowForwardIcon />}
-              as={RouterLink}
-              to="/how-it-works"
-            >
-              See How It Works
-            </Button>
-          </VStack>
-        </GridItem>
-        <GridItem position="relative">
-          <Box
-            borderRadius="xl"
-            overflow="hidden"
-            boxShadow="2xl"
-            bg={useColorModeValue('white', 'gray.700')}
-            p={1}
-          >
-            <Box borderRadius="lg" overflow="hidden">
-              <AspectRatio ratio={16/9}>
-                <Image
-                  src="https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=2074"
-                  alt="AI Recommendations Dashboard"
-                  objectFit="cover"
-                />
-              </AspectRatio>
-            </Box>
-            <HStack spacing={4} p={4} alignItems="center">
-              <Circle size={12} bg="primary.500" color="white">
-                <Icon as={GiArtificialIntelligence} boxSize={6} />
-              </Circle>
-              <Box>
-                <Text fontWeight="bold">Skill Sprint AI™</Text>
-                <Text fontSize="sm" color="gray.500">Personalized Learning System</Text>
-              </Box>
-            </HStack>
-          </Box>
-          
-          {/* Floating elements */}
-          <Box
-            position="absolute"
-            top="-15px"
-            right="-15px"
-            bg={useColorModeValue('white', 'gray.800')}
-            boxShadow="lg"
-            borderRadius="lg"
-            p={3}
-            maxW="180px"
-            zIndex={2}
-            animation={floatAnimation}
-          >
-            <HStack spacing={3}>
-              <Circle size={8} bg="green.100" color="green.500">
-                <Icon as={CheckCircleIcon} />
-              </Circle>
-              <Text fontWeight="medium" fontSize="sm">
-                95% better results than traditional courses
+      <Box
+        p={{ base: 4, md: 10 }}
+        borderRadius="2xl"
+        bg={gray50_gray800}
+        borderWidth="1px"
+        borderColor={gray200_gray700}
+        boxShadow="xl"
+        overflow="hidden"
+        position="relative"
+      >
+        <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={8} alignItems="center">
+          <GridItem>
+            <VStack align="start" spacing={6}>
+              <Heading 
+                size="lg" 
+                bgGradient="linear(to-r, primary.500, secondary.500)"
+                bgClip="text"
+              >
+                Learn Faster with AI-Powered Recommendations
+              </Heading>
+              <Text color={gray600_gray400} fontSize="lg">
+                Our AI analyzes your learning patterns and adapts content in real-time to match your 
+                optimal learning style. Experience personalized education like never before.
               </Text>
-            </HStack>
-          </Box>
-        </GridItem>
-      </Grid>
-    </Box>
-  </motion.div>
-);
+              <List spacing={3}>
+                {[
+                  'Customized learning paths based on your progress',
+                  'Adaptive difficulty level that grows with you',
+                  'Focus on areas where you need the most improvement',
+                  'Learning strategies optimized for your cognitive style'
+                ].map((item, i) => (
+                  <ListItem key={i}>
+                    <HStack align="start">
+                      <ListIcon as={CheckCircleIcon} color="primary.500" mt={1} />
+                      <Text>{item}</Text>
+                    </HStack>
+                  </ListItem>
+                ))}
+              </List>
+              <Button
+                as={RouterLink}
+                size="lg"
+                colorScheme="primary"
+                rightIcon={<ArrowForwardIcon />}
+                to="/how-it-works"
+              >
+                See How It Works
+              </Button>
+            </VStack>
+          </GridItem>
+          <GridItem position="relative">
+            <Box
+              borderRadius="xl"
+              overflow="hidden"
+              boxShadow="2xl"
+              bg={white_gray700}
+              p={1}
+            >
+              <Box borderRadius="lg" overflow="hidden">
+                <AspectRatio ratio={16/9}>
+                  <Image
+                    src="https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=2074"
+                    alt="AI Recommendations Dashboard"
+                    objectFit="cover"
+                  />
+                </AspectRatio>
+              </Box>
+              <HStack spacing={4} p={4} alignItems="center">
+                <Circle size={12} bg="primary.500" color="white">
+                  <Icon as={GiArtificialIntelligence} boxSize={6} />
+                </Circle>
+                <Box>
+                  <Text fontWeight="bold">Skill Sprint AI™</Text>
+                  <Text fontSize="sm" color="gray.500">Personalized Learning System</Text>
+                </Box>
+              </HStack>
+            </Box>
+            {/* Floating elements */}
+            <Box
+              position="absolute"
+              top="-15px"
+              right="-15px"
+              bg={white_gray800}
+              boxShadow="lg"
+              borderRadius="lg"
+              p={3}
+              maxW="180px"
+              zIndex={2}
+              animation={floatAnimation}
+            >
+              <HStack spacing={3}>
+                <Circle size={8} bg="green.100" color="green.500">
+                  <Icon as={CheckCircleIcon} />
+                </Circle>
+                <Text fontWeight="medium" fontSize="sm">
+                  95% better results than traditional courses
+                </Text>
+              </HStack>
+            </Box>
+          </GridItem>
+        </Grid>
+      </Box>
+    </motion.div>
+  );
+};
 
 export default HomePage;
