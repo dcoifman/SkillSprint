@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -13,33 +13,16 @@ import {
   Tag,
   HStack,
   VStack,
-  Image,
   Flex,
   Badge,
-  Card,
-  CardBody,
   useColorModeValue,
   Select,
   Avatar,
-  AvatarGroup,
-  Spinner,
   Center,
-  useToast,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
   IconButton,
   Tooltip,
   Grid,
   GridItem,
-  Divider,
-  SlideFade,
   ScaleFade,
   useDisclosure,
   ButtonGroup,
@@ -48,7 +31,6 @@ import {
   Wrap,
   WrapItem,
   useBreakpointValue,
-  keyframes,
   Skeleton,
   SkeletonText,
 } from '@chakra-ui/react';
@@ -56,9 +38,7 @@ import {
   SearchIcon,
   StarIcon,
   TimeIcon,
-  ChevronDownIcon,
   ViewIcon,
-  ExternalLinkIcon,
   AddIcon,
   RepeatIcon,
   InfoOutlineIcon,
@@ -66,6 +46,7 @@ import {
   ArrowForwardIcon,
 } from '@chakra-ui/icons';
 import { motion, AnimatePresence } from 'framer-motion';
+import { keyframes } from '@emotion/react';
 import { fetchLearningPaths } from '../services/supabaseClient';
 import PathCard from '../components/PathCard';
 import useApiErrorHandler from '../hooks/useApiErrorHandler';
@@ -73,7 +54,6 @@ import ThreeDAnatomyModel from '../components/ThreeDAnatomyModel';
 
 // Create animated components with framer-motion
 const MotionBox = motion(Box);
-const MotionFlex = motion(Flex);
 const MotionGrid = motion(Grid);
 
 // Define animations
@@ -486,7 +466,7 @@ function ExplorePathsPage() {
               <InputLeftElement pointerEvents="none">
                 <SearchIcon color={isSearchFocused ? accentColor : "gray.400"} />
               </InputLeftElement>
-              <Input
+              <Input 
                 ref={searchInputRef}
                 placeholder="Search for a specific skill or topic..."
                 value={searchQuery}
@@ -504,7 +484,7 @@ function ExplorePathsPage() {
             </InputGroup>
 
             <Flex direction={{ base: "column", md: "row" }} width="full" gap={4} align="center">
-              <Select
+              <Select 
                 placeholder="Select Category"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
@@ -518,7 +498,7 @@ function ExplorePathsPage() {
                 ))}
               </Select>
 
-              <Select
+              <Select 
                 placeholder="Select Level"
                 value={selectedLevel}
                 onChange={(e) => setSelectedLevel(e.target.value)}
@@ -549,8 +529,8 @@ function ExplorePathsPage() {
                     size="lg"
                   />
                 </Tooltip>
-              </HStack>
-            </Flex>
+            </HStack>
+          </Flex>
           </VStack>
         </MotionBox>
 
@@ -565,7 +545,7 @@ function ExplorePathsPage() {
             
             {categories.map(category => (
               <CategoryBadge
-                key={category}
+                key={category} 
                 category={category}
                 isSelected={selectedCategory === category}
                 onClick={() => handleCategorySelect(category)}
@@ -590,28 +570,28 @@ function ExplorePathsPage() {
 
         {/* Results Count and Sort Option */}
         {!isLoading && (
-          <Flex justify="space-between" align="center" mb={6}>
+        <Flex justify="space-between" align="center" mb={6}>
             <HStack>
               <Badge colorScheme="purple" px={2} py={1} borderRadius="md" fontSize="md">
                 {learningPaths.length}
               </Badge>
-              <Text fontWeight="medium">
+          <Text fontWeight="medium">
                 {learningPaths.length === 1 ? 'Path' : 'Paths'} Found
-              </Text>
+          </Text>
             </HStack>
-            <Select
+          <Select 
               width="auto"
-              size="sm"
+            size="sm" 
               defaultValue="popular"
               borderColor={borderColor}
-              bg={cardBg}
-            >
+            bg={cardBg}
+          >
               <option value="popular">Most Popular</option>
-              <option value="newest">Newest First</option>
+            <option value="newest">Newest First</option>
               <option value="rating">Highest Rated</option>
               <option value="duration">Shortest First</option>
-            </Select>
-          </Flex>
+          </Select>
+        </Flex>
         )}
 
         {/* Learning Paths Grid or List */}
@@ -639,7 +619,7 @@ function ExplorePathsPage() {
                     <PathCard path={path} />
                   </MotionBox>
                 </GridItem>
-              ))}
+          ))}
             </AnimatePresence>
           </MotionGrid>
         )}
@@ -656,13 +636,13 @@ function ExplorePathsPage() {
               <Button colorScheme="purple" onClick={handleReset}>
                 Reset Filters
               </Button>
-              <Button
+            <Button 
                 leftIcon={<AddIcon />}
                 variant="outline"
                 onClick={() => navigate('/course-generation')}
               >
                 Create Custom Path
-              </Button>
+            </Button>
             </ButtonGroup>
           </Center>
         )}
@@ -682,7 +662,7 @@ function ExplorePathsPage() {
               boxShadow="lg"
             />
           </ScaleFade>
-        </Box>
+          </Box>
       </Container>
     </Box>
   );
