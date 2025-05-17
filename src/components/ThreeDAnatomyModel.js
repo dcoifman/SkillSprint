@@ -180,15 +180,9 @@ function useAnatomyModel(systemType) {
   const modelPath = modelConfig?.path;
   const placeholderPath = `/models/anatomy/${systemType}/placeholder.glb`;
   
-  // Load both main model and placeholder
+  // Load both main model and placeholder UNCONDITIONALLY
   const mainModel = useGLTF(modelPath);
-  let placeholderModel;
-  
-  try {
-    placeholderModel = useGLTF(placeholderPath);
-  } catch (error) {
-    console.error(`Error loading placeholder for ${systemType}:`, error);
-  }
+  const placeholderModel = useGLTF(placeholderPath);
 
   // Handle errors and caching
   useEffect(() => {
