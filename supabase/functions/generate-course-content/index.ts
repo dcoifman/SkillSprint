@@ -516,6 +516,28 @@ serve(async (req: Request) => {
       return new Response('ok', { headers: corsHeaders });
     }
 
+    // Validate critical environment variables first
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    // Check for missing environment variables
+    const missingEnvVars = [];
+    if (!GEMINI_API_KEY) missingEnvVars.push('GEMINI_API_KEY');
+    if (!supabaseUrl) missingEnvVars.push('SUPABASE_URL');
+    if (!supabaseServiceKey) missingEnvVars.push('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (missingEnvVars.length > 0) {
+      console.error(`[ERROR] Missing environment variables: ${missingEnvVars.join(', ')}`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Server configuration error: Missing environment variables',
+          details: `Missing: ${missingEnvVars.join(', ')}` 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Verify request method
     if (req.method !== 'POST') {
       console.log('[ERROR] Invalid method:', req.method);
@@ -525,21 +547,39 @@ serve(async (req: Request) => {
       );
     }
 
-    // Parse request body
+    // Parse request body with better error handling
     let requestData;
     try {
-      requestData = await req.json();
-      console.log('[DEBUG] Received request data:', JSON.stringify(requestData));
+      const bodyText = await req.text();
+      console.log('[DEBUG] Request body:', bodyText);
+      
+      if (!bodyText) {
+        return new Response(
+          JSON.stringify({ error: 'Empty request body' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      requestData = JSON.parse(bodyText);
+      console.log('[DEBUG] Parsed request data:', JSON.stringify(requestData));
     } catch (error) {
       console.log('[ERROR] Invalid JSON body:', error);
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON body' }),
+        JSON.stringify({ error: 'Invalid JSON body', details: error.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const { courseRequest } = requestData;
-    console.log(`[DEBUG] Generated requestId: ${requestId}`);
+    // Validate request data
+    const { courseRequest, requestId: providedRequestId } = requestData;
+    
+    // Use provided requestId if available, otherwise use the generated one
+    if (providedRequestId) {
+      requestId = providedRequestId;
+      console.log(`[DEBUG] Using provided requestId: ${requestId}`);
+    } else {
+      console.log(`[DEBUG] Generated requestId: ${requestId}`);
+    }
     
     if (!courseRequest) {
       console.log('[ERROR] Missing courseRequest in payload');
@@ -550,18 +590,6 @@ serve(async (req: Request) => {
     }
 
     // Create Supabase admin client with service role key
-    console.log('[DEBUG] Checking Supabase configuration');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.log('[ERROR] Missing Supabase configuration');
-      return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     console.log('[DEBUG] Creating Supabase client');
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
@@ -569,6 +597,63 @@ serve(async (req: Request) => {
         persistSession: false
       }
     });
+
+    // Test Gemini API connectivity before proceeding
+    try {
+      console.log('[DEBUG] Testing Gemini API connectivity');
+      const testResponse = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          contents: [
+            {
+              parts: [
+                {
+                  text: "Respond with 'API test successful' only."
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 10,
+          }
+        },
+        {
+          timeout: 10000 // 10 second timeout
+        }
+      );
+      
+      if (!testResponse.data?.candidates?.[0]?.content) {
+        console.error('[ERROR] Gemini API test failed - unexpected response format');
+        return new Response(
+          JSON.stringify({ 
+            error: 'Gemini API connectivity test failed', 
+            details: 'The API returned an unexpected response format'
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log('[DEBUG] Gemini API test successful');
+      
+    } catch (apiTestError) {
+      console.error('[ERROR] Gemini API test failed:', apiTestError);
+      let errorDetails = 'Unknown error';
+      
+      if (apiTestError.response) {
+        errorDetails = `Status ${apiTestError.response.status}: ${JSON.stringify(apiTestError.response.data)}`;
+      } else if (apiTestError.message) {
+        errorDetails = apiTestError.message;
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          error: 'Gemini API connectivity test failed', 
+          details: errorDetails
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     try {
       console.log('[DEBUG] Creating initial request record');
@@ -640,7 +725,8 @@ serve(async (req: Request) => {
     
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        requestId: requestId || 'unknown'
       }),
       { 
         status: 500, 

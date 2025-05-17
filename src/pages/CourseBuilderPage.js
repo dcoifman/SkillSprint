@@ -376,9 +376,16 @@ function CourseBuilderPage() {
         
         if (error) {
           console.error('Error starting backend generation:', error);
+          
+          // Show detailed error message to the user
+          let errorMessage = "Failed to start course generation. Please try again.";
+          if (error.message) {
+            errorMessage = error.message;
+          }
+          
           toast({
             title: "Error",
-            description: "Failed to start course generation. Please try again.",
+            description: errorMessage,
             status: "error",
             duration: 5000,
             isClosable: true,

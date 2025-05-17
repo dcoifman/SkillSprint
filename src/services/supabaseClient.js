@@ -753,17 +753,41 @@ export const generateCourseContentBackend = async (courseRequest, onProgress) =>
     if (functionError) {
       console.error('Error invoking Edge Function:', functionError);
       
-      // Update the request status to failed
-      await supabase
-        .from('course_generation_requests')
-        .update({
-          status: 'failed',
-          error_message: functionError.message || 'Failed to start course generation',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', requestData.id);
+      // Show detailed error message to the user
+      let errorMessage = 'Failed to start course generation';
+      if (functionError.message) errorMessage = functionError.message;
       
-      return { error: functionError };
+      // If we have a specific error from the Edge Function response
+      if (functionData && typeof functionData === 'object') {
+        if (functionData.error) {
+          errorMessage = functionData.error;
+          if (functionData.details) {
+            errorMessage += `: ${functionData.details}`;
+          }
+        }
+      }
+      
+      // Update the request status to failed
+      try {
+        await supabase
+          .from('course_generation_requests')
+          .update({
+            status: 'failed',
+            error_message: errorMessage,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', requestData.id);
+      } catch (updateError) {
+        console.error('Error updating request status:', updateError);
+      }
+      
+      return { 
+        error: { 
+          message: errorMessage, 
+          originalError: functionError,
+          responseData: functionData
+        } 
+      };
     }
     
     return { 
