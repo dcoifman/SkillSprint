@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Heading,
@@ -27,92 +27,12 @@ import {
   IconButton,
   Tooltip,
   Spinner,
-  useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
-  Circle,
-  AspectRatio,
-  useBreakpointValue,
-  List,
-  ListItem,
-  ListIcon,
-  Input,
-  InputGroup,
-  InputRightElement,
-  Center,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  useToast,
-  ScaleFade,
-  SlideFade,
-  Fade,
-  Skeleton,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  AccordionIcon,
-  ModalFooter,
-  Spacer,
 } from '@chakra-ui/react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { keyframes, css } from '@emotion/react';
-import { 
-  ChevronRightIcon, 
-  StarIcon, 
-  ChatIcon, 
-  TimeIcon, 
-  CheckCircleIcon, 
-  SearchIcon,
-  ArrowForwardIcon,
-  DownloadIcon,
-  ExternalLinkIcon,
-  InfoOutlineIcon,
-  RepeatIcon,
-  LockIcon,
-  UnlockIcon,
-  ViewIcon,
-  EmailIcon,
-  PhoneIcon,
-  AddIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from '@chakra-ui/icons';
-import { FaGraduationCap, FaRocket, FaBrain, FaChartLine, FaLightbulb, FaUserGraduate, FaUsers, FaClock, FaCode, FaMobileAlt, FaUser } from 'react-icons/fa';
-import { GiArtificialIntelligence, GiMagnifyingGlass, GiTargetArrows, GiBrain } from 'react-icons/gi';
-import { BiCodeAlt, BiAnalyse, BiBarChartAlt2, BiBookOpen } from 'react-icons/bi';
+import { keyframes } from '@emotion/react';
+import { ChevronRightIcon, StarIcon, ChatIcon, TimeIcon, CheckCircleIcon } from '@chakra-ui/icons';
 import { fetchLearningPaths } from '../services/supabaseClient';
 import CourseCarousel from '../components/CourseCarousel';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Pagination, Autoplay, EffectCoverflow, EffectFade } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
-import 'swiper/css/effect-coverflow';
-import 'swiper/css/effect-fade';
-import ThreeDAnatomyModel from '../components/ThreeDAnatomyModel';
-import Particles from 'react-tsparticles';
-import { loadFull } from 'tsparticles';
-import CountUp from 'react-countup';
-import VisibilitySensor from 'react-visibility-sensor';
-import { TypeAnimation } from 'react-type-animation';
-import { Parallax, ParallaxProvider } from 'react-scroll-parallax';
-import { ErrorBoundary } from 'react-error-boundary';
 
-// Animation keyframes
 const pulse = keyframes`
   0% {
     transform: scale(0.95);
@@ -142,1683 +62,317 @@ const bounceAnimation = keyframes`
   }
 `;
 
-const float = keyframes`
-  0% {
-    transform: translateY(0px) translateX(0px);
-  }
-  25% {
-    transform: translateY(-10px) translateX(5px);
-  }
-  50% {
-    transform: translateY(0px) translateX(10px);
-  }
-  75% {
-    transform: translateY(10px) translateX(5px);
-  }
-  100% {
-    transform: translateY(0px) translateX(0px);
-  }
-`;
-
-const glowPulse = keyframes`
-  0% {
-    box-shadow: 0 0 5px 0px rgba(98, 0, 234, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 20px 5px rgba(98, 0, 234, 0.6);
-  }
-  100% {
-    box-shadow: 0 0 5px 0px rgba(98, 0, 234, 0.4);
-  }
-`;
-
-const gradientShift = keyframes`
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-`;
-
-const typewriterCursor = keyframes`
-  from {
-    border-right-color: rgba(98, 0, 234, 0.8);
-  }
-  to {
-    border-right-color: transparent;
-  }
-`;
-
-// Framer Motion variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.3,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { type: 'spring', stiffness: 100 },
-  },
-};
-
-const cardVariants = {
-  hover: {
-    scale: 1.05,
-    boxShadow: "0 12px 20px rgba(0,0,0,0.1)",
-    transition: { duration: 0.3 },
-  },
-};
-
-// Utility Functions
-const getRandomInt = (min, max) => {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-};
-
-// Particle Background Configuration
-const particlesConfig = {
-  particles: {
-    number: {
-      value: 30,
-      density: {
-        enable: true,
-        value_area: 900,
-      },
-    },
-    color: {
-      value: "#6200ea",
-    },
-    shape: {
-      type: "circle",
-      stroke: {
-        width: 0,
-        color: "#000000",
-      },
-      polygon: {
-        nb_sides: 5,
-      },
-    },
-    opacity: {
-      value: 0.3,
-      random: true,
-      anim: {
-        enable: true,
-        speed: 0.5,
-        opacity_min: 0.1,
-        sync: false,
-      },
-    },
-    size: {
-      value: 5,
-      random: true,
-      anim: {
-        enable: true,
-        speed: 2,
-        size_min: 0.1,
-        sync: false,
-      },
-    },
-    line_linked: {
-      enable: true,
-      distance: 150,
-      color: "#6200ea",
-      opacity: 0.2,
-      width: 1,
-    },
-    move: {
-      enable: true,
-      speed: 1,
-      direction: "none",
-      random: true,
-      straight: false,
-      out_mode: "out",
-      bounce: false,
-      attract: {
-        enable: true,
-        rotateX: 600,
-        rotateY: 1200,
-      },
-    },
-  },
-  interactivity: {
-    detect_on: "canvas",
-    events: {
-      onhover: {
-        enable: true,
-        mode: "grab",
-      },
-      onclick: {
-        enable: true,
-        mode: "push",
-      },
-      resize: true,
-    },
-    modes: {
-      grab: {
-        distance: 140,
-        line_linked: {
-          opacity: 0.5,
-        },
-      },
-      push: {
-        particles_nb: 2,
-      },
-    },
-  },
-  retina_detect: true,
-};
-
-// Animated Stat Card Component
-const StatCard = ({ icon, accentColor, value, suffix, label, delay, isVisible }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 40 }}
-    animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-    transition={{ duration: 0.7, delay }}
-  >
-    <VStack 
-      p={8} 
-      borderRadius="xl" 
-      bg="whiteAlpha.100"
-      backdropFilter="blur(8px)"
-      border="1px solid"
-      borderColor="whiteAlpha.200"
-      spacing={4}
-      height="100%"
-      boxShadow="0 10px 30px -5px rgba(0, 0, 0, 0.1)"
-      transition="transform 0.3s, box-shadow 0.3s"
-      _hover={{ transform: "translateY(-5px)", boxShadow: "xl" }}
-    >
-      <Circle 
-        size={14} 
-        bg={accentColor} 
-        color="white" 
-        opacity={0.9}
-      >
-        <Icon as={icon} boxSize={6} />
-      </Circle>
-      
-      <Box textAlign="center">
-        <HStack justify="center" fontSize={{ base: '3xl', md: '4xl' }} fontWeight="bold" color="white">
-          <VisibilitySensor partialVisibility offset={{ bottom: 50 }}>
-            {({ isVisible: isCounterVisible }) => (
-              <Text display="flex" alignItems="baseline">
-                <CountUp 
-                  start={0} 
-                  end={isVisible && isCounterVisible ? value : 0}
-                  duration={2.5}
-                  separator=","
-                  decimals={value < 100 ? 1 : 0}
-                  decimal="."
-                />
-                <Text as="span" ml={1}>{suffix}</Text>
-              </Text>
-            )}
-          </VisibilitySensor>
-        </HStack>
-        <Text mt={1} color="whiteAlpha.800" fontWeight="medium">{label}</Text>
-      </Box>
-    </VStack>
-  </motion.div>
-);
-
-// Achievement Component
-const Achievement = ({ icon, title, description, delay, isVisible }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 30 }}
-    animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-    transition={{ duration: 0.6, delay }}
-  >
-    <HStack 
-      align="start" 
-      spacing={4} 
-      bg="whiteAlpha.100" 
-      p={5} 
-      borderRadius="lg"
-      border="1px solid"
-      borderColor="whiteAlpha.200"
-      backdropFilter="blur(8px)"
-      transition="transform 0.3s"
-      _hover={{ transform: "translateY(-5px)" }}
-    >
-      <Circle size={10} bg="whiteAlpha.300" color="white">
-        <Icon as={icon} boxSize={5} />
-      </Circle>
-      <Box>
-        <Text color="white" fontWeight="bold" fontSize="lg" mb={1}>{title}</Text>
-        <Text color="whiteAlpha.800" fontSize="sm">{description}</Text>
-      </Box>
-    </HStack>
-  </motion.div>
-);
-
 function HomePage() {
   const pulseAnimation = `${pulse} 2s infinite`;
-  const floatAnimation = `${float} 6s ease-in-out infinite`;
-  const glowAnimation = `${glowPulse} 3s infinite`;
-  const gradientAnimation = `${gradientShift} 5s ease infinite`;
-  
-  // Theme colors
-  const heroBg = useColorModeValue('white', 'gray.900');
+  const heroBg = useColorModeValue('white', 'gray.800');
   const cardBg = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const glassEffect = useColorModeValue(
-    'rgba(255, 255, 255, 0.9)',
-    'rgba(26, 32, 44, 0.8)'
-  );
-  const gradientBg = useColorModeValue(
-    'linear-gradient(135deg, #6200ea 0%, #b388ff 100%)',
-    'linear-gradient(135deg, #42389d 0%, #5b4cdb 100%)'
-  );
-  const accentGradient = 'linear-gradient(135deg, #6200ea 0%, #00e5ff 100%)';
-
-  // State for data and UI management
   const [courses, setCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTestimonial, setActiveTestimonial] = useState(0);
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewData, setPreviewData] = useState(null);
-  const [statsVisible, setStatsVisible] = useState(false);
-  const [featuresVisible, setFeaturesVisible] = useState(false);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const navigate = useNavigate();
-  const toast = useToast();
-  
-  // Refs for scrolling elements
-  const statsRef = useRef(null);
-  const featuresRef = useRef(null);
-  const heroRef = useRef(null);
-  
-  // Initialize particles
-  const particlesInit = async (engine) => {
-    await loadFull(engine);
-  };
-  
-  // Responsive values based on screen size
-  const heroTextSize = useBreakpointValue({ base: '4xl', md: '5xl', lg: '6xl' });
-  const heroWidth = useBreakpointValue({ base: '100%', md: '90%', lg: '80%' });
-  const isMobile = useBreakpointValue({ base: true, md: false });
-  const featuredCoursesCount = useBreakpointValue({ base: 1, sm: 1, md: 2, lg: 3 });
 
-  // Mock featured courses data (will be replaced by API data)
-  const featuredCourses = [
-    {
-      id: 'ml-fundamentals',
-      title: 'Machine Learning Fundamentals',
-      description: 'Learn the core concepts of machine learning and build your first models',
-      duration: '2 weeks',
-      level: 'Beginner',
-      rating: 4.9,
-      students: 12345,
-      image: 'https://images.unsplash.com/photo-1555952494-efd681c7e3f9?q=80&w=2070',
-      tags: ['AI', 'Python', 'Data Science'],
-    },
-    {
-      id: 'ux-design',
-      title: 'UX Design Principles',
-      description: 'Master the fundamentals of user experience design and create intuitive interfaces',
-      duration: '3 weeks',
-      level: 'Intermediate',
-      rating: 4.8,
-      students: 8765,
-      image: 'https://images.unsplash.com/photo-1559028012-481c04fa702d?q=80&w=2036',
-      tags: ['Design', 'UI/UX', 'Prototyping'],
-    },
-    {
-      id: 'data-science',
-      title: 'Data Science Bootcamp',
-      description: 'Comprehensive data science training from statistical analysis to visualization',
-      duration: '4 weeks',
-      level: 'Advanced',
-      rating: 4.7,
-      students: 6543,
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070',
-      tags: ['Data', 'Python', 'Statistics'],
-    },
-    {
-      id: 'frontend-dev',
-      title: 'Frontend Development Mastery',
-      description: 'Build modern, responsive interfaces with React, CSS and modern JavaScript',
-      duration: '3 weeks',
-      level: 'Intermediate',
-      rating: 4.9,
-      students: 9876,
-      image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=2072',
-      tags: ['React', 'JavaScript', 'CSS'],
-    },
-  ];
-
-  // Load course data
   useEffect(() => {
     const loadCourses = async () => {
       try {
         const { data, error } = await fetchLearningPaths({});
         if (error) {
           console.error('Error loading courses:', error);
-          // Show fallback data
-          setTimeout(() => {
-            setCourses(featuredCourses);
-            setIsLoading(false);
-          }, 1500);
         } else {
-          // Format API data if needed
-          const formattedData = data?.length > 0 ? data : featuredCourses;
-          setCourses(formattedData);
-          setIsLoading(false);
+          setCourses(data || []);
         }
       } catch (err) {
         console.error('Unexpected error:', err);
-        // Show fallback data
-        setTimeout(() => {
-          setCourses(featuredCourses);
+      } finally {
         setIsLoading(false);
-        }, 1500);
       }
     };
 
     loadCourses();
-    
-    // Add scroll event listener for animations
-    const handleScroll = () => {
-      if (statsRef.current) {
-        const statsPosition = statsRef.current.getBoundingClientRect();
-        setStatsVisible(statsPosition.top < window.innerHeight * 0.8);
-      }
-      
-      if (featuresRef.current) {
-        const featuresPosition = featuresRef.current.getBoundingClientRect();
-        setFeaturesVisible(featuresPosition.top < window.innerHeight * 0.8);
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Handle course preview
-  const handleShowPreview = (course) => {
-    setPreviewData(course);
-    setShowPreview(true);
-    onOpen();
-  };
-  
-  // Handle email signup
-  const handleEmailSignup = (e) => {
-    e.preventDefault();
-    toast({
-      title: "Welcome aboard!",
-      description: "Thanks for joining! Check your email for next steps.",
-      status: "success",
-      duration: 5000,
-      isClosable: true,
-      position: "top",
-    });
-  };
-
-  // Add variables for useColorModeValue used in callbacks
-  const whiteAlpha900_blackAlpha700 = useColorModeValue('whiteAlpha.900', 'blackAlpha.700');
-  const gray600_gray400 = useColorModeValue('gray.600', 'gray.400');
-  const gray200_gray700 = useColorModeValue('gray.200', 'gray.700');
-  const gray50_gray700 = useColorModeValue('gray.50', 'gray.700');
-  const white_gray600 = useColorModeValue('white', 'gray.600');
-  const blackAlpha800_gray800 = useColorModeValue('blackAlpha.800', 'gray.800');
-  const white_gray800 = useColorModeValue('white', 'gray.800');
-  const gray50_gray800 = useColorModeValue('gray.50', 'gray.800');
-  const primary50_primary900 = useColorModeValue('primary.50', 'primary.900');
-  const secondary50_secondary900 = useColorModeValue('secondary.50', 'secondary.900');
-  const grayscaleFilter = useColorModeValue('grayscale(100%)', 'grayscale(100%) brightness(1.5)');
-  const purple50_purple900 = useColorModeValue('purple.50', 'purple.900');
-  const blue50_blue900 = useColorModeValue('blue.50', 'blue.900');
-  const opacityPurple = useColorModeValue(0.3, 0.1);
-  const opacityBlue = useColorModeValue(0.4, 0.1);
-  // ... add more as needed for all useColorModeValue calls inside callbacks ...
-
   return (
-    <ParallaxProvider>
-      <Box position="relative" overflow="hidden">
-        {/* Floating Navigation Menu */}
-        <Box 
-          position="fixed" 
-          bottom="20px" 
-          right="20px" 
-          zIndex={999}
-          display="flex"
-          flexDirection="column"
-          alignItems="flex-end"
-        >
-          <Button
-            as={motion.button}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            mb={2}
-            size="md"
-            colorScheme="primary"
-            boxShadow="lg"
-            borderRadius="full"
-            onClick={() => navigate('/signup')}
-            rightIcon={<ArrowForwardIcon />}
-          >
-            Join Free
-          </Button>
-          
-          <HStack spacing={2}>
-            <IconButton
-              as={motion.button}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              size="md"
-              colorScheme="teal"
-              aria-label="Contact us"
-              icon={<EmailIcon />}
-              boxShadow="lg"
-              borderRadius="full"
-              onClick={() => navigate('/contact')}
-            />
-            
-            <IconButton
-              as={motion.button}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              size="md"
-              colorScheme="blue"
-              aria-label="Search courses"
-              icon={<SearchIcon />}
-              boxShadow="lg"
-              borderRadius="full"
-              onClick={() => navigate('/courses')}
-            />
-            
-            <IconButton
-              as={motion.button}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              size="md"
-              colorScheme="purple"
-              aria-label="Scroll to top"
-              icon={<ChevronUpIcon />}
-              boxShadow="lg"
-              borderRadius="full"
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            />
-          </HStack>
-        </Box>
-
-        {/* Particle Background */}
-        <Box position="absolute" top={0} left={0} right={0} bottom={0} zIndex={1} opacity={0.7} pointerEvents="none">
-          <Particles id="tsparticles" init={particlesInit} options={particlesConfig} />
-        </Box>
-
+    <Box>
       {/* Hero Section */}
-        <Box 
-          position="relative" 
-          minH="100vh" 
-          py={{ base: 20, lg: 0 }}
-          display="flex" 
-          alignItems="center"
-          zIndex={2}
-          ref={heroRef}
-          overflow="hidden"
-          bg={`linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.6)), url('https://images.unsplash.com/photo-1523961131990-5ea7c61b2107?q=80&w=2074') center/cover no-repeat`}
-          _dark={{
-            bg: `linear-gradient(rgba(26,32,44,0.9), rgba(26,32,44,0.6)), url('https://images.unsplash.com/photo-1523961131990-5ea7c61b2107?q=80&w=2074') center/cover no-repeat`
-          }}
-        >
-          <Container maxW={'7xl'} zIndex={3}>
-            <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={10} alignItems="center">
-              {/* Hero Text Content */}
-              <GridItem>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8 }}
-                >
-                  <VStack spacing={6} align="flex-start" maxW="650px">
-                    <Badge
-                      as={motion.div}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.2, duration: 0.6 }}
-                      colorScheme="purple"
-                      fontSize="md"
-                      px={3}
-                      py={1}
-                      borderRadius="full"
-                      fontWeight="bold"
-                      boxShadow="sm"
-                    >
-                      AI-Powered Learning Platform
-                    </Badge>
-                    
+      <Box bg={heroBg} py={{ base: 10, md: 0 }}>
+        <Container maxW={'7xl'} minH={{base: "auto", md: "80vh"}} display="flex" alignItems="center" pt={{ base: 10, md: 0 }}>
+          <Stack
+            direction={{ base: 'column', lg: 'row' }}
+            spacing={{ base: 10, lg: 20 }}
+            align="center"
+            w="full"
+          >
+            <Stack
+              flex={1}
+              spacing={{ base: 5, md: 10 }}
+              py={{ base: 5, md: 20 }}
+            >
               <Heading
-                      as={motion.h1}
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4, duration: 0.6 }}
                 lineHeight={1.1}
-                      fontWeight={700}
-                      fontSize={heroTextSize}
-                    >
-                      <chakra.span display="block" mb={2}>
-                        Master any skill
-                      </chakra.span>
-                      <chakra.span 
-                        bgGradient={accentGradient}
-                        bgClip="text"
-                        animation={gradientAnimation}
-                      >
-                        in micro-sprints.
-                      </chakra.span>
-                    </Heading>
-                    
-                    <Box 
-                      as={motion.div}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.6, duration: 0.6 }}
-                    >
-                      <TypeAnimation
-                        sequence={[
-                          'Data Science. Machine Learning. UX Design.',
-                          2000,
-                          'Programming. Digital Marketing. Product Management.',
-                          2000,
-                          'Web Development. AI. Mobile Apps.',
-                          2000,
-                        ]}
-                        wrapper="span"
-                        speed={40}
-                        style={{ 
-                          fontSize: '1.25rem', 
-                          display: 'inline-block',
-                          fontWeight: 'medium',
-                          color: 'var(--chakra-colors-purple-500)'
-                        }}
-                        repeat={Infinity}
-                      />
-                    </Box>
-                    
+                fontWeight={600}
+                fontSize={{ base: '3xl', sm: '4xl', md: '5xl', lg: '6xl' }}
+              >
                 <Text
-                      as={motion.p}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.8, duration: 0.6 }}
-                      fontSize={{ base: 'lg', md: 'xl' }}
-                      color={useColorModeValue('gray.600', 'gray.300')}
-                      pr={{ base: 0, md: 10 }}
-                    >
-                      SkillSprint's personalized AI learning platform delivers targeted micro-lessons
-                      engineered for maximum retention and rapid skill acquisition.
+                  as={'span'}
+                  position={'relative'}
+                  _after={{
+                    content: "''",
+                    width: 'full',
+                    height: '20%',
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    bg: useColorModeValue('secondary.100', 'secondary.700'),
+                    zIndex: -1,
+                  }}>
+                  Short bursts.
                 </Text>
-                    
+                <br />
+                <Text as={'span'} color={'primary.600'}>
+                  Big skills.
+                </Text>
+              </Heading>
+              <Text color={'gray.500'} fontSize={{ base: 'md', sm: 'lg', md: 'xl' }} maxW="600px">
+                Master any skill with personalized, AI-powered adaptive micro-learning.
+                SkillSprint delivers concise sessions tailored to your learning style and goals.
+              </Text>
               <Stack
-                      as={motion.div}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1, duration: 0.6 }}
-                      spacing={5}
+                spacing={{ base: 4, sm: 6 }}
                 direction={{ base: 'column', sm: 'row' }}
-                      mt={2}
               >
                 <Button
-                        as={motion.button}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        size="lg"
-                        px={8}
-                        fontSize="md"
-                        fontWeight="bold"
-                        colorScheme="primary"
-                        bg={useColorModeValue('primary.500', 'primary.400')}
-                        _hover={{
-                          bg: useColorModeValue('primary.600', 'primary.300'),
-                        }}
-                        leftIcon={<Icon as={FaRocket} h={5} w={5} />}
+                  size={'lg'}
+                  fontWeight={'bold'}
+                  px={6}
+                  colorScheme={'primary'}
+                  as={RouterLink}
+                  to="/signup"
                   position="relative"
                   _after={{
                     content: "''",
                     width: '100%',
                     height: '100%',
+                    position: 'absolute',
                     borderRadius: '50px',
-                          position: 'absolute',
                     zIndex: -1,
                     animation: pulseAnimation,
                   }}
-                        onClick={() => navigate('/signup')}
                 >
-                        Start Free Trial
+                  Start Learning Free
                 </Button>
-                      
                 <Button
-                        as={motion.button}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        size="lg"
-                        px={8}
-                        fontSize="md"
-                        fontWeight="bold"
-                        variant="outline"
-                        colorScheme="primary"
-                        leftIcon={<Icon as={BiCodeAlt} h={5} w={5} />}
-                        onClick={() => navigate('/courses')}
-                      >
-                        Browse Courses
+                  as={RouterLink}
+                  to="/how-it-works"
+                  size={'lg'}
+                  fontWeight={'bold'}
+                  variant={'outline'}
+                  colorScheme={'primary'}
+                  leftIcon={<Icon boxSize={5} viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"
+                    />
+                  </Icon>}
+                >
+                  Learn More
                 </Button>
               </Stack>
               
-                    <HStack 
-                      as={motion.div}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 1.2, duration: 0.8 }}
-                      spacing={4} 
-                      mt={4}
-                    >
-                      <HStack>
-                        <Icon as={FaGraduationCap} color="primary.500" />
-                        <Text fontWeight="medium" fontSize="sm">30+ Learning Paths</Text>
-                      </HStack>
-                      
-                      <HStack>
-                        <Icon as={FaUsers} color="primary.500" />
-                        <Text fontWeight="medium" fontSize="sm">1M+ Learners</Text>
-                      </HStack>
-                      
-                      <HStack>
-                        <Icon as={FaClock} color="primary.500" />
-                        <Text fontWeight="medium" fontSize="sm">15min Daily</Text>
-                      </HStack>
-                    </HStack>
-                  </VStack>
-                </motion.div>
-              </GridItem>
-              
-              {/* Hero Visuals */}
-              <GridItem display={{ base: 'none', lg: 'block' }}>
-                <Box position="relative" height="600px">
-                  {/* 3D element or main image */}
-                  <motion.div
-                    initial={{ y: 30, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.8, delay: 0.5 }}
-                  >
-                    <Box
-                      position="absolute"
-                      width="500px"
-                      height="500px"
-                      top="0"
-                      right="0"
-                      borderRadius="2xl"
-                      overflow="hidden"
-                      boxShadow="2xl"
-                      zIndex={2}
-                      animation={floatAnimation}
-                    >
-                      {/* 3D model preview for anatomy course */}
-                      <ErrorBoundary fallback={
+              <HStack spacing={3}>
+                <Text fontSize="sm" fontWeight="medium" color="gray.500">Trusted by:</Text>
                 <Image
-                          src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=2026"
-                          alt="Learning dashboard"
+                  src="https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?q=80&w=2069"
+                  boxSize="30px"
+                  borderRadius="full"
                   objectFit="cover"
-                          width="100%"
-                          height="100%"
-                        />
-                      }>
-                        {courses.some(c => c.id === 'ml-fundamentals') ? (
-                          <ThreeDAnatomyModel 
-                            systemType="skeletal"
-                            initialView="anterior"
-                          />
-                        ) : (
+                  alt="Company A"
+                />
                 <Image
-                            src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=2026"
-                            alt="Learning dashboard"
+                  src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?q=80&w=2073"
+                  boxSize="30px"
+                  borderRadius="full"
                   objectFit="cover"
-                            width="100%"
-                            height="100%"
-                          />
-                        )}
-                      </ErrorBoundary>
-                    </Box>
-                  </motion.div>
-                  
-                  {/* Floating course card */}
-                  <motion.div
-                    initial={{ x: 50, y: 50, opacity: 0 }}
-                    animate={{ x: 0, y: 0, opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.8 }}
-                  >
-                    <Card
-                      position="absolute"
-                      bottom="80px"
-                      left="0px"
-                      width="320px"
-                      boxShadow="2xl"
-                      borderRadius="xl"
-                      overflow="hidden"
-                      bg={glassEffect}
-                      borderWidth="1px"
-                      borderColor={gray200_gray700}
-                      backdropFilter="blur(10px)"
-                      zIndex={3}
-                      as={motion.div}
-                      whileHover={{ y: -5, boxShadow: "0 20px 30px rgba(0,0,0,0.15)" }}
-                      animation={`${floatAnimation} 8s infinite`}
-                    >
-                      <CardBody p={0}>
-                        <AspectRatio ratio={16/9}>
+                  alt="Company B"
+                />
                 <Image
-                            src="https://images.unsplash.com/photo-1509228627152-72ae9ae6848d?q=80&w=2070"
-                            alt="Machine Learning"
+                  src="https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0?q=80&w=2673"
+                  boxSize="30px"
+                  borderRadius="full"
                   objectFit="cover"
-                          />
-                        </AspectRatio>
-                        <Box p={4}>
-                          <HStack mb={2}>
-                            <Badge colorScheme="green">Trending</Badge>
-                            <Badge colorScheme="purple">AI</Badge>
+                  alt="Company C"
+                />
+                <Text fontSize="sm" color="gray.500">+ 10,000 professionals</Text>
               </HStack>
-                          <Heading size="md" mb={2}>Machine Learning Fundamentals</Heading>
-                          <HStack mb={3}>
-                            <Icon as={FaUser} color="gray.500" />
-                            <Text fontSize="sm" color="gray.500">12.3k students</Text>
-                            <Spacer />
-                            <HStack>
-                              <Icon as={StarIcon} color="yellow.400" />
-                              <Text fontWeight="bold">4.9</Text>
-                            </HStack>
-                          </HStack>
-                          <Box height="6px" bg="gray.100" borderRadius="full" mb={2}>
-                            <Box height="6px" width="85%" bg="primary.500" borderRadius="full" />
-                          </Box>
-                          <HStack justify="space-between">
-                            <Text fontSize="sm" color="gray.500">12 of 14 sections</Text>
-                            <Button
-                              size="sm"
-                              colorScheme="primary"
-                              variant="ghost"
-                              rightIcon={<ArrowForwardIcon />}
-                            >
-                              Continue
-                            </Button>
-                          </HStack>
-                        </Box>
-                      </CardBody>
-                    </Card>
-                  </motion.div>
-                  
-                  {/* Floating code snippet */}
-                  <motion.div
-                    initial={{ x: -30, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 1.1 }}
+            </Stack>
+            <Flex
+              flex={1}
+              justify={'center'}
+              align={'center'}
+              position={'relative'}
+              w={'full'}
+              display={{ base: 'none', lg: 'flex' }}
             >
               <Box
-                      position="absolute"
-                      top="60px"
-                      left="0"
-                      width="300px"
-                      p={4}
-                      bg={blackAlpha800_gray800}
-                      color="white"
-                      borderRadius="xl"
-                      boxShadow="xl"
-                      fontFamily="mono"
-                      fontSize="sm"
-                      zIndex={3}
-                      as={motion.div}
-                      whileHover={{ y: -5, boxShadow: "0 20px 30px rgba(0,0,0,0.2)" }}
-                      animation={`${floatAnimation} 9s infinite`}
-                    >
-                      <HStack mb={2} color="gray.400">
-                        <Circle size={3} bg="red.400" />
-                        <Circle size={3} bg="yellow.400" />
-                        <Circle size={3} bg="green.400" />
-                        <Text ml={2}>python_ml.py</Text>
-                      </HStack>
-                      <Text color="purple.300">import <Text as="span" color="yellow.300">numpy</Text> as np</Text>
-                      <Text color="purple.300">import <Text as="span" color="yellow.300">tensorflow</Text> as tf</Text>
-                      <Text color="gray.400" my={1}># Build a simple neural network</Text>
-                      <Text color="blue.300">model = tf.keras.Sequential([</Text>
-                      <Text color="blue.300" ml={4}>tf.keras.layers.Dense(128, activation=<Text as="span" color="green.300">'relu'</Text>),</Text>
-                      <Text color="blue.300" ml={4}>tf.keras.layers.Dense(10, activation=<Text as="span" color="green.300">'softmax'</Text>)</Text>
-                      <Text color="blue.300">])</Text>
-                    </Box>
-                  </motion.div>
-                  
-                  {/* Notification toast */}
-                  <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 1.4 }}
-                  >
+                position={'relative'}
+                height={'550px'}
+                width={'full'}
+                overflow={'hidden'}
+                borderRadius={'2xl'}
+                boxShadow={'2xl'}
+              >
+                <Image
+                  alt={'Hero Image'}
+                  fit={'cover'}
+                  align={'center'}
+                  w={'100%'}
+                  h={'100%'}
+                  src={'https://images.unsplash.com/photo-1522881193457-37ae97c905bf?q=80&w=2070'}
+                  fallbackSrc="https://placehold.co/800x600/e2e8f0/1a202c?text=SkillSprint"
+                />
                 <Box
                   position="absolute"
                   bottom="20px"
-                      right="40px"
-                      width="250px"
-                      bg={white_gray800}
+                  left="20px"
+                  bg="white"
+                  p={4}
                   borderRadius="lg"
-                      boxShadow="xl"
-                      p={3}
-                      borderWidth="1px"
-                      borderColor={gray200_gray700}
-                      zIndex={3}
-                      as={motion.div}
-                      whileHover={{ y: -5 }}
-                      animation={`${float} 7s infinite`}
-                    >
-                      <HStack spacing={3}>
-                        <Circle size={10} bg="green.100" color="green.500">
-                          <CheckCircleIcon />
-                        </Circle>
-                        <Box>
-                          <Text fontWeight="bold" fontSize="sm">Daily Goal Achieved!</Text>
-                          <Text fontSize="xs" color="gray.500">You've completed today's learning sprint.</Text>
-                        </Box>
-                  </HStack>
-                  </Box>
-                  </motion.div>
-                </Box>
-              </GridItem>
-            </Grid>
-            
-            {/* Trusted by companies */}
-            <Box 
-              mt={{ base: 12, lg: 20 }} 
-              as={motion.div}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.5, duration: 0.6 }}
-            >
-              <Text textAlign="center" fontSize="sm" fontWeight="medium" mb={6} color="gray.500">
-                TRUSTED BY LEADING COMPANIES WORLDWIDE
+                  boxShadow="lg"
+                  width="60%"
+                  backdropFilter="blur(10px)"
+                  border="1px solid"
+                  borderColor="gray.100"
+                >
+                  <Text fontWeight="bold" mb={2}>
+                    Machine Learning Fundamentals
                   </Text>
-              <SimpleGrid 
-                columns={{ base: 2, md: 4, lg: 6 }} 
-                spacing={10} 
-                alignItems="center"
-                opacity={0.7}
-              >
-                <Image
-                  src="https://cdn.worldvectorlogo.com/logos/microsoft-5.svg"
-                  alt="Microsoft"
-                  maxH="35px"
-                  mx="auto"
-                  filter={grayscaleFilter}
-                />
-                <Image
-                  src="https://cdn.worldvectorlogo.com/logos/google-2015.svg"
-                  alt="Google"
-                  maxH="35px"
-                  mx="auto"
-                  filter={grayscaleFilter}
-                />
-                <Image
-                  src="https://cdn.worldvectorlogo.com/logos/amazon-2.svg"
-                  alt="Amazon"
-                  maxH="35px"
-                  mx="auto"
-                  filter={grayscaleFilter}
-                />
-                <Image
-                  src="https://cdn.worldvectorlogo.com/logos/salesforce-2.svg"
-                  alt="Salesforce"
-                  maxH="35px"
-                  mx="auto"
-                  filter={grayscaleFilter}
-                />
-                <Image
-                  src="https://cdn.worldvectorlogo.com/logos/adobe-2.svg"
-                  alt="Adobe"
-                  maxH="35px"
-                  mx="auto"
-                  filter={useColorModeValue("grayscale(100%)", "grayscale(100%) brightness(1.5)")}
-                />
-                <Image
-                  src="https://cdn.worldvectorlogo.com/logos/ibm-1.svg"
-                  alt="IBM"
-                  maxH="35px"
-                  mx="auto"
-                  filter={useColorModeValue("grayscale(100%)", "grayscale(100%) brightness(1.5)")}
-                />
-              </SimpleGrid>
+                  <HStack mb={2}>
+                    <Badge colorScheme="purple">12 min</Badge>
+                    <Badge colorScheme="green">Beginner</Badge>
+                  </HStack>
+                  <Box height="6px" bg="gray.100" borderRadius="full" mb={2}>
+                    <Box height="6px" width="60%" bg="primary.500" borderRadius="full" />
+                  </Box>
+                  <Text fontSize="sm" color="gray.500">
+                    60% Complete
+                  </Text>
                 </Box>
+              </Box>
+            </Flex>
+          </Stack>
         </Container>
       </Box>
 
       {/* Featured Courses Section */}
-        <Box position="relative" py={20} bg={gray50_gray800}>
-          {/* Background decoration */}
-          <Box
-            position="absolute"
-            top="0"
-            right="0"
-            height="300px"
-            width="300px"
-            bg={primary50_primary900}
-            opacity={opacityPurple}
-            filter="blur(70px)"
-            borderRadius="full"
-            zIndex={1}
-          />
-          <Box
-            position="absolute"
-            bottom="0"
-            left="0"
-            height="200px"
-            width="200px"
-            bg={secondary50_secondary900}
-            opacity={opacityBlue}
-            filter="blur(60px)"
-            borderRadius="full"
-            zIndex={1}
-          />
-          
-          <Container maxW={'7xl'} position="relative" zIndex={2}>
-            <VStack spacing={8} mb={12}>
-              <Box textAlign="center">
-                <Badge
-                  px={3}
-                  py={1}
-                  mb={3}
-                  colorScheme="secondary"
-                  fontSize="sm"
-                  borderRadius="full"
-                  boxShadow="sm"
-                >
-                  Top-Rated Programs
-                </Badge>
+      <Box bg={useColorModeValue('gray.50', 'gray.900')} py={12}>
+        <Container maxW={'7xl'}>
           <Heading
-                  as={motion.h2}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5 }}
-                  fontSize={{ base: '3xl', md: '4xl' }}
+            textAlign="center"
+            fontSize={{ base: '2xl', sm: '4xl' }}
             fontWeight="bold"
-                  mb={4}
+            mb={8}
           >
-                  Featured Learning Paths
+            Featured Courses
           </Heading>
-                <Text
-                  color={useColorModeValue('gray.600', 'gray.400')}
-                  maxW="800px"
-                  mx="auto"
-                  fontSize={{ base: 'md', md: 'lg' }}
-                >
-                  Explore our most popular paths designed by industry experts and continuously 
-                  optimized by our AI to deliver the most effective learning experience.
-                </Text>
-              </Box>
-              
-              {/* Course cards slider */}
           {isLoading ? (
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={10} width="100%">
-                  {[...Array(3)].map((_, i) => (
-                    <Box key={i} borderRadius="xl" overflow="hidden" height="450px">
-                      <Skeleton height="200px" />
-                      <Box p={5}>
-                        <Skeleton height="20px" width="40%" mb={4} />
-                        <Skeleton height="20px" width="90%" mb={3} />
-                        <Skeleton height="20px" width="60%" mb={4} />
-                        <Skeleton height="15px" width="80%" mb={2} />
-                        <Skeleton height="15px" width="70%" mb={6} />
-                        <Skeleton height="40px" width="100%" />
-                      </Box>
-                    </Box>
-                  ))}
-                </SimpleGrid>
-              ) : (
-                <Box width="100%" overflow="hidden">
-                  <Swiper
-                    slidesPerView={featuredCoursesCount}
-                    spaceBetween={30}
-                    pagination={{
-                      clickable: true,
-                      dynamicBullets: true,
-                    }}
-                    navigation={true}
-                    effect="coverflow"
-                    coverflowEffect={{
-                      rotate: 0,
-                      stretch: 0,
-                      depth: 100,
-                      modifier: 1,
-                      slideShadows: false,
-                    }}
-                    autoplay={{
-                      delay: 5000,
-                      disableOnInteraction: false,
-                    }}
-                    modules={[Navigation, Pagination, Autoplay, EffectCoverflow]}
-                    className="mySwiper"
-                    style={{ padding: '30px 0 50px' }}
-                  >
-                    {courses.map((course, index) => (
-                      <SwiperSlide key={course.id || index}>
-                        <motion.div whileHover="hover">
-                          <Card
-                            as={motion.div}
-                            variants={cardVariants}
-                            height="450px"
-                            overflow="hidden"
-                            borderRadius="xl"
-                            bg={cardBg}
-                            boxShadow="lg"
-                            position="relative"
-                            cursor="pointer"
-                            onClick={() => handleShowPreview(course)}
-                          >
-                            <Box overflow="hidden" height="200px">
-                              <Image
-                                src={course.image || `https://images.unsplash.com/photo-1501504905252-473c47e087f8?q=80&w=1974`}
-                                alt={course.title}
-                                objectFit="cover"
-                                width="100%"
-                                height="100%"
-                                transition="transform 0.3s"
-                                _groupHover={{ transform: "scale(1.05)" }}
-                              />
-                              <Box position="absolute" top={3} left={3}>
-                                <Badge colorScheme={
-                                  course.level === 'Beginner' ? 'green' :
-                                  course.level === 'Intermediate' ? 'blue' : 'purple'
-                                }>
-                                  {course.level || 'All Levels'}
-                                </Badge>
-                              </Box>
-                              <HStack 
-                                position="absolute" 
-                                top={3} 
-                                right={3}
-                                bg={whiteAlpha900_blackAlpha700}
-                                borderRadius="full"
-                                py={1}
-                                px={2}
-                              >
-                                <Icon as={StarIcon} color="yellow.400" boxSize={3} />
-                                <Text fontSize="xs" fontWeight="bold">
-                                  {course.rating || '4.8'}
-                                </Text>
-                              </HStack>
-                            </Box>
-                            
-                            <CardBody>
-                              <HStack mb={2} wrap="wrap">
-                                {(course.tags || ['Skill', 'Learning']).map((tag, i) => (
-                                  <Badge 
-                                    key={i} 
-                                    colorScheme={
-                                      tag === 'AI' ? 'purple' : 
-                                      tag === 'Data' ? 'blue' : 
-                                      tag === 'Design' ? 'pink' : 
-                                      tag === 'Python' ? 'green' : 
-                                      tag === 'JavaScript' ? 'yellow' : 
-                                      'gray'
-                                    }
-                                    fontSize="xs"
-                                    mt={1}
-                                  >
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </HStack>
-                              
-                              <Heading size="md" mb={2} noOfLines={2}>
-                                {course.title || 'Course Title'}
-                              </Heading>
-                              
-                              <Text 
-                                fontSize="sm" 
-                                color={gray600_gray400}
-                                noOfLines={3}
-                                mb={3}
-                              >
-                                {course.description || 'This course teaches you the essential skills needed to master this subject through engaging content and practical exercises.'}
-                              </Text>
-                              
-                              <HStack mb={2}>
-                                <Icon as={FaClock} color="gray.400" boxSize={4} />
-                                <Text fontSize="sm" color="gray.500">
-                                  {course.duration || '2-4 weeks'}
-                                </Text>
-                                <Spacer />
-                                <Icon as={FaUsers} color="gray.400" boxSize={4} />
-                                <Text fontSize="sm" color="gray.500">
-                                  {course.students?.toLocaleString() || '8,234'} students
-                                </Text>
-                              </HStack>
-                            </CardBody>
-                            
-                            <CardFooter
-                              borderTop="1px"
-                              borderColor={gray200_gray700}
-                              py={3}
-                              px={5}
-                              bg={gray50_gray700}
-                            >
-                              <Button
-                                colorScheme="primary"
-                                size="sm"
-                                width="full"
-                                leftIcon={<Icon as={FaGraduationCap} />}
-                              >
-                                Enroll Now
-                              </Button>
-                            </CardFooter>
-                          </Card>
-                        </motion.div>
-                      </SwiperSlide>
-                    ))}
-                  </Swiper>
-                </Box>
-              )}
-            </VStack>
-            
-            <Box textAlign="center">
-              <Button
-                as={motion.button}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                size="lg"
-                colorScheme="primary"
-                variant="outline"
-                rightIcon={<ArrowForwardIcon />}
-                onClick={() => navigate('/courses')}
-              >
-                View All Courses
-              </Button>
-            </Box>
+            <Flex justify="center" align="center" minH="400px">
+              <Spinner size="xl" color="primary.500" />
+            </Flex>
+          ) : (
+            <CourseCarousel courses={courses} />
+          )}
         </Container>
       </Box>
 
-        {/* Course Preview Modal */}
-        <Modal isOpen={isOpen} onClose={onClose} size="5xl" motionPreset="slideInBottom">
-          <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(10px)" />
-          <ModalContent borderRadius="xl" overflow="hidden">
-            <ModalCloseButton />
-            {previewData && (
-              <>
-                <Box position="relative" height="300px">
-                  <Image
-                    src={previewData.image || `https://images.unsplash.com/photo-1501504905252-473c47e087f8?q=80&w=1974`}
-                    alt={previewData.title}
-                    objectFit="cover"
-                    width="100%"
-                    height="100%"
-                  />
-                  <Box
-                    position="absolute"
-                    bottom={0}
-                    left={0}
-                    right={0}
-                    p={6}
-                    bg="linear-gradient(to top, rgba(0,0,0,0.8), transparent)"
-                    color="white"
-                  >
-                    <Heading size="xl">{previewData.title}</Heading>
-                    <HStack mt={2}>
-                      <Badge colorScheme="green">{previewData.level || 'All Levels'}</Badge>
-                      <Badge colorScheme="purple">{previewData.duration || '2-4 weeks'}</Badge>
-                      <Badge colorScheme="blue">{previewData.students?.toLocaleString() || '8,234'} enrolled</Badge>
-                    </HStack>
-                  </Box>
-                </Box>
-                <ModalBody p={6}>
-                  <Tabs colorScheme="primary" variant="soft-rounded">
-                    <TabList mb={4}>
-                      <Tab>Overview</Tab>
-                      <Tab>Curriculum</Tab>
-                      <Tab>Instructors</Tab>
-                      <Tab>Reviews</Tab>
-                    </TabList>
-                    <TabPanels>
-                      <TabPanel>
-                        <VStack align="start" spacing={6}>
-                          <Box>
-                            <Heading size="md" mb={3}>About This Course</Heading>
-                            <Text>{previewData.description || 'This comprehensive course is designed to take you from beginner to proficient in this subject area through carefully crafted lessons, hands-on exercises, and practical projects that reinforce learning.'}</Text>
-                          </Box>
-                          
-                          <Box width="100%">
-                            <Heading size="md" mb={3}>What You'll Learn</Heading>
-                            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                              {[
-                                'Master the fundamental concepts and principles',
-                                'Apply your knowledge to real-world projects',
-                                'Develop critical thinking and problem-solving skills',
-                                'Learn industry best practices and workflows',
-                                'Build a professional portfolio of work',
-                                'Gain confidence in your abilities and skills'
-                              ].map((item, i) => (
-                                <HStack key={i} align="start">
-                                  <Icon as={CheckCircleIcon} color="green.500" mt={1} />
-                                  <Text>{item}</Text>
-                                </HStack>
-                              ))}
-                            </SimpleGrid>
-                          </Box>
+      {/* Stats Section */}
+      <Box bg={useColorModeValue('gray.50', 'gray.900')} py={12}>
+        <Container maxW={'7xl'}>
+          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={5}>
+            <VStack bg={cardBg} p={6} borderRadius="lg" boxShadow="md" spacing={2} 
+                    transition="all 0.3s" _hover={{ transform: 'translateY(-5px)', boxShadow: 'lg' }}>
+              <Text fontSize="3xl" fontWeight="bold" color="primary.600">
+                1M+
+              </Text>
+              <Text fontWeight="medium">Active Learners</Text>
             </VStack>
-                      </TabPanel>
-                      <TabPanel>
-                        <Heading size="md" mb={4}>Course Content</Heading>
-                        <Accordion allowToggle>
-                          {[
-                            { title: 'Getting Started', lessons: 4, duration: '45 min' },
-                            { title: 'Core Concepts', lessons: 6, duration: '1h 20min' },
-                            { title: 'Advanced Techniques', lessons: 5, duration: '1h 15min' },
-                            { title: 'Practical Applications', lessons: 7, duration: '2h 10min' },
-                            { title: 'Final Projects', lessons: 3, duration: '1h 30min' }
-                          ].map((section, i) => (
-                            <AccordionItem key={i} border="1px" borderColor="gray.200" mb={2} borderRadius="md">
-                              <h2>
-                                <AccordionButton py={4} _hover={{ bg: gray50_gray700 }}>
-                                  <Box flex="1" textAlign="left" fontWeight="semibold">
-                                    {section.title}
-                                  </Box>
-                                  <HStack>
-                                    <Text mr={2} fontSize="sm" color="gray.500">
-                                      {section.lessons} lessons • {section.duration}
+            <VStack bg={cardBg} p={6} borderRadius="lg" boxShadow="md" spacing={2}
+                    transition="all 0.3s" _hover={{ transform: 'translateY(-5px)', boxShadow: 'lg' }}>
+              <Text fontSize="3xl" fontWeight="bold" color="primary.600">
+                5K+
               </Text>
-                                    <AccordionIcon />
-                                  </HStack>
-                                </AccordionButton>
-                              </h2>
-                              <AccordionPanel pb={4} bg={gray50_gray700}>
-                                <VStack align="stretch" spacing={2}>
-                                  {[...Array(section.lessons)].map((_, j) => (
-                                    <HStack key={j} p={2} borderRadius="md" bg={white_gray600}>
-                                      <Icon as={j === 0 ? UnlockIcon : LockIcon} color={j === 0 ? "green.500" : "gray.500"} />
-                                      <Text fontWeight={j === 0 ? "medium" : "normal"}>
-                                        Lesson {j + 1}: {section.title.replace(/s$/, '')} {j + 1}
-              </Text>
-                                      <Spacer />
-                                      <Text fontSize="sm" color="gray.500">
-                                        {Math.floor(5 + Math.random() * 15)} min
-                                      </Text>
-                                    </HStack>
-                                  ))}
+              <Text fontWeight="medium">Learning Paths</Text>
             </VStack>
-                              </AccordionPanel>
-                            </AccordionItem>
-                          ))}
-                        </Accordion>
-                      </TabPanel>
-                      <TabPanel>
-                        <Heading size="md" mb={4}>Course Instructors</Heading>
-                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8}>
-                          <HStack align="start" spacing={4}>
-                            <Avatar size="xl" src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=2070" />
-                            <Box>
-                              <Heading size="sm">Dr. Michael Chen</Heading>
-                              <Text color="gray.500" fontSize="sm" mb={2}>Senior Data Scientist, PhD</Text>
-                              <Text fontSize="sm">
-                                Expert in machine learning with over 10 years of experience in both academic and industry settings. 
-                                Previously lead AI researcher at Tech Innovators Inc.
+            <VStack bg={cardBg} p={6} borderRadius="lg" boxShadow="md" spacing={2}
+                    transition="all 0.3s" _hover={{ transform: 'translateY(-5px)', boxShadow: 'lg' }}>
+              <Text fontSize="3xl" fontWeight="bold" color="primary.600">
+                15M+
               </Text>
-                            </Box>
-                          </HStack>
-                          <HStack align="start" spacing={4}>
-                            <Avatar size="xl" src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961" />
-                            <Box>
-                              <Heading size="sm">Sarah Johnson</Heading>
-                              <Text color="gray.500" fontSize="sm" mb={2}>Lead Product Manager</Text>
-                              <Text fontSize="sm">
-                                Experienced product leader with expertise in translating complex technical concepts into 
-                                practical applications. Former VP of Product at LearnTech.
-                              </Text>
-                            </Box>
-                          </HStack>
-                        </SimpleGrid>
-                      </TabPanel>
-                      <TabPanel>
-                        <VStack align="stretch" spacing={6}>
-                          <HStack>
-                            <Heading size="xl" color="primary.500">4.9</Heading>
-                            <VStack align="start" spacing={0}>
-                              <HStack>
-                                {[...Array(5)].map((_, i) => (
-                                  <Icon key={i} as={StarIcon} color={i < 5 ? "yellow.400" : "gray.300"} />
-                                ))}
-                              </HStack>
-                              <Text color="gray.500" fontSize="sm">Based on 342 reviews</Text>
-                            </VStack>
-                          </HStack>
-                          
-                          <Divider />
-                          
-                          {[
-                            { name: "Alex Murphy", avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=1974", rating: 5, comment: "This course exceeded my expectations. The content is well-structured and the practical exercises really helped solidify my understanding." },
-                            { name: "Jamie Lee", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=2070", rating: 5, comment: "Excellent course! The instructors explain complex concepts in simple terms. I feel much more confident in my skills now." },
-                            { name: "Robert Garcia", avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=1974", rating: 4, comment: "Very informative and practical. I would have liked a bit more depth in the advanced sections, but overall it was great value." }
-                          ].map((review, i) => (
-                            <VStack key={i} align="start" spacing={3} p={4} borderWidth="1px" borderRadius="lg">
-                              <HStack>
-                                <Avatar size="sm" src={review.avatar} name={review.name} />
-                                <Box>
-                                  <Text fontWeight="bold">{review.name}</Text>
-                                  <HStack>
-                                    {[...Array(5)].map((_, j) => (
-                                      <Icon key={j} as={StarIcon} boxSize={3} color={j < review.rating ? "yellow.400" : "gray.300"} />
-                                    ))}
-                                  </HStack>
-                                </Box>
-                              </HStack>
-                              <Text fontSize="sm">{review.comment}</Text>
-                            </VStack>
-                          ))}
-                        </VStack>
-                      </TabPanel>
-                    </TabPanels>
-                  </Tabs>
-                </ModalBody>
-                <ModalFooter borderTop="1px" borderColor="gray.200">
-                  <Button
-                    colorScheme="primary"
-                    size="lg"
-                    leftIcon={<Icon as={FaGraduationCap} />}
-                    onClick={() => {
-                      onClose();
-                      navigate(`/courses/${previewData.id || 'details'}`);
-                    }}
-                  >
-                    Enroll Now
-                  </Button>
-                </ModalFooter>
-              </>
-            )}
-          </ModalContent>
-        </Modal>
-
-        {/* Stats Section */}
-        <Box 
-          py={24} 
-          position="relative" 
-          overflow="hidden"
-          bgGradient={gradientBg}
-          ref={statsRef}
-        >
-          {/* Background geometric shapes */}
-          <Box 
-            position="absolute" 
-            top="-10%" 
-            left="-5%" 
-            width="300px" 
-            height="300px" 
-            bg="white" 
-            opacity="0.05" 
-            borderRadius="full" 
-            zIndex={1} 
-          />
-          <Box 
-            position="absolute" 
-            bottom="-15%" 
-            right="-10%" 
-            width="400px" 
-            height="400px" 
-            bg="white" 
-            opacity="0.05" 
-            borderRadius="full" 
-            zIndex={1} 
-          />
-          <Box
-            position="absolute"
-            top="20%"
-            right="15%"
-            width="150px"
-            height="150px"
-            bg="white"
-            opacity="0.05"
-            borderRadius="full"
-            zIndex={1}
-          />
-          
-          <Container maxW={'7xl'} position="relative" zIndex={2}>
-            <VStack spacing={16}>
-              <Box textAlign="center" mb={6}>
-                <Badge 
-                  px={3} 
-                  py={1} 
-                  mb={3} 
-                  colorScheme="secondary" 
-                  fontSize="sm" 
-                  borderRadius="full"
-                  boxShadow="sm"
-                >
-                  Platform Impact
-                </Badge>
-                <Heading 
-                  as={motion.h2}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5 }}
-                  fontSize={{ base: '3xl', md: '4xl' }} 
-                  fontWeight="bold" 
-                  mb={4}
-                  color="white"
-                >
-                  Our Impact in Numbers
-                </Heading>
-                <Text 
-                  color="whiteAlpha.900" 
-                  maxW="800px" 
-                  mx="auto"
-                  fontSize={{ base: 'md', md: 'lg' }}
-                >
-                  Join millions of learners who are already achieving their goals with our 
-                  unique approach to skill development and micro-learning.
-                </Text>
-              </Box>
-              
-              <SimpleGrid 
-                columns={{ base: 1, sm: 2, md: 4 }} 
-                spacing={{ base: 10, md: 5 }} 
-                maxW="1200px" 
-                mx="auto" 
-                w="full"
-              >
-                <StatCard 
-                  isVisible={statsVisible}
-                  icon={FaUsers} 
-                  accentColor="purple.300"
-                  value={1250000} 
-                  label="Active Learners" 
-                  delay={0}
-                />
-                <StatCard 
-                  isVisible={statsVisible}
-                  icon={BiBookOpen} 
-                  accentColor="blue.300"
-                  value={5840} 
-                  label="Learning Paths" 
-                  delay={0.2}
-                />
-                <StatCard 
-                  isVisible={statsVisible}
-                  icon={GiBrain} 
-                  accentColor="green.300"
-                  value={15200000} 
-                  label="Sprints Completed" 
-                  delay={0.4}
-                />
-                <StatCard 
-                  isVisible={statsVisible}
-                  icon={BiAnalyse} 
-                  accentColor="yellow.300"
-                  value={93} 
-                  suffix="%" 
-                  label="Completion Rate" 
-                  delay={0.6}
-                />
+              <Text fontWeight="medium">Sprints Completed</Text>
+            </VStack>
+            <VStack bg={cardBg} p={6} borderRadius="lg" boxShadow="md" spacing={2}
+                    transition="all 0.3s" _hover={{ transform: 'translateY(-5px)', boxShadow: 'lg' }}>
+              <Text fontSize="3xl" fontWeight="bold" color="primary.600">
+                93%
+              </Text>
+              <Text fontWeight="medium">Completion Rate</Text>
+            </VStack>
           </SimpleGrid>
-              
-              <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8} mt={4} w="full">
-                <Achievement 
-                  isVisible={statsVisible}
-                  icon={BiBarChartAlt2}
-                  title="84% Skill Growth"
-                  description="Average skill improvement after completing learning paths"
-                  delay={0.3}
-                />
-                <Achievement 
-                  isVisible={statsVisible}
-                  icon={FaLightbulb}
-                  title="98% Satisfaction"
-                  description="Of our users would recommend SkillSprint to colleagues"
-                  delay={0.5}
-                />
-                <Achievement 
-                  isVisible={statsVisible}
-                  icon={FaRocket}
-                  title="3x Faster Learning"
-                  description="Compared to traditional course formats and methods"
-                  delay={0.7}
-                />
-              </SimpleGrid>
-            </VStack>
         </Container>
       </Box>
 
       {/* Features Section */}
-        <Box 
-          py={24} 
-          position="relative" 
-          overflow="hidden" 
-          bg={white_gray800}
-          ref={featuresRef}
-        >
-          {/* Background decoration */}
-          <Box
-            position="absolute"
-            top="5%"
-            right="-10%"
-            width="600px"
-            height="600px"
-            borderRadius="full"
-            bg={purple50_purple900}
-            opacity={opacityPurple}
-            filter="blur(80px)"
-            zIndex={1}
-          />
-          <Box
-            position="absolute"
-            bottom="-10%"
-            left="-5%"
-            width="400px"
-            height="400px"
-            borderRadius="full"
-            bg={blue50_blue900}
-            opacity={opacityBlue}
-            filter="blur(80px)"
-            zIndex={1}
-          />
-          
-          <Container maxW={'7xl'} position="relative" zIndex={2}>
-            <VStack spacing={16}>
-              <Box textAlign="center" maxW="800px" mx="auto">
-                <Badge 
-                  px={3} 
-                  py={1} 
-                  mb={3} 
-                  colorScheme="purple" 
-                  fontSize="sm" 
-                  borderRadius="full"
-                  boxShadow="sm"
-                >
-                  Powerful Features
-                </Badge>
-                <Heading
-                  as={motion.h2}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5 }}
-                  fontSize={{ base: '3xl', md: '4xl' }}
+      <Box bg={useColorModeValue('white', 'gray.800')} py={20}>
+        <Container maxW={'7xl'}>
+          <Box mb={20} textAlign="center">
+            <chakra.h2
+              fontSize={{ base: '2xl', sm: '3xl' }}
               fontWeight="bold"
-                  bgGradient="linear(to-r, primary.500, secondary.500)"
-                  bgClip="text"
               mb={5}
             >
               Everything you need to master new skills
-                </Heading>
+            </chakra.h2>
             <Text 
-                  color={useColorModeValue('gray.600', 'gray.400')}
-                  fontSize={{ base: 'md', md: 'lg' }}
+              color={'gray.500'} 
+              maxW={'3xl'} 
+              mx={'auto'}
             >
-                  Our AI-powered platform adapts to your learning style, delivering personalized 
-                  micro-lessons that fit perfectly into your busy schedule.
+              Our AI-powered platform adapts to your learning style, delivering personalized micro-lessons 
+              that fit perfectly into your busy schedule.
             </Text>
           </Box>
 
-              <Grid 
-                templateColumns={{ base: 'repeat(1, 1fr)', md: 'repeat(3, 1fr)' }}
-                gap={10}
-                w="100%"
-              >
-                <FeatureCard
-                  isVisible={featuresVisible}
-                  icon={FaRocket}
-                  title="Adaptive Micro-Learning"
-                  description="Short, engaging 5-15 minute sessions that adapt to your skill level in real-time."
-                  gradient="linear(to-r, purple.400, purple.600)"
-                  delay={0}
-                />
-                <FeatureCard
-                  isVisible={featuresVisible}
-                  icon={GiArtificialIntelligence}
-                  title="AI-Curated Pathways"
-                  description="Personalized learning roadmaps based on your goals, existing skills, and learning style."
-                  gradient="linear(to-r, blue.400, blue.600)"
-                  delay={0.2}
-                />
-                <FeatureCard
-                  isVisible={featuresVisible}
-                  icon={GiMagnifyingGlass}
-                  title="24/7 AI Tutor"
-                  description="Get answers, explanations, and guidance from your personal AI tutor anytime."
-                  gradient="linear(to-r, teal.400, teal.600)"
-                  delay={0.4}
-                />
-                <FeatureCard
-                  isVisible={featuresVisible}
-                  icon={RepeatIcon}
-                  title="Spaced Repetition"
-                  description="Automatically scheduled review sessions at optimal intervals for maximum retention."
-                  gradient="linear(to-r, green.400, green.600)"
-                  delay={0.3}
-                />
-                <FeatureCard
-                  isVisible={featuresVisible}
-                  icon={FaChartLine}
-                  title="Progress Tracking"
-                  description="Comprehensive visual analytics that track your skill mastery and identify areas for improvement."
-                  gradient="linear(to-r, yellow.400, yellow.600)"
-                  delay={0.5}
-                />
-                <FeatureCard
-                  isVisible={featuresVisible}
-                  icon={FaMobileAlt}
-                  title="Cross-Platform Access"
-                  description="Seamless learning across all your devices, with offline mode for on-the-go learning."
-                  gradient="linear(to-r, orange.400, orange.600)"
-                  delay={0.7}
-                />
-              </Grid>
-              
-              <FeatureShowcase isVisible={featuresVisible} floatAnimation={floatAnimation} />
-            </VStack>
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10} mb={20}>
+            <Feature
+              icon={'🚀'}
+              title={'Adaptive Micro-Learning'}
+              text={'Short, engaging 5-15 minute sessions that adapt to your skill level in real-time.'}
+            />
+            <Feature
+              icon={'🧠'}
+              title={'AI-Curated Pathways'}
+              text={'Personalized learning roadmaps based on your goals, existing skills, and learning style.'}
+            />
+            <Feature
+              icon={'💬'}
+              title={'24/7 AI Tutor'}
+              text={'Get answers, explanations, and guidance from your personal AI tutor anytime.'}
+            />
+          </SimpleGrid>
+
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10} mb={20}>
+            <Feature
+              icon={'🔄'}
+              title={'Spaced Repetition'}
+              text={'Automatically scheduled review sessions at optimal intervals for maximum retention.'}
+            />
+            <Feature
+              icon={'📊'}
+              title={'Progress Tracking'}
+              text={'Comprehensive visual analytics that track your skill mastery and identify areas for improvement.'}
+            />
+            <Feature
+              icon={'📱'}
+              title={'Cross-Platform Access'}
+              text={'Seamless learning across all your devices, with offline mode for on-the-go learning.'}
+            />
+          </SimpleGrid>
         </Container>
       </Box>
 
@@ -2169,7 +723,6 @@ function HomePage() {
         </Container>
       </Box>
     </Box>
-    </ParallaxProvider>
   );
 }
 
@@ -2257,186 +810,13 @@ const Testimonial = ({ name, role, content, avatar }) => {
         "{content}"
       </Text>
       <HStack spacing={4}>
-        <Avatar size="sm" src={avatar} name={name} />
-        <Box>
+        <Avatar src={avatar} name={name} size="md" />
+        <VStack align="start" spacing={0}>
           <Text fontWeight="bold">{name}</Text>
           <Text fontSize="sm" color="gray.500">{role}</Text>
-        </Box>
+        </VStack>
       </HStack>
     </VStack>
-  );
-};
-
-// Feature Card Component
-const FeatureCard = ({ icon, title, description, gradient, delay, isVisible }) => {
-  const white_gray800 = useColorModeValue('white', 'gray.800');
-  const gray100_gray700 = useColorModeValue('gray.100', 'gray.700');
-  const gray600_gray400 = useColorModeValue('gray.600', 'gray.400');
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-      transition={{ duration: 0.7, delay }}
-      style={{ height: '100%' }}
-    >
-      <Box
-        p={8}
-        borderRadius="2xl"
-        boxShadow="xl"
-        bg={white_gray800}
-        borderWidth="1px"
-        borderColor={gray100_gray700}
-        position="relative"
-        overflow="hidden"
-        height="100%"
-        transition="transform 0.3s, box-shadow 0.3s"
-        _hover={{ transform: "translateY(-10px)", boxShadow: "2xl" }}
-      >
-        <Box 
-          position="absolute" 
-          top="-20px" 
-          left="-20px" 
-          width="120px" 
-          height="120px" 
-          bgGradient={gradient} 
-          opacity="0.2" 
-          borderRadius="full" 
-          zIndex={1} 
-        />
-        <Box position="relative" zIndex={2}>
-          <Circle 
-            size={14} 
-            bgGradient={gradient} 
-            color="white" 
-            mb={5}
-          >
-            <Icon as={icon} boxSize={6} />
-          </Circle>
-          <Heading size="md" fontWeight="bold" mb={4}>{title}</Heading>
-          <Text color={gray600_gray400}>{description}</Text>
-        </Box>
-      </Box>
-    </motion.div>
-  );
-};
-
-// Feature Showcase Component
-const FeatureShowcase = ({ isVisible, floatAnimation }) => {
-  const gray50_gray800 = useColorModeValue('gray.50', 'gray.800');
-  const gray200_gray700 = useColorModeValue('gray.200', 'gray.700');
-  const white_gray700 = useColorModeValue('white', 'gray.700');
-  const gray600_gray400 = useColorModeValue('gray.600', 'gray.400');
-  const white_gray800 = useColorModeValue('white', 'gray.800');
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
-      transition={{ duration: 1.2, delay: 0.8 }}
-      style={{ width: '100%' }}
-    >
-      <Box
-        p={{ base: 4, md: 10 }}
-        borderRadius="2xl"
-        bg={gray50_gray800}
-        borderWidth="1px"
-        borderColor={gray200_gray700}
-        boxShadow="xl"
-        overflow="hidden"
-        position="relative"
-      >
-        <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={8} alignItems="center">
-          <GridItem>
-            <VStack align="start" spacing={6}>
-              <Heading 
-                size="lg" 
-                bgGradient="linear(to-r, primary.500, secondary.500)"
-                bgClip="text"
-              >
-                Learn Faster with AI-Powered Recommendations
-              </Heading>
-              <Text color={gray600_gray400} fontSize="lg">
-                Our AI analyzes your learning patterns and adapts content in real-time to match your 
-                optimal learning style. Experience personalized education like never before.
-              </Text>
-              <List spacing={3}>
-                {[
-                  'Customized learning paths based on your progress',
-                  'Adaptive difficulty level that grows with you',
-                  'Focus on areas where you need the most improvement',
-                  'Learning strategies optimized for your cognitive style'
-                ].map((item, i) => (
-                  <ListItem key={i}>
-                    <HStack align="start">
-                      <ListIcon as={CheckCircleIcon} color="primary.500" mt={1} />
-                      <Text>{item}</Text>
-                    </HStack>
-                  </ListItem>
-                ))}
-              </List>
-              <Button
-                as={RouterLink}
-                size="lg"
-                colorScheme="primary"
-                rightIcon={<ArrowForwardIcon />}
-                to="/how-it-works"
-              >
-                See How It Works
-              </Button>
-            </VStack>
-          </GridItem>
-          <GridItem position="relative">
-            <Box
-              borderRadius="xl"
-              overflow="hidden"
-              boxShadow="2xl"
-              bg={white_gray700}
-              p={1}
-            >
-              <Box borderRadius="lg" overflow="hidden">
-                <AspectRatio ratio={16/9}>
-                  <Image
-                    src="https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=2074"
-                    alt="AI Recommendations Dashboard"
-                    objectFit="cover"
-                  />
-                </AspectRatio>
-              </Box>
-              <HStack spacing={4} p={4} alignItems="center">
-                <Circle size={12} bg="primary.500" color="white">
-                  <Icon as={GiArtificialIntelligence} boxSize={6} />
-                </Circle>
-                <Box>
-                  <Text fontWeight="bold">Skill Sprint AI™</Text>
-                  <Text fontSize="sm" color="gray.500">Personalized Learning System</Text>
-                </Box>
-              </HStack>
-            </Box>
-            {/* Floating elements */}
-            <Box
-              position="absolute"
-              top="-15px"
-              right="-15px"
-              bg={white_gray800}
-              boxShadow="lg"
-              borderRadius="lg"
-              p={3}
-              maxW="180px"
-              zIndex={2}
-              animation={floatAnimation}
-            >
-              <HStack spacing={3}>
-                <Circle size={8} bg="green.100" color="green.500">
-                  <Icon as={CheckCircleIcon} />
-                </Circle>
-                <Text fontWeight="medium" fontSize="sm">
-                  95% better results than traditional courses
-                </Text>
-              </HStack>
-            </Box>
-          </GridItem>
-        </Grid>
-      </Box>
-    </motion.div>
   );
 };
 
