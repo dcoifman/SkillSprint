@@ -37,7 +37,7 @@ import {
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.js';
-import { supabase } from '../lib/supabase.js';
+import { supabase } from '../services/supabaseClient.js';
 
 // Course status definitions
 const COURSE_STATUS = {
