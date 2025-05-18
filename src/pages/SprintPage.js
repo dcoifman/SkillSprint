@@ -108,7 +108,7 @@ function SprintPage() {
 
         if (sprintError) throw sprintError;
         if (!sprint) throw new Error('Sprint not found');
-
+  
         // Get user progress if authenticated
         let progress = null;
         if (user) {
@@ -130,7 +130,7 @@ function SprintPage() {
           .eq('module_index', sprint.module.order_index)
           .eq('sprint_index', sprint.order_index)
           .single();
-
+    
         // Format the data for the component
         const formattedData = {
           id: sprint.id,

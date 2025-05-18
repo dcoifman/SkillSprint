@@ -44,7 +44,7 @@ CREATE POLICY "Allow anonymous access to sprint_contents"
 ON public.sprint_contents
 FOR ALL
 USING (true)
-WITH CHECK (true);
+WITH CHECK (true); 
 
 -- Drop existing policies
 DROP POLICY IF EXISTS "Users can view their own progress" ON user_progress;
