@@ -230,7 +230,13 @@ const UnifiedCourseDashboard = () => {
           </Box>
           <Button 
             colorScheme="purple" 
-            onClick={() => navigate('/course-builder')}
+            onClick={() => {
+              if (!user) {
+                navigate('/login');
+                return;
+              }
+              navigate('/course-builder/new');
+            }}
           >
             Create New Course
           </Button>

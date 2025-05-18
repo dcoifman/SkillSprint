@@ -62,6 +62,7 @@ import { useNavigate } from 'react-router-dom';
 import { keyframes } from '@emotion/react';
 import geminiClient, { PROMPT_TEMPLATES, generateContent, stripCodeFences } from '../services/geminiClient.js';
 import supabaseClient from '../services/supabaseClient.js';
+import { useAuth } from '../contexts/AuthContext.js';
 
 // Default course structure
 const defaultCourseForm = {
@@ -118,6 +119,7 @@ const BulkGenerationProgress = ({ current, total, isComplete }) => {
 };
 
 function CourseBuilderPage() {
+  const { user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -142,6 +144,12 @@ function CourseBuilderPage() {
   // Rate limit warning threshold (8 out of 10 free requests)
   const RATE_LIMIT_WARNING = 8;
 
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+  
   // Poll for generation status if we're using backend generation
   useEffect(() => {
     let interval;

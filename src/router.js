@@ -31,6 +31,7 @@ export const router = createBrowserRouter(
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/course-builder" element={<ProtectedRoute><UnifiedCourseDashboard /></ProtectedRoute>} />
       <Route path="/course-generation" element={<ProtectedRoute><CourseGenerationPage /></ProtectedRoute>} />
+      <Route path="/course-builder/new" element={<ProtectedRoute><CourseBuilderPage /></ProtectedRoute>} />
       <Route path="/community" element={<CommunityPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Route>

@@ -156,6 +156,7 @@ function Header() {
               <>
                 <Button
                   as={RouterLink}
+                  to="/login"
                   fontSize={'sm'}
                   fontWeight={400}
                   variant={'link'}

@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
   Box,
@@ -37,6 +37,7 @@ import { fetchLearningPaths } from '../services/supabaseClient.js';
 import CourseCarousel from '../components/CourseCarousel.js';
 import LoadingSkeleton from '../components/LoadingSkeleton.js';
 import { css } from '@emotion/react';
+import { useAuth } from '../contexts/AuthContext.js';
 
 // Lazy load below-the-fold components
 const CommunitySpotlight = lazy(() => import('../components/CommunitySpotlight.js'));
@@ -83,6 +84,8 @@ const getImagePath = (path) => {
 };
 
 function HomePage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const heroBg = useColorModeValue('white', 'gray.800');
   const cardBg = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
@@ -129,6 +132,14 @@ function HomePage() {
         fallbackSrc="https://placehold.co/500x300/e2e8f0/1a202c?text=No+Image"
       />
     );
+  };
+
+  const handleCreateCourse = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    navigate('/course-builder/new');
   };
 
   return (
@@ -1153,6 +1164,16 @@ function HomePage() {
         <CommunitySpotlight />
         <TestimonialsSection />
       </Suspense>
+
+      {/* Update any "Create Course" or "Start Teaching" buttons */}
+      <Button
+        onClick={handleCreateCourse}
+        colorScheme="purple"
+        size="lg"
+        rightIcon={<ChevronRightIcon />}
+      >
+        Start Teaching
+      </Button>
     </Box>
   );
 }
