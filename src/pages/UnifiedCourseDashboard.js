@@ -7,7 +7,6 @@ import {
   Text,
   VStack,
   HStack,
-  DragHandleIcon,
   useColorModeValue,
   Card,
   CardBody,
@@ -26,6 +25,7 @@ import {
   Tooltip,
   useDisclosure,
 } from '@chakra-ui/react';
+import { DragHandleIcon } from '@chakra-ui/icons';
 import { 
   FiMoreVertical, 
   FiEdit2, 
@@ -36,7 +36,7 @@ import {
 } from 'react-icons/fi';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext.js';
 
 // Course status definitions
 const COURSE_STATUS = {

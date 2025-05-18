@@ -76,6 +76,12 @@ const LoadingSpinner = () => (
   </Flex>
 );
 
+// Add this function at the top level of the file, before the HomePage component
+const getImagePath = (path) => {
+  // Ensure the path starts with a forward slash
+  return path.startsWith('/') ? path : `/${path}`;
+};
+
 function HomePage() {
   const heroBg = useColorModeValue('white', 'gray.800');
   const cardBg = useColorModeValue('white', 'gray.700');
@@ -109,6 +115,21 @@ function HomePage() {
   React.useEffect(() => {
     loadCourses();
   }, []);
+
+  // Update the image rendering in the courses section
+  const renderCourseImage = (course) => {
+    return (
+      <Image
+        src={getImagePath(course.image)}
+        alt={course.title}
+        borderRadius="lg"
+        width="100%"
+        height="250px"
+        objectFit="cover"
+        fallbackSrc="https://placehold.co/500x300/e2e8f0/1a202c?text=No+Image"
+      />
+    );
+  };
 
   return (
     <Box>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Container } from '@chakra-ui/react';
-import EnhancedInstructorProfile from '../components/EnhancedInstructorProfile';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../services/supabaseClient';
+import EnhancedInstructorProfile from '../components/EnhancedInstructorProfile.js';
+import { useAuth } from '../contexts/AuthContext.js';
+import { supabase } from '../services/supabaseClient.js';
 
 function InstructorProfilePage() {
   const { user } = useAuth();
