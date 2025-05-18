@@ -384,8 +384,8 @@ const NAV_ITEMS = [
     href: '/dashboard',
   },
   {
-    label: 'Create',
-        href: '/course-builder',
+    label: 'Course Studio',
+    href: '/course-builder',
   },
   {
     label: 'Community',
