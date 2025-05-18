@@ -21,8 +21,8 @@ import { AddIcon } from '@chakra-ui/icons';
 import { motion } from 'framer-motion';
 import { supabase } from '../services/supabaseClient.js';
 import { useAuth } from '../contexts/AuthContext.js';
-import PersonalizedPathCard from './PersonalizedPathCard';
-import PersonalizedPathGenerator from './PersonalizedPathGenerator';
+import PersonalizedPathCard from './PersonalizedPathCard.js';
+import PersonalizedPathGenerator from './PersonalizedPathGenerator.js';
 
 const MotionBox = motion(Box);
 
