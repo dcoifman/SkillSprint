@@ -45,9 +45,25 @@ function PersonalizedPathsSection() {
           .from('personalized_learning_paths')
           .select(`
             *,
-            personalized_modules (
-              *,
-              personalized_sprints (*)
+            base_path:base_path_id(
+              title,
+              description,
+              category,
+              difficulty,
+              image_url
+            ),
+            modules:personalized_modules!personalized_path_id(
+              id,
+              title,
+              description,
+              order_index,
+              sprints:personalized_sprints!personalized_module_id(
+                id,
+                title,
+                description,
+                time,
+                order_index
+              )
             )
           `)
           .eq('user_id', user.id)
