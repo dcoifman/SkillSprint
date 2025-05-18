@@ -423,7 +423,7 @@ const LEARNING_PATHS = [
     difficulty: 'Intermediate',
     rating: 4.8,
     reviews: 128,
-    image: '/path-images/naval-disaster.jpg',
+    image: '/path-images/russian-baltic-fleet.jpg',
     tags: ['Military History', 'Naval Warfare', 'Comedy in History'],
     featured: true,
     instructor: {

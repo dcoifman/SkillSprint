@@ -31,7 +31,7 @@ INSERT INTO public.learning_paths (
   'Embark on a hilariously tragic voyage with the Tsar''s Baltic Fleet during the Russo-Japanese War! This course charts the unbelievable journey of a fleet plagued by misfortune, incompetence, and a severe shortage of common sense. From mistaking British fishermen for Japanese destroyers to the logistical nightmare of coaling obsolete battleships across the globe, you''ll learn why this expedition is a textbook example of ''what not to do.''',
   'History',
   'Intermediate',
-  '/path-images/naval-disaster.jpg',
+  '/path-images/russian-baltic-fleet.jpg',
   '5 hours',
   4.8,
   128,

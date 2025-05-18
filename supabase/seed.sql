@@ -24,7 +24,7 @@ INSERT INTO learning_paths (
   'Intermediate',
   4.8,
   128,
-  '/path-images/naval-disaster.jpg',
+  '/path-images/russian-baltic-fleet.jpg',
   ARRAY['Military History', 'Naval Warfare', 'Comedy in History'],
   true,
   'Dr. Naval History',
