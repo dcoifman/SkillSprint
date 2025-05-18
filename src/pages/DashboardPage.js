@@ -59,6 +59,7 @@ import { motion } from 'framer-motion';
 import CourseInvitationsComponent from '../components/CourseInvitationsComponent.js';
 import { getInstructorProfile } from '../services/supabaseClient.js';
 import PersonalizedPathsSection from '../components/PersonalizedPathsSection.js';
+import { supabase } from '../services/supabaseClient.js';
 
 // Motion components for animations
 const MotionBox = motion(Box);
@@ -71,23 +72,51 @@ function DashboardPage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isInstructor, setIsInstructor] = useState(false);
   
-  // Simulate data loading
+  const [userInfo, setUserInfo] = useState({
+    name: user?.user_metadata?.full_name || 'Learner',
+    avatar: user?.user_metadata?.avatar_url,
+    streak: 0,
+    completedSprints: 0,
+    level: 1,
+    xp: 0,
+    nextLevelXp: 1000,
+    activePaths: 0,
+    recentActivity: null,
+    joined: new Date(user?.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  });
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-    
-    // Check if user is an instructor
-    const checkInstructorStatus = async () => {
-      if (user) {
-        const { data } = await getInstructorProfile();
-        setIsInstructor(!!data);
+    const fetchUserStats = async () => {
+      if (!user) return;
+      
+      try {
+        // Fetch user stats from Supabase
+        const { data: stats, error } = await supabase
+          .from('user_stats')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (error) throw error;
+        
+        if (stats) {
+          setUserInfo(prev => ({
+            ...prev,
+            streak: stats.streak || 0,
+            completedSprints: stats.completed_sprints || 0,
+            level: stats.level || 1,
+            xp: stats.xp || 0,
+            nextLevelXp: stats.next_level_xp || 1000,
+            activePaths: stats.active_paths || 0,
+            recentActivity: stats.last_activity ? new Date(stats.last_activity).toLocaleDateString() : null
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching user stats:', error);
       }
     };
     
-    checkInstructorStatus();
-    
-    return () => clearTimeout(timer);
+    fetchUserStats();
   }, [user]);
 
   // Cards and text styling
@@ -100,20 +129,6 @@ function DashboardPage() {
     'linear(to-r, purple.400, blue.400)'
   );
   
-  // User information - in a real app, this would come from an API
-  const userInfo = {
-    name: user?.user_metadata?.full_name || 'Learner',
-    avatar: user?.user_metadata?.avatar_url,
-    streak: 7,
-    completedSprints: 42,
-    level: 7,
-    xp: 2150,
-    nextLevelXp: 3000,
-    activePaths: 4,
-    recentActivity: '2 hours ago',
-    joined: 'May 2023',
-  };
-
   const progressPercent = Math.round((userInfo.xp / userInfo.nextLevelXp) * 100);
 
   return (

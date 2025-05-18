@@ -37,6 +37,7 @@ import {
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.js';
+import { supabase } from '../lib/supabase.js';
 
 // Course status definitions
 const COURSE_STATUS = {
@@ -173,28 +174,40 @@ const UnifiedCourseDashboard = () => {
   const { user } = useAuth();
   
   useEffect(() => {
-    // TODO: Fetch courses and stats from API
-    // This is placeholder data
-    setCourses([
-      {
-        id: '1',
-        title: 'Introduction to React',
-        description: 'Learn the basics of React development',
-        status: 'PUBLISHED',
-        level: 'Beginner',
-        totalModules: 5,
-        completionRate: 75
-      },
-      // Add more sample courses...
-    ]);
+    const fetchCoursesAndStats = async () => {
+      if (!user) return;
+      
+      try {
+        // Fetch courses
+        const { data: coursesData, error: coursesError } = await supabase
+          .from('courses')
+          .select('*')
+          .eq('instructor_id', user.id);
+          
+        if (coursesError) throw coursesError;
+        
+        // Calculate stats from courses data
+        const publishedCourses = coursesData?.filter(c => c.status === 'PUBLISHED') || [];
+        const totalStudents = coursesData?.reduce((acc, course) => acc + (course.enrolled_students || 0), 0) || 0;
+        const completionRates = coursesData?.map(c => c.completion_rate || 0) || [];
+        const averageCompletion = completionRates.length 
+          ? Math.round(completionRates.reduce((a, b) => a + b, 0) / completionRates.length) 
+          : 0;
+        
+        setCourses(coursesData || []);
+        setStats({
+          totalCourses: coursesData?.length || 0,
+          publishedCourses: publishedCourses.length,
+          totalStudents,
+          averageCompletion
+        });
+      } catch (error) {
+        console.error('Error fetching courses and stats:', error);
+      }
+    };
     
-    setStats({
-      totalCourses: 12,
-      publishedCourses: 8,
-      totalStudents: 450,
-      averageCompletion: 68
-    });
-  }, []);
+    fetchCoursesAndStats();
+  }, [user]);
   
   const onDragEnd = (result) => {
     if (!result.destination) return;

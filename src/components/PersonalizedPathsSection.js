@@ -134,7 +134,7 @@ function PersonalizedPathsSection() {
             >
               <PersonalizedPathCard 
                 path={path} 
-                progress={Math.floor(Math.random() * 100)} // Replace with actual progress calculation
+                progress={path.progress || 0}
               />
             </MotionBox>
           ))}
