@@ -58,6 +58,7 @@ import { useAuth } from '../contexts/AuthContext.js';
 import { motion } from 'framer-motion';
 import CourseInvitationsComponent from '../components/CourseInvitationsComponent.js';
 import { getInstructorProfile } from '../services/supabaseClient.js';
+import PersonalizedPathsSection from '../components/PersonalizedPathsSection.js';
 
 // Motion components for animations
 const MotionBox = motion(Box);
@@ -400,6 +401,16 @@ function DashboardPage() {
           </CardBody>
         </MotionCard>
       </SimpleGrid>
+
+      {/* Personalized Learning Paths Section */}
+      <Box mb={8}>
+        <PersonalizedPathsSection />
+      </Box>
+
+      {/* Continue Learning section */}
+      <Heading as="h2" size="lg" mb={6}>
+        Continue Learning
+      </Heading>
 
       {/* Learning Paths Progress - Enhanced with hover effects */}
       <Box mb={10}>
