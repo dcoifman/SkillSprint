@@ -667,8 +667,31 @@ function SprintPage() {
               </AspectRatio>
             ) : null}
             
-            {/* Safely map over currentStep.content only if it is an array */}
-            {Array.isArray(currentStep?.content) ? (
+            {/* Safely check if currentStep.content is an object with a steps array, or just an array */}
+            {typeof currentStep?.content === 'object' && Array.isArray(currentStep.content?.steps) ? (
+              // Render content items if content is an object with a steps array
+              currentStep.content.steps.map((item, index) => {
+                // Log each item before rendering
+                console.log('Rendering content item:', item, 'at index:', index);
+                // Ensure item is not null or undefined
+                if (!item) {
+                  console.warn('Encountered undefined or null item in steps array at index:', index);
+                  return null; // Skip rendering for undefined/null items
+                }
+                 // Ensure item.type is a string before using it in switch
+                if (typeof item.type !== 'string') {
+                   console.warn('Encountered item with non-string type at index:', index, ':', item);
+                   return null; // Skip rendering if type is not a string
+                }
+
+                return (
+                  <Box key={index}>
+                    {renderContentItem(item)}
+                  </Box>
+                );
+              })
+            ) : Array.isArray(currentStep?.content) ? (
+              // Fallback for if content is just an array (less common now with JSONB change, but good to keep)
               currentStep.content.map((item, index) => {
                 // Log each item before rendering
                 console.log('Rendering content item:', item, 'at index:', index);
