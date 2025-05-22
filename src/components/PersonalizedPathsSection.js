@@ -50,7 +50,7 @@ function PersonalizedPathsSection() {
               description,
               category,
               level,
-              image_url
+              image
             ),
             modules:personalized_modules!personalized_path_id(
               id,
