@@ -33,6 +33,7 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
+  Textarea,
 } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import ReactMarkdown from 'react-markdown';
@@ -42,6 +43,9 @@ import ErrorBoundary from '../components/ErrorBoundary.js';
 import MarkdownWithMath from '../components/MarkdownWithMath.js';
 import supabaseClient from '../services/supabaseClient.js';
 import { useAuth } from '../contexts/AuthContext.js';
+import { generatePracticeProblems } from '../services/geminiClient.js';
+import { savePracticeProblems, fetchPracticeProblems } from '../services/supabaseClient.js';
+import PracticeProblemItem from '../components/PracticeProblemItem.js';
 
 function SprintPage() {
   const { sprintId } = useParams();
@@ -54,6 +58,8 @@ function SprintPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sprintData, setSprintData] = useState(null);
+  const [practiceProblems, setPracticeProblems] = useState('');
+  const [isGeneratingProblems, setIsGeneratingProblems] = useState(false);
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
@@ -148,6 +154,15 @@ function SprintPage() {
 
         setSprintData(formattedData);
         setError(null);
+
+        // Fetch saved practice problems for this sprint
+        const { data: savedProblems, error: fetchProblemsError } = await fetchPracticeProblems(sprintId);
+        if (fetchProblemsError && fetchProblemsError.code !== 'PGRST116') {
+          console.error('Error fetching saved practice problems:', fetchProblemsError);
+        } else if (savedProblems) {
+          setPracticeProblems(savedProblems);
+        }
+
       } catch (err) {
         console.error('Error fetching sprint data:', err);
         setError(err.message);
@@ -223,6 +238,91 @@ function SprintPage() {
   const isCorrectAnswer = (stepIndex) => {
     const step = sprintData?.steps?.[stepIndex];
     return step?.type === 'quiz' && userAnswers[stepIndex] === step.correctAnswer;
+  };
+
+  const handleGeneratePracticeProblems = async () => {
+    if (!sprintData || !sprintData.steps || currentStepIndex >= sprintData.steps.length) {
+      toast({
+        title: 'Cannot generate problems',
+        description: 'Sprint data is not available.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsGeneratingProblems(true);
+    setPracticeProblems('');
+
+    try {
+      const currentStepContent = sprintData.steps[currentStepIndex].content;
+      if (!currentStepContent) {
+         toast({
+          title: 'No content to generate problems from',
+          description: 'The current sprint step has no content.',
+          status: 'warning',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      const problems = await generatePracticeProblems(sprintData.title, currentStepContent);
+      setPracticeProblems(problems);
+      
+      // Save the generated problems to Supabase
+      const { error: saveError } = await savePracticeProblems(sprintId, problems);
+      if (saveError) {
+        console.error('Error saving practice problems:', saveError);
+        toast({
+          title: 'Error saving problems',
+          description: 'Failed to save practice problems.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+
+    } catch (err) {
+      console.error('Error generating practice problems:', err);
+      toast({
+        title: 'Error generating problems',
+        description: 'Failed to generate practice problems. Please try again.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsGeneratingProblems(false);
+    }
+  };
+
+  // Function to parse the practice problems string
+  const parsePracticeProblems = (problemsString) => {
+    const problems = [];
+    const problemBlocks = problemsString.split(/Problem \d+:\s*/).filter(block => block.trim() !== '');
+
+    problemBlocks.forEach(block => {
+      const lines = block.trim().split('\n');
+      if (lines.length < 6) return; // Minimum lines: question, 4 options, answer
+
+      const question = lines[0].trim();
+      const options = lines.slice(1, 5).map(optionLine => optionLine.substring(3).trim()); // Remove A) , B) etc.
+      const answerLine = lines[5];
+      const correctAnswerMatch = answerLine.match(/^Answer:\s*([A-D])/);
+      const correctAnswer = correctAnswerMatch ? correctAnswerMatch[1] : null;
+
+      if (question && options.length === 4 && correctAnswer) {
+        problems.push({
+          question,
+          options,
+          correctAnswer
+        });
+      }
+    });
+
+    return problems;
   };
 
   // Show loading state while auth is initializing
@@ -814,6 +914,28 @@ function SprintPage() {
                   </Box>
                   <Button colorScheme="purple">Ask</Button>
                 </HStack>
+
+                <Button 
+                  colorScheme="purple"
+                  onClick={handleGeneratePracticeProblems}
+                  isLoading={isGeneratingProblems}
+                  isDisabled={!sprintData || !sprintData.steps || currentStepIndex >= sprintData.steps.length}
+                  mt={4}
+                >
+                  Generate Practice Problems
+                </Button>
+
+                {practiceProblems && (
+                  <Box mt={4} p={4} bg={useColorModeValue('gray.100', 'gray.700')} borderRadius="md">
+                    <Heading size="sm" mb={2}>Practice Problems</Heading>
+                    <VStack align="stretch" spacing={3}>
+                      {/* Render parsed practice problems */}
+                      {parsePracticeProblems(practiceProblems).map((problem, index) => (
+                        <PracticeProblemItem key={index} problem={problem} />
+                      ))}
+                    </VStack>
+                  </Box>
+                )}
               </VStack>
             </AccordionPanel>
           </AccordionItem>

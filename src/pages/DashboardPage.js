@@ -39,6 +39,8 @@ import {
   Image,
   AvatarBadge,
   Skeleton,
+  Spinner,
+  Center,
 } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
 import { 
@@ -59,7 +61,7 @@ import { motion } from 'framer-motion';
 import CourseInvitationsComponent from '../components/CourseInvitationsComponent.js';
 import { getInstructorProfile } from '../services/supabaseClient.js';
 import PersonalizedPathsSection from '../components/PersonalizedPathsSection.js';
-import { supabase } from '../services/supabaseClient.js';
+import { fetchUserEnrolledPathsWithProgress, fetchUserStats, fetchUserEnrolledPathsWithNextSprint } from '../services/supabaseClient.js';
 
 // Motion components for animations
 const MotionBox = motion(Box);
@@ -71,6 +73,8 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isInstructor, setIsInstructor] = useState(false);
+  const [enrolledPaths, setEnrolledPaths] = useState([]);
+  const [loadingEnrolledPaths, setLoadingEnrolledPaths] = useState(true);
   
   const [userInfo, setUserInfo] = useState({
     name: user?.user_metadata?.full_name || 'Learner',
@@ -86,19 +90,16 @@ function DashboardPage() {
   });
 
   useEffect(() => {
-    const fetchUserStats = async () => {
+    const fetchUserStatsAndPaths = async () => {
       if (!user) return;
-      
+
+      setLoading(true); // Set loading true for the entire section
+
       try {
-        // Fetch user stats from Supabase
-        const { data: stats, error } = await supabase
-          .from('user_stats')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-          
-        if (error) throw error;
-        
+        // Fetch user stats
+        const { data: stats, error: statsError } = await fetchUserStats();
+        if (statsError) throw statsError;
+
         if (stats) {
           setUserInfo(prev => ({
             ...prev,
@@ -107,16 +108,27 @@ function DashboardPage() {
             level: stats.level || 1,
             xp: stats.xp || 0,
             nextLevelXp: stats.next_level_xp || 1000,
-            activePaths: stats.active_paths || 0,
+            // activePaths will be calculated from enrolledPaths
             recentActivity: stats.last_activity ? new Date(stats.last_activity).toLocaleDateString() : null
           }));
         }
+
+        // Fetch enrolled paths
+        const { data: enrolledData, error: enrolledError } = await fetchUserEnrolledPathsWithNextSprint();
+        if (enrolledError) throw enrolledError;
+
+        setEnrolledPaths(enrolledData || []);
+        setUserInfo(prev => ({ ...prev, activePaths: enrolledData?.length || 0 }));
+
       } catch (error) {
-        console.error('Error fetching user stats:', error);
+        console.error('Error fetching dashboard data:', error);
+        // Optionally show a toast or error message
+      } finally {
+        setLoading(false); // Set loading false after fetching both
       }
     };
-    
-    fetchUserStats();
+
+    fetchUserStatsAndPaths();
   }, [user]);
 
   // Cards and text styling
@@ -269,8 +281,9 @@ function DashboardPage() {
         </Flex>
       </MotionBox>
 
-      {/* Stats Section - Animated and Enhanced */}
+      {/* Stats Section - Enhanced UI */}
       <SimpleGrid columns={{ base: 1, sm: 2, md: 4 }} spacing={6} mb={8}>
+        {/* Daily Streak */}
         <MotionCard
           bg={cardBg}
           shadow="md"
@@ -284,7 +297,16 @@ function DashboardPage() {
           whileHover={{ y: -5, boxShadow: "lg" }}
         >
           <CardBody>
-            <Skeleton isLoaded={!loading}>
+            {loading ? (
+              <VStack spacing={3} align="flex-start">
+                <Skeleton boxSize="50px" borderRadius="full" />
+                <Box>
+                  <Skeleton height="14px" width="80px" mb={2} />
+                  <Skeleton height="24px" width="120px" />
+                  <Skeleton height="12px" width="100px" mt={1} />
+                </Box>
+              </VStack>
+            ) : (
               <VStack spacing={3} align="flex-start">
                 <Flex
                   align="center"
@@ -302,13 +324,14 @@ function DashboardPage() {
                     <Heading size="xl" mr={1}>{userInfo.streak}</Heading>
                     <Text fontSize="xl">days</Text>
                   </Flex>
-                  <Text fontSize="xs" color={textColor} fontWeight="medium">Keep it going!</Text>
+                  <Text fontSize="xs" color={textColor} fontWeight="medium">Keep the learning momentum!</Text>
                 </Box>
               </VStack>
-            </Skeleton>
+            )}
           </CardBody>
         </MotionCard>
 
+        {/* Completed Sprints */}
         <MotionCard
           bg={cardBg}
           shadow="md"
@@ -317,12 +340,21 @@ function DashboardPage() {
           borderRadius="lg"
           overflow="hidden"
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }} /* Delay relative to previous card */
           transition={{ duration: 0.3, delay: 0.3 }}
           whileHover={{ y: -5, boxShadow: "lg" }}
         >
           <CardBody>
-            <Skeleton isLoaded={!loading}>
+            {loading ? (
+              <VStack spacing={3} align="flex-start">
+                <Skeleton boxSize="50px" borderRadius="full" />
+                <Box>
+                  <Skeleton height="14px" width="100px" mb={2} />
+                  <Skeleton height="24px" width="80px" />
+                  <Skeleton height="12px" width="120px" mt={1} />
+                </Box>
+              </VStack>
+            ) : (
               <VStack spacing={3} align="flex-start">
                 <Flex
                   align="center"
@@ -337,13 +369,14 @@ function DashboardPage() {
                 <Box>
                   <Text fontSize="sm" color={textColor}>Completed Sprints</Text>
                   <Heading size="xl">{userInfo.completedSprints}</Heading>
-                  <Text fontSize="xs" color={textColor} fontWeight="medium">+3 this week</Text>
+                  <Text fontSize="xs" color={textColor} fontWeight="medium">Great progress!</Text>
                 </Box>
               </VStack>
-            </Skeleton>
+            )}
           </CardBody>
         </MotionCard>
 
+        {/* XP Points */}
         <MotionCard
           bg={cardBg}
           shadow="md"
@@ -352,12 +385,21 @@ function DashboardPage() {
           borderRadius="lg"
           overflow="hidden"
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }} /* Delay relative to previous card */
           transition={{ duration: 0.3, delay: 0.4 }}
           whileHover={{ y: -5, boxShadow: "lg" }}
         >
           <CardBody>
-            <Skeleton isLoaded={!loading}>
+            {loading ? (
+              <VStack spacing={3} align="flex-start">
+                <Skeleton boxSize="50px" borderRadius="full" />
+                <Box>
+                  <Skeleton height="14px" width="80px" mb={2} />
+                  <Skeleton height="24px" width="100px" />
+                  <Skeleton height="12px" width="150px" mt={1} />
+                </Box>
+              </VStack>
+            ) : (
               <VStack spacing={3} align="flex-start">
                 <Flex
                   align="center"
@@ -372,15 +414,14 @@ function DashboardPage() {
                 <Box>
                   <Text fontSize="sm" color={textColor}>XP Points</Text>
                   <Heading size="xl">{userInfo.xp}</Heading>
-                  <Text fontSize="xs" color={textColor} fontWeight="medium">
-                    {userInfo.nextLevelXp - userInfo.xp} until next level
-                  </Text>
+                  <Text fontSize="xs" color={textColor} fontWeight="medium">{userInfo.nextLevelXp - userInfo.xp} until Level {userInfo.level + 1}</Text>
                 </Box>
               </VStack>
-            </Skeleton>
+            )}
           </CardBody>
         </MotionCard>
 
+        {/* Active Paths */}
         <MotionCard
           bg={cardBg}
           shadow="md"
@@ -389,12 +430,21 @@ function DashboardPage() {
           borderRadius="lg"
           overflow="hidden"
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }} /* Delay relative to previous card */
           transition={{ duration: 0.3, delay: 0.5 }}
           whileHover={{ y: -5, boxShadow: "lg" }}
         >
           <CardBody>
-            <Skeleton isLoaded={!loading}>
+            {loading ? (
+              <VStack spacing={3} align="flex-start">
+                <Skeleton boxSize="50px" borderRadius="full" />
+                <Box>
+                  <Skeleton height="14px" width="90px" mb={2} />
+                  <Skeleton height="24px" width="50px" />
+                  <Skeleton height="12px" width="100px" mt={1} />
+                </Box>
+              </VStack>
+            ) : (
               <VStack spacing={3} align="flex-start">
                 <Flex
                   align="center"
@@ -412,7 +462,7 @@ function DashboardPage() {
                   <Text fontSize="xs" color={textColor} fontWeight="medium">Skills in progress</Text>
                 </Box>
               </VStack>
-            </Skeleton>
+            )}
           </CardBody>
         </MotionCard>
       </SimpleGrid>
@@ -443,271 +493,105 @@ function DashboardPage() {
           </Button>
         </Flex>
         
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
-          {/* Path Card 1 */}
-          <MotionCard
-            bg={cardBg}
-            shadow="md"
-            borderRadius="lg"
-            borderWidth="1px"
-            borderColor={cardBorder}
-            overflow="hidden"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-            whileHover={{ y: -5, boxShadow: "lg" }}
-          >
-            <Box h="120px" bg="purple.500" position="relative">
-              <Box 
-                position="absolute" 
-                bottom="-20px" 
-                left="20px" 
-                bg="blue.500" 
-                borderRadius="lg" 
-                boxSize="48px" 
-                display="flex" 
-                alignItems="center" 
-                justifyContent="center"
-                boxShadow="md"
+        {loadingEnrolledPaths ? (
+          <Center py={10}>
+            <Spinner size="xl" color="purple.500" thickness="4px" />
+            <Text ml={4}>Loading your learning paths...</Text>
+          </Center>
+        ) : enrolledPaths.length === 0 ? (
+          <Box textAlign="center" py={10}>
+            <Text fontSize="lg" color={textColor} mb={4}>You haven't enrolled in any learning paths yet.</Text>
+            <Button as={RouterLink} to="/explore" colorScheme="purple">
+              Browse Paths
+            </Button>
+          </Box>
+        ) : (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
+            {enrolledPaths.map((path) => (
+              <MotionCard
+                key={path.id}
+                bg={cardBg}
+                shadow="md"
+                borderRadius="lg"
+                borderWidth="1px"
+                borderColor={cardBorder}
+                overflow="hidden"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }} /* Delay relative to previous card in grid */
+                transition={{ duration: 0.3, delay: 0.2 + (enrolledPaths.indexOf(path) * 0.05) }} /* Stagger delay */
+                whileHover={{ y: -5, boxShadow: "lg" }}
               >
-                <Icon as={InfoIcon} color="white" boxSize="24px" />
-              </Box>
-            </Box>
-            
-            <CardHeader pt={8} pb={2}>
-              <Heading size="md">Machine Learning Fundamentals</Heading>
-            </CardHeader>
-            
-            <CardBody py={2}>
-              <Skeleton isLoaded={!loading} mb={2}>
-                <Flex justify="space-between" mb={2}>
-                  <Text fontWeight="medium">Progress</Text>
-                  <Text>65%</Text>
-                </Flex>
-                <Progress value={65} colorScheme="purple" size="sm" borderRadius="full" mb={4} />
+                <Box h="120px" bg={`${path.category}.500`} position="relative">
+                  <Box 
+                    position="absolute" 
+                    bottom="-20px" 
+                    left="20px" 
+                    bg="blue.500"
+                    borderRadius="lg" 
+                    boxSize="48px" 
+                    display="flex" 
+                    alignItems="center" 
+                    justifyContent="center"
+                    boxShadow="md"
+                  >
+                    <Icon as={InfoIcon} color="white" boxSize="24px" />
+                  </Box>
+                </Box>
                 
-                <Text fontWeight="medium" mb={1}>Next Sprint:</Text>
-                <Text color={textColor}>Neural Networks Basics</Text>
-                <Flex align="center" mt={1} color={textColor}>
-                  <TimeIcon mr={2} />
-                  <Text>12 min</Text>
-                </Flex>
-              </Skeleton>
-            </CardBody>
-            
-            <CardFooter pt={2}>
-              <Button 
-                as={RouterLink} 
-                to="/sprint/101" 
-                colorScheme="purple" 
-                rightIcon={<ChevronRightIcon />}
-                variant="solid"
-                size="md"
-                width="full"
-              >
-                Continue
-              </Button>
-            </CardFooter>
-          </MotionCard>
-          
-          {/* Path Card 2 */}
-          <MotionCard
-            bg={cardBg}
-            shadow="md"
-            borderRadius="lg"
-            borderWidth="1px"
-            borderColor={cardBorder}
-            overflow="hidden"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.3 }}
-            whileHover={{ y: -5, boxShadow: "lg" }}
-          >
-            <Box h="120px" bg="blue.500" position="relative">
-              <Box 
-                position="absolute" 
-                bottom="-20px" 
-                left="20px" 
-                bg="green.500" 
-                borderRadius="lg" 
-                boxSize="48px" 
-                display="flex" 
-                alignItems="center" 
-                justifyContent="center"
-                boxShadow="md"
-              >
-                <Icon as={InfoIcon} color="white" boxSize="24px" />
-              </Box>
-            </Box>
-            
-            <CardHeader pt={8} pb={2}>
-              <Heading size="md">Web Development with React</Heading>
-            </CardHeader>
-            
-            <CardBody py={2}>
-              <Skeleton isLoaded={!loading} mb={2}>
-                <Flex justify="space-between" mb={2}>
-                  <Text fontWeight="medium">Progress</Text>
-                  <Text>30%</Text>
-                </Flex>
-                <Progress value={30} colorScheme="blue" size="sm" borderRadius="full" mb={4} />
+                <CardHeader pt={8} pb={2}>
+                  <Heading size="md">{path.title}</Heading>
+                </CardHeader>
                 
-                <Text fontWeight="medium" mb={1}>Next Sprint:</Text>
-                <Text color={textColor}>React Hooks Deep Dive</Text>
-                <Flex align="center" mt={1} color={textColor}>
-                  <TimeIcon mr={2} />
-                  <Text>8 min</Text>
-                </Flex>
-              </Skeleton>
-            </CardBody>
-            
-            <CardFooter pt={2}>
-              <Button 
-                as={RouterLink} 
-                to="/sprint/102" 
-                colorScheme="blue" 
-                rightIcon={<ChevronRightIcon />}
-                variant="solid"
-                size="md"
-                width="full"
-              >
-                Continue
-              </Button>
-            </CardFooter>
-          </MotionCard>
-          
-          {/* Path Card 3 */}
-          <MotionCard
-            bg={cardBg}
-            shadow="md"
-            borderRadius="lg"
-            borderWidth="1px"
-            borderColor={cardBorder}
-            overflow="hidden"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.4 }}
-            whileHover={{ y: -5, boxShadow: "lg" }}
-          >
-            <Box h="120px" bg="green.500" position="relative">
-              <Box 
-                position="absolute" 
-                bottom="-20px" 
-                left="20px" 
-                bg="purple.500" 
-                borderRadius="lg" 
-                boxSize="48px" 
-                display="flex" 
-                alignItems="center" 
-                justifyContent="center"
-                boxShadow="md"
-              >
-                <Icon as={InfoIcon} color="white" boxSize="24px" />
-              </Box>
-            </Box>
-            
-            <CardHeader pt={8} pb={2}>
-              <Heading size="md">Business Communication</Heading>
-            </CardHeader>
-            
-            <CardBody py={2}>
-              <Skeleton isLoaded={!loading} mb={2}>
-                <Flex justify="space-between" mb={2}>
-                  <Text fontWeight="medium">Progress</Text>
-                  <Text>90%</Text>
-                </Flex>
-                <Progress value={90} colorScheme="green" size="sm" borderRadius="full" mb={4} />
+                <CardBody py={2}>
+                  <Flex justify="space-between" mb={2}>
+                    <Text fontWeight="medium">Progress</Text>
+                    <Text>{path.progress}%</Text>
+                  </Flex>
+                  <Progress value={path.progress} colorScheme="purple" size="sm" borderRadius="full" mb={4} />
+                  
+                  {path.nextSprint ? (
+                    <>
+                      <Text fontWeight="medium" mb={1}>Next Sprint:</Text>
+                      <Text color={textColor}>{path.nextSprint.title}</Text>
+                      <Flex align="center" mt={1} color={textColor}>
+                        <TimeIcon mr={2} />
+                        <Text>{path.nextSprint.time}</Text>
+                      </Flex>
+                    </>
+                  ) : (path.progress === 100 ? (
+                    <Box>
+                      <Text fontWeight="medium" mb={1}>Status:</Text>
+                      <Text color="green.500" fontWeight="bold">Completed!</Text>
+                    </Box>
+                  ) : (
+                    <Box>
+                      <Text fontWeight="medium" mb={1}>Next Sprint:</Text>
+                      <Text color={textColor}>Continue where you left off</Text>
+                      <Flex align="center" mt={1} color={textColor}>
+                        <TimeIcon mr={2} />
+                        <Text>N/A</Text>
+                      </Flex>
+                    </Box>
+                  ))}
+                </CardBody>
                 
-                <Text fontWeight="medium" mb={1}>Next Sprint:</Text>
-                <Text color={textColor}>Persuasive Presentations</Text>
-                <Flex align="center" mt={1} color={textColor}>
-                  <TimeIcon mr={2} />
-                  <Text>15 min</Text>
-                </Flex>
-              </Skeleton>
-            </CardBody>
-            
-            <CardFooter pt={2}>
-              <Button 
-                as={RouterLink} 
-                to="/sprint/103" 
-                colorScheme="green" 
-                rightIcon={<ChevronRightIcon />}
-                variant="solid"
-                size="md"
-                width="full"
-              >
-                Continue
-              </Button>
-            </CardFooter>
-          </MotionCard>
-          
-          {/* Path Card 4 */}
-          <MotionCard
-            bg={cardBg}
-            shadow="md"
-            borderRadius="lg"
-            borderWidth="1px"
-            borderColor={cardBorder}
-            overflow="hidden"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.5 }}
-            whileHover={{ y: -5, boxShadow: "lg" }}
-          >
-            <Box h="120px" bg="orange.500" position="relative">
-              <Box 
-                position="absolute" 
-                bottom="-20px" 
-                left="20px" 
-                bg="blue.500" 
-                borderRadius="lg" 
-                boxSize="48px" 
-                display="flex" 
-                alignItems="center" 
-                justifyContent="center"
-                boxShadow="md"
-              >
-                <Icon as={InfoIcon} color="white" boxSize="24px" />
-              </Box>
-            </Box>
-            
-            <CardHeader pt={8} pb={2}>
-              <Heading size="md">Functional Anatomy</Heading>
-            </CardHeader>
-            
-            <CardBody py={2}>
-              <Skeleton isLoaded={!loading} mb={2}>
-                <Flex justify="space-between" mb={2}>
-                  <Text fontWeight="medium">Progress</Text>
-                  <Text>15%</Text>
-                </Flex>
-                <Progress value={15} colorScheme="orange" size="sm" borderRadius="full" mb={4} />
-                
-                <Text fontWeight="medium" mb={1}>Next Sprint:</Text>
-                <Text color={textColor}>Skeletal System Basics</Text>
-                <Flex align="center" mt={1} color={textColor}>
-                  <TimeIcon mr={2} />
-                  <Text>10 min</Text>
-                </Flex>
-              </Skeleton>
-            </CardBody>
-            
-            <CardFooter pt={2}>
-              <Button 
-                as={RouterLink} 
-                to="/sprint/201" 
-                colorScheme="orange" 
-                rightIcon={<ChevronRightIcon />}
-                variant="solid"
-                size="md"
-                width="full"
-              >
-                Continue
-              </Button>
-            </CardFooter>
-          </MotionCard>
-        </SimpleGrid>
+                <CardFooter pt={2}>
+                  <Button 
+                    as={RouterLink} 
+                    to={path.nextSprint ? `/sprint/${path.nextSprint.id}` : `/paths/${path.id}`}
+                    colorScheme="purple" 
+                    rightIcon={<ChevronRightIcon />}
+                    variant="solid"
+                    size="md"
+                    width="full"
+                  >
+                    {path.nextSprint ? 'Continue Learning' : (path.progress === 100 ? 'Review Path' : 'Start Learning')}
+                  </Button>
+                </CardFooter>
+              </MotionCard>
+            ))}
+          </SimpleGrid>
+        )}
       </Box>
 
       {/* Recent and Recommended Sections with enhanced styling */}

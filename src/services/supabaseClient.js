@@ -851,6 +851,216 @@ export const getCourseGenerationStatus = async (requestId) => {
   }
 };
 
+export const fetchUserStats = async () => {
+// ... existing code ...
+};
+
+export const savePracticeProblems = async (sprintId, problems) => {
+  try {
+    const { user, error: userError } = await getCurrentUser();
+    if (userError || !user) {
+      return { data: null, error: userError || { message: 'User not authenticated' } };
+    }
+
+    // Assuming a 'user_practice_problems' table with columns: user_id, sprint_id, problems_data (jsonb)
+    const { data, error } = await supabase
+      .from('user_practice_problems')
+      .upsert(
+        {
+          user_id: user.id,
+          sprint_id: sprintId,
+          problems_data: problems, // Store problems as JSON
+        },
+        { onConflict: ['user_id', 'sprint_id'] } // Upsert based on user and sprint
+      )
+      .select();
+
+    if (error) {
+      console.error('Error saving practice problems:', error);
+    }
+
+    return { data, error };
+
+  } catch (err) {
+    console.error('Exception during saving practice problems:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const saveLearningSummary = async (pathId, summary) => {
+  try {
+    const { user, error: userError } = await getCurrentUser();
+    if (userError || !user) {
+      return { data: null, error: userError || { message: 'User not authenticated' } };
+    }
+
+    // Assuming a 'user_learning_summaries' table with columns: user_id, path_id, summary_text, generated_at
+    const { data, error } = await supabase
+      .from('user_learning_summaries')
+      .upsert(
+        {
+          user_id: user.id,
+          path_id: pathId,
+          summary_text: summary,
+          generated_at: new Date().toISOString(),
+        },
+        { onConflict: ['user_id', 'path_id'] } // Upsert based on user and path
+      )
+      .select();
+
+    if (error) {
+      console.error('Error saving learning summary:', error);
+    }
+
+    return { data, error };
+
+  } catch (err) {
+    console.error('Exception during saving learning summary:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const fetchPracticeProblems = async (sprintId) => {
+  try {
+    const { user, error: userError } = await getCurrentUser();
+    if (userError || !user) {
+      return { data: null, error: userError || { message: 'User not authenticated' } };
+    }
+
+    const { data, error } = await supabase
+      .from('user_practice_problems')
+      .select('problems_data')
+      .eq('user_id', user.id)
+      .eq('sprint_id', sprintId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 means row not found, which is okay
+      console.error('Error fetching practice problems:', error);
+    }
+
+    return { data: data ? data.problems_data : null, error: error && error.code === 'PGRST116' ? null : error };
+
+  } catch (err) {
+    console.error('Exception during fetching practice problems:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const fetchLearningSummary = async (pathId) => {
+  try {
+    const { user, error: userError } = await getCurrentUser();
+    if (userError || !user) {
+      return { data: null, error: userError || { message: 'User not authenticated' } };
+    }
+
+    const { data, error } = await supabase
+      .from('user_learning_summaries')
+      .select('summary_text')
+      .eq('user_id', user.id)
+      .eq('path_id', pathId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 means row not found, which is okay
+      console.error('Error fetching learning summary:', error);
+    }
+
+    return { data: data ? data.summary_text : null, error: error && error.code === 'PGRST116' ? null : error };
+
+  } catch (err) {
+    console.error('Exception during fetching learning summary:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Function to fetch user's enrolled paths with progress and next incomplete sprint
+export const fetchUserEnrolledPathsWithNextSprint = async () => {
+  try {
+    const { user, error: userError } = await getCurrentUser();
+    if (userError || !user) {
+      return { data: null, error: userError || { message: 'User not authenticated' } };
+    }
+
+    // Fetch all paths the user is enrolled in
+    const { data: userPaths, error: userPathsError } = await supabase
+      .from('user_paths')
+      .select(`
+        path:path_id (
+          *,
+          modules (
+            *,
+            sprints (*)
+          )
+        )
+      `)
+      .eq('user_id', user.id);
+
+    if (userPathsError) {
+      console.error('Error fetching user paths:', userPathsError);
+      return { data: null, error: userPathsError };
+    }
+
+    const enrolledPathsData = [];
+
+    for (const userPath of userPaths) {
+      const path = userPath.path;
+      if (!path) continue; // Skip if path data is null
+
+      // Fetch user's progress for this specific path
+      const { data: userProgress, error: userProgressError } = await supabase
+        .from('user_progress')
+        .select('sprint_id, is_completed')
+        .eq('user_id', user.id)
+        .eq('path_id', path.id);
+
+      if (userProgressError) {
+        console.error(`Error fetching user progress for path ${path.id}:`, userProgressError);
+        // Continue to the next path even if progress fetch fails for one
+        enrolledPathsData.push({ ...path, progress: 0, nextSprint: null });
+        continue;
+      }
+
+      const completedSprints = userProgress ? userProgress.filter(p => p.is_completed).length : 0;
+      const totalSprints = path.total_sprints || 0;
+      const progress = totalSprints > 0 ? Math.round((completedSprints / totalSprints) * 100) : 0;
+
+      let nextSprint = null;
+
+      // Find the next incomplete sprint
+      if (path.modules && path.modules.length > 0) {
+        for (const module of path.modules) {
+          if (module.sprints && module.sprints.length > 0) {
+            // Sort sprints within module by order_index
+            const sortedSprints = module.sprints.sort((a, b) => a.order_index - b.order_index);
+
+            for (const sprint of sortedSprints) {
+              const progressEntry = userProgress ? userProgress.find(p => p.sprint_id === sprint.id) : null;
+              const isCompleted = progressEntry ? progressEntry.is_completed : false;
+
+              if (!isCompleted) {
+                nextSprint = {
+                  id: sprint.id,
+                  title: sprint.title,
+                  time: sprint.time,
+                };
+                break; // Found the next incomplete sprint for this path
+              }
+            }
+          }
+          if (nextSprint) break; // Found next sprint in a module, move to next path
+        }
+      }
+
+      enrolledPathsData.push({ ...path, progress, nextSprint });
+    }
+
+    return { data: enrolledPathsData, error: null };
+
+  } catch (err) {
+    console.error('Exception during fetching user enrolled paths with next sprint:', err);
+    return { data: null, error: err };
+  }
+};
+
 // Create a named object for export
 const supabaseClient = {
   signUp,
@@ -875,7 +1085,13 @@ const supabaseClient = {
   safeJsonParse,
   supabase,
   generateCourseContentBackend,
-  getCourseGenerationStatus
+  getCourseGenerationStatus,
+  fetchUserStats,
+  savePracticeProblems,
+  saveLearningSummary,
+  fetchPracticeProblems,
+  fetchLearningSummary,
+  fetchUserEnrolledPathsWithNextSprint,
 };
 
 // Export the named object
