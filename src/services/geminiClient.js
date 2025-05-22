@@ -162,7 +162,7 @@ const generateWithModel = async (modelKey, prompt, temperature) => {
 };
 
 // Optimized prompt templates for course creation
-export const PROMPT_TEMPLATES = {
+const PROMPT_TEMPLATES = {
   COURSE_OUTLINE: `Create a comprehensive outline for a course on "{topic}" with the following parameters:
 - Target audience: {audience}
 - Skill level: {level}
@@ -289,7 +289,7 @@ Output ONLY valid JSON. Do not include markdown, code fences, or any explanation
 };
 
 // Helper function to strip code fences from Gemini responses
-export function stripCodeFences(response) {
+function stripCodeFences(response) {
   let clean = response.trim();
   if (clean.startsWith('```json')) {
     clean = clean.replace(/^```json/, '').replace(/```$/, '').trim();
