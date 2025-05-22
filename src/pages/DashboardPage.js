@@ -99,28 +99,33 @@ function DashboardPage() {
 
       try {
         // Fetch user stats
-        const { data: stats, error: statsError } = await fetchUserStats();
-        if (statsError) throw statsError;
-
-        if (stats) {
-          setUserInfo(prev => ({
-            ...prev,
-            streak: stats.streak || 0,
-            completedSprints: stats.completed_sprints || 0,
-            level: stats.level || 1,
-            xp: stats.xp || 0,
-            nextLevelXp: stats.next_level_xp || 1000,
-            // activePaths will be calculated from enrolledPaths
-            recentActivity: stats.last_activity ? new Date(stats.last_activity).toLocaleDateString() : null
-          }));
+        const statsResult = await fetchUserStats();
+        if (statsResult && !statsResult.error) {
+          const stats = statsResult.data;
+          if (stats) {
+            setUserInfo(prev => ({
+              ...prev,
+              streak: stats.streak || 0,
+              completedSprints: stats.completed_sprints || 0,
+              level: stats.level || 1,
+              xp: stats.xp || 0,
+              nextLevelXp: stats.next_level_xp || 1000,
+              recentActivity: stats.last_activity ? new Date(stats.last_activity).toLocaleDateString() : null
+            }));
+          } else {
+            console.error('Error fetching user stats:', statsResult?.error || 'Unknown error');
+          }
         }
 
         // Fetch enrolled paths
-        const { data: enrolledData, error: enrolledError } = await fetchUserEnrolledPathsWithNextSprint();
-        if (enrolledError) throw enrolledError;
-
-        setEnrolledPaths(enrolledData || []);
-        setUserInfo(prev => ({ ...prev, activePaths: enrolledData?.length || 0 }));
+        const enrolledResult = await fetchUserEnrolledPathsWithNextSprint();
+        if (enrolledResult && !enrolledResult.error) {
+          const enrolledData = enrolledResult.data;
+          setEnrolledPaths(enrolledData || []);
+          setUserInfo(prev => ({ ...prev, activePaths: enrolledData?.length || 0 }));
+        } else {
+          console.error('Error fetching enrolled paths:', enrolledResult?.error || 'Unknown error');
+        }
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
