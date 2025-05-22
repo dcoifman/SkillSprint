@@ -97,28 +97,27 @@ function DashboardPage() {
 
       try {
         // Fetch user stats
-        const { data: stats, error: statsError } = await fetchUserStats();
-        if (statsError) throw statsError;
+        const statsResult = await fetchUserStats();
+        if (statsResult && statsResult.error) throw statsResult.error;
 
-        if (stats) {
+        if (statsResult && statsResult.data) {
           setUserInfo(prev => ({
             ...prev,
-            streak: stats.streak || 0,
-            completedSprints: stats.completed_sprints || 0,
-            level: stats.level || 1,
-            xp: stats.xp || 0,
-            nextLevelXp: stats.next_level_xp || 1000,
-            // activePaths will be calculated from enrolledPaths
-            recentActivity: stats.last_activity ? new Date(stats.last_activity).toLocaleDateString() : null
+            streak: statsResult.data.streak || 0,
+            completedSprints: statsResult.data.completed_sprints || 0,
+            level: statsResult.data.level || 1,
+            xp: statsResult.data.xp || 0,
+            nextLevelXp: statsResult.data.next_level_xp || 1000,
+            recentActivity: statsResult.data.last_activity ? new Date(statsResult.data.last_activity).toLocaleDateString() : null
           }));
         }
 
         // Fetch enrolled paths
-        const { data: enrolledData, error: enrolledError } = await fetchUserEnrolledPathsWithNextSprint();
-        if (enrolledError) throw enrolledError;
+        const enrolledResult = await fetchUserEnrolledPathsWithNextSprint();
+        if (enrolledResult && enrolledResult.error) throw enrolledResult.error;
 
-        setEnrolledPaths(enrolledData || []);
-        setUserInfo(prev => ({ ...prev, activePaths: enrolledData?.length || 0 }));
+        setEnrolledPaths(enrolledResult?.data || []);
+        setUserInfo(prev => ({ ...prev, activePaths: enrolledResult?.data?.length || 0 }));
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
