@@ -1,26 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Button, VStack, HStack, Text, Select, useToast } from '@chakra-ui/react';
+import { Box, Button, VStack, HStack, Text, Select, useToast, Spinner, Center } from '@chakra-ui/react';
 import Editor from '@monaco-editor/react';
+import { useAuth } from '../contexts/AuthContext';
+import { saveCodeSnippet, loadCodeSnippet } from '../services/supabaseClient';
 
 const LANGUAGES = [
   { value: 'javascript', label: 'JavaScript' },
-  { value: 'python', label: 'Python' },
   { value: 'html', label: 'HTML' },
   { value: 'css', label: 'CSS' },
 ];
 
 const DEFAULT_CODE = {
   javascript: '// Write your JavaScript code here\nconsole.log("Hello, World!");',
-  python: '# Write your Python code here\nprint("Hello, World!")',
   html: '<!-- Write your HTML here -->\n<h1>Hello, World!</h1>',
   css: '/* Write your CSS here */\nh1 { color: blue; }'
 };
 
 function CodePlayground({ initialLanguage = 'javascript' }) {
+  const { user, loading: authLoading } = useAuth();
   const [code, setCode] = useState(DEFAULT_CODE[initialLanguage]);
   const [language, setLanguage] = useState(initialLanguage);
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingSnippet, setIsLoadingSnippet] = useState(true);
   const toast = useToast();
   const editorRef = useRef(null);
 
@@ -28,13 +31,41 @@ function CodePlayground({ initialLanguage = 'javascript' }) {
     editorRef.current = editor;
   }
 
+  useEffect(() => {
+    const fetchSnippet = async () => {
+      if (!user || authLoading) {
+        setIsLoadingSnippet(false);
+        return;
+      }
+      setIsLoadingSnippet(true);
+      const { code: savedCode, error } = await loadCodeSnippet(user.id, language);
+      if (error) {
+        console.error('Error loading snippet:', error);
+        toast({
+          title: 'Error loading code',
+          description: error.message,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+        setCode(DEFAULT_CODE[language]); 
+      } else if (savedCode !== null) {
+        setCode(savedCode);
+      } else {
+        setCode(DEFAULT_CODE[language]);
+      }
+      setIsLoadingSnippet(false);
+    };
+
+    fetchSnippet();
+  }, [user, language, authLoading]);
+
   const handleRunCode = async () => {
     setIsRunning(true);
     setOutput('Running code...');
     
     try {
       if (language === 'javascript') {
-        // Create a safe execution environment
         const safeEval = (code) => {
           const iframe = document.createElement('iframe');
           iframe.style.display = 'none';
@@ -58,8 +89,7 @@ function CodePlayground({ initialLanguage = 'javascript' }) {
         setOutput('');
         safeEval(code);
       } else {
-        // For other languages, we'll eventually integrate with backend services
-        setOutput('Code execution for ' + language + ' would be handled by backend service');
+        setOutput('Code execution is only available for JavaScript.\n(Save/Load functionality is active)');
       }
     } catch (error) {
       setOutput('Error: ' + error.message);
@@ -68,17 +98,112 @@ function CodePlayground({ initialLanguage = 'javascript' }) {
     }
   };
 
+  const handleSaveCode = async () => {
+    if (!user) {
+      toast({
+        title: 'Login Required',
+        description: 'Please log in to save code.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+    setIsSaving(true);
+    const { error } = await saveCodeSnippet(user.id, language, code);
+    setIsSaving(false);
+
+    if (error) {
+      console.error('Error saving code:', error);
+      toast({
+        title: 'Error saving code',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } else {
+      toast({
+        title: 'Code saved',
+        description: 'Your code snippet has been saved.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleLoadCode = async () => {
+    if (!user) {
+      toast({
+        title: 'Login Required',
+        description: 'Please log in to load code.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+    setIsLoadingSnippet(true);
+    const { code: loadedCode, error } = await loadCodeSnippet(user.id, language);
+    setIsLoadingSnippet(false);
+
+    if (error) {
+      console.error('Error loading snippet:', error);
+      toast({
+        title: 'Error loading code',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } else if (loadedCode !== null) {
+      setCode(loadedCode);
+      toast({
+        title: 'Code loaded',
+        description: 'Your saved code snippet has been loaded.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } else {
+      toast({
+        title: 'No saved code',
+        description: 'No saved snippet found for this language.',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      });
+      setCode(DEFAULT_CODE[language]);
+    }
+  };
+
   const handleReset = () => {
     setCode(DEFAULT_CODE[language]);
     setOutput('');
+    toast({
+      title: 'Code reset',
+      description: 'Editor content reset to default.',
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+    });
   };
 
   const handleLanguageChange = (e) => {
     const newLanguage = e.target.value;
     setLanguage(newLanguage);
-    setCode(DEFAULT_CODE[newLanguage]);
     setOutput('');
   };
+
+  if (authLoading || isLoadingSnippet) {
+    return (
+      <Center h="400px">
+        <Spinner size="xl" color="purple.500" thickness="4px" />
+        <Text ml={4}>Loading code playground...</Text>
+      </Center>
+    );
+  }
 
   return (
     <VStack spacing={4} align="stretch" p={4} borderWidth={1} borderRadius="md">

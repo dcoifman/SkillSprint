@@ -1116,6 +1116,91 @@ export const fetchRecentSprints = async (limit = 3) => {
   }
 };
 
+// --- Code Snippets Functions ---
+
+// Function to save a code snippet
+export const saveCodeSnippet = async (userId, language, code) => {
+  try {
+    console.log(`Saving code snippet for user ${userId}, language ${language}`);
+    
+    // Check if a snippet for this user and language already exists
+    const { data: existingSnippet, error: fetchError } = await supabase
+      .from('code_snippets')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('language', language)
+      .single();
+
+    let upsertData = {
+      user_id: userId,
+      language: language,
+      code: code,
+    };
+
+    let query;
+    if (existingSnippet) {
+      // If exists, update the existing one
+      query = supabase
+        .from('code_snippets')
+        .update(upsertData)
+        .eq('id', existingSnippet.id);
+        console.log('Updating existing snippet');
+    } else {
+      // If not exists, insert a new one
+      query = supabase
+        .from('code_snippets')
+        .insert(upsertData);
+        console.log('Inserting new snippet');
+    }
+    
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error saving code snippet:', error);
+      return { data: null, error };
+    }
+
+    console.log('Code snippet saved successfully');
+    return { data, error: null };
+
+  } catch (err) {
+    console.error('Exception during saving code snippet:', err);
+    const formattedError = formatError(err);
+    return { data: null, error: formattedError };
+  }
+};
+
+// Function to load a code snippet
+export const loadCodeSnippet = async (userId, language) => {
+  try {
+    console.log(`Loading code snippet for user ${userId}, language ${language}`);
+    
+    const { data, error } = await supabase
+      .from('code_snippets')
+      .select('code')
+      .eq('user_id', userId)
+      .eq('language', language)
+      .order('created_at', { ascending: false }) // Get the latest one
+      .limit(1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found (expected for new users)
+      console.error('Error loading code snippet:', error);
+      return { data: null, error };
+    }
+    
+    // Return the code or null if not found
+    const code = data ? data.code : null;
+    console.log('Code snippet loaded:', code ? 'found' : 'not found');
+    return { code, error: null };
+
+  } catch (err) {
+    console.error('Exception during loading code snippet:', err);
+    const formattedError = formatError(err);
+    return { code: null, error: formattedError };
+  }
+};
+
 // Create a named object for export
 const supabaseClient = {
   signUp,
@@ -1148,6 +1233,8 @@ const supabaseClient = {
   fetchLearningSummary,
   fetchUserEnrolledPathsWithNextSprint,
   fetchRecentSprints,
+  saveCodeSnippet,
+  loadCodeSnippet,
 };
 
 // Export the named object
