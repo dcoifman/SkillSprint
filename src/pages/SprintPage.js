@@ -168,7 +168,7 @@ function SprintPage() {
              // Provide a default step if no steps are found in the content
              formattedData.steps = [{
                 type: 'content',
-                title: sprint.title,
+                title: sprint.title || 'Untitled Sprint Content',
                 content: 'Content not available or improperly formatted.',
              }];
              formattedData.totalSteps = 1;
@@ -526,6 +526,7 @@ function SprintPage() {
     const renderContentItem = (item) => {
       // Log item at the beginning of the function
       console.log('Inside renderContentItem for item:', item);
+      // Ensure item is not null or undefined before proceeding
       if (!item) {
          console.error('renderContentItem received undefined or null item.');
          return null; // Do not render if item is undefined or null
@@ -533,7 +534,7 @@ function SprintPage() {
 
       // Add a safeguard for accessing title property if needed elsewhere in this function
       // Use a safe way to get the title and convert to lowercase if it exists and is a string.
-      const itemTitle = typeof item.title === 'string' ? item.title.toLowerCase() : '';
+      const itemTitle = (item && typeof item.title === 'string') ? item.title.toLowerCase() : '';
       // Now use itemTitle instead of item.title directly if you need its lowercase version
       // If you just need the title (potentially undefined), use item.title
 
@@ -611,9 +612,10 @@ function SprintPage() {
       case 'content':
         return (
           <VStack spacing={6} align="stretch">
-            {currentStep.title && <Heading size="lg">{currentStep.title}</Heading>}
+            {/* Safely render title only if it exists */}
+            {currentStep && currentStep.title && <Heading size="lg">{currentStep.title}</Heading>}
             
-            {currentStep.introduction && (
+            {currentStep && currentStep.introduction && (
               <Text fontSize="lg" color="gray.600" mb={4}>
                 {currentStep.introduction}
               </Text>
@@ -657,14 +659,22 @@ function SprintPage() {
               </AspectRatio>
             ) : null}
             
-            {Array.isArray(currentStep.content) ? (
+            {/* Safely map over currentStep.content only if it is an array */}
+            {Array.isArray(currentStep?.content) ? (
               currentStep.content.map((item, index) => {
                 // Log each item before rendering
                 console.log('Rendering content item:', item, 'at index:', index);
+                // Ensure item is not null or undefined
                 if (!item) {
                   console.warn('Encountered undefined or null item in steps array at index:', index);
                   return null; // Skip rendering for undefined/null items
                 }
+                 // Ensure item.type is a string before using it in switch
+                if (typeof item.type !== 'string') {
+                   console.warn('Encountered item with non-string type at index:', index, ':', item);
+                   return null; // Skip rendering if type is not a string
+                }
+
                 return (
                   <Box key={index}>
                     {renderContentItem(item)}
@@ -687,7 +697,8 @@ function SprintPage() {
         if (currentStep.componentType === 'anatomy') {
           return (
             <VStack spacing={6} align="stretch">
-              {currentStep.title && <Heading size="lg">{currentStep.title}</Heading>}
+              {/* Safely render title only if it exists */}
+              {currentStep && currentStep.title && <Heading size="lg">{currentStep.title}</Heading>}
               <Text>{currentStep.content}</Text>
               
               <Card variant="outline" p={4} my={4}>
