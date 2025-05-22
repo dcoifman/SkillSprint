@@ -1201,6 +1201,352 @@ export const loadCodeSnippet = async (userId, language) => {
   }
 };
 
+// --- Instructor Analytics Functions ---
+
+// Function to fetch enrollment count for a course
+export const fetchCourseEnrollmentCount = async (pathId) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_paths')
+      .select('user_id', { count: 'exact' })
+      .eq('path_id', pathId);
+    
+    if (error) {
+      console.error('Error fetching course enrollment count:', error);
+      return { count: 0, error };
+    }
+    
+    return { count: data.length, error: null };
+  } catch (err) {
+    console.error('Exception during fetching course enrollment count:', err);
+    return { count: 0, error: err };
+  }
+};
+
+// Function to fetch course completion rate
+export const fetchCourseCompletionRate = async (pathId) => {
+  try {
+    // First get all sprints for this path
+    const { data: pathData, error: pathError } = await supabase
+      .from('learning_paths')
+      .select(`
+        total_sprints,
+        modules!learning_paths_id_fkey (
+          id
+        )
+      `)
+      .eq('id', pathId)
+      .single();
+
+    if (pathError) {
+      console.error('Error fetching path data:', pathError);
+      return { completionRate: 0, error: pathError };
+    }
+
+    const totalSprints = pathData.total_sprints || 0;
+    if (totalSprints === 0) {
+      return { completionRate: 0, error: null };
+    }
+
+    // Get module IDs for this path
+    const moduleIds = pathData.modules.map(m => m.id);
+    
+    if (moduleIds.length === 0) {
+      return { completionRate: 0, error: null };
+    }
+
+    // Get all sprints for these modules
+    const { data: sprintsData, error: sprintsError } = await supabase
+      .from('sprints')
+      .select('id')
+      .in('module_id', moduleIds);
+
+    if (sprintsError) {
+      console.error('Error fetching sprints:', sprintsError);
+      return { completionRate: 0, error: sprintsError };
+    }
+
+    // Get all student progress entries for these sprints
+    const sprintIds = sprintsData.map(s => s.id);
+    
+    if (sprintIds.length === 0) {
+      return { completionRate: 0, error: null };
+    }
+
+    // Get all users enrolled in this path
+    const { data: enrolledUsers, error: enrollmentError } = await supabase
+      .from('user_paths')
+      .select('user_id')
+      .eq('path_id', pathId);
+
+    if (enrollmentError) {
+      console.error('Error fetching enrolled users:', enrollmentError);
+      return { completionRate: 0, error: enrollmentError };
+    }
+
+    const userIds = enrolledUsers.map(u => u.user_id);
+    
+    if (userIds.length === 0) {
+      return { completionRate: 0, error: null }; // No enrolled users
+    }
+
+    // Get completion data
+    const { data: completionData, error: completionError } = await supabase
+      .from('user_progress')
+      .select('user_id, sprint_id, is_completed')
+      .in('user_id', userIds)
+      .in('sprint_id', sprintIds)
+      .eq('is_completed', true);
+
+    if (completionError) {
+      console.error('Error fetching completion data:', completionError);
+      return { completionRate: 0, error: completionError };
+    }
+
+    // Calculate completion rate
+    // Formula: (Number of completed sprints) / (Number of enrolled users × Total sprints)
+    const totalPossibleCompletions = userIds.length * totalSprints;
+    const totalCompletions = completionData.length;
+    
+    const completionRate = totalPossibleCompletions > 0 
+      ? (totalCompletions / totalPossibleCompletions) * 100 
+      : 0;
+
+    return { 
+      completionRate: Math.round(completionRate * 10) / 10, // Round to 1 decimal place
+      totalCompletions,
+      totalPossibleCompletions,
+      enrolledCount: userIds.length,
+      totalSprints,
+      error: null 
+    };
+
+  } catch (err) {
+    console.error('Exception during calculating course completion rate:', err);
+    return { completionRate: 0, error: err };
+  }
+};
+
+// Function to fetch sprint completion rates for a course
+export const fetchSprintCompletionRatesForCourse = async (pathId) => {
+  try {
+    // Get all modules for this path
+    const { data: modulesData, error: modulesError } = await supabase
+      .from('modules')
+      .select('id, title, order_index')
+      .eq('path_id', pathId)
+      .order('order_index');
+
+    if (modulesError) {
+      console.error('Error fetching modules:', modulesError);
+      return { data: [], error: modulesError };
+    }
+
+    // Get all sprints for these modules
+    const moduleIds = modulesData.map(m => m.id);
+    
+    if (moduleIds.length === 0) {
+      return { data: [], error: null };
+    }
+
+    const { data: sprintsData, error: sprintsError } = await supabase
+      .from('sprints')
+      .select('id, title, module_id, order_index, time')
+      .in('module_id', moduleIds)
+      .order('order_index');
+
+    if (sprintsError) {
+      console.error('Error fetching sprints:', sprintsError);
+      return { data: [], error: sprintsError };
+    }
+
+    // Get all users enrolled in this path
+    const { data: enrolledUsers, error: enrollmentError } = await supabase
+      .from('user_paths')
+      .select('user_id')
+      .eq('path_id', pathId);
+
+    if (enrollmentError) {
+      console.error('Error fetching enrolled users:', enrollmentError);
+      return { data: [], error: enrollmentError };
+    }
+
+    const userIds = enrolledUsers.map(u => u.user_id);
+    const totalUsers = userIds.length;
+    
+    if (totalUsers === 0) {
+      // If no users are enrolled, return sprints with 0% completion
+      const formattedData = sprintsData.map(sprint => {
+        const module = modulesData.find(m => m.id === sprint.module_id);
+        return {
+          id: sprint.id,
+          title: sprint.title,
+          moduleTitle: module?.title || 'Unknown Module',
+          moduleIndex: module?.order_index || 0,
+          sprintIndex: sprint.order_index,
+          completionCount: 0,
+          totalUsers: 0,
+          completionRate: 0
+        };
+      });
+      return { data: formattedData, error: null };
+    }
+
+    // Get all completion data for these sprints and users
+    const { data: progressData, error: progressError } = await supabase
+      .from('user_progress')
+      .select('user_id, sprint_id, is_completed')
+      .in('user_id', userIds)
+      .in('sprint_id', sprintsData.map(s => s.id));
+
+    if (progressError) {
+      console.error('Error fetching progress data:', progressError);
+      return { data: [], error: progressError };
+    }
+
+    // Calculate completion rate for each sprint
+    const formattedData = sprintsData.map(sprint => {
+      const completedEntries = progressData.filter(
+        p => p.sprint_id === sprint.id && p.is_completed
+      );
+      
+      const module = modulesData.find(m => m.id === sprint.module_id);
+      
+      return {
+        id: sprint.id,
+        title: sprint.title,
+        moduleTitle: module?.title || 'Unknown Module',
+        moduleIndex: module?.order_index || 0,
+        sprintIndex: sprint.order_index,
+        completionCount: completedEntries.length,
+        totalUsers,
+        completionRate: totalUsers > 0 
+          ? Math.round((completedEntries.length / totalUsers) * 100)
+          : 0
+      };
+    });
+
+    // Sort by module and then sprint order
+    formattedData.sort((a, b) => {
+      if (a.moduleIndex !== b.moduleIndex) {
+        return a.moduleIndex - b.moduleIndex;
+      }
+      return a.sprintIndex - b.sprintIndex;
+    });
+
+    return { data: formattedData, error: null };
+
+  } catch (err) {
+    console.error('Exception during fetching sprint completion rates:', err);
+    return { data: [], error: err };
+  }
+};
+
+// Function to fetch individual student progress on a course
+export const fetchStudentProgressOnCourse = async (pathId) => {
+  try {
+    // Get all users enrolled in this path
+    const { data: enrolledUsers, error: enrollmentError } = await supabase
+      .from('user_paths')
+      .select(`
+        user_id,
+        user:user_id (
+          email,
+          user_metadata
+        )
+      `)
+      .eq('path_id', pathId);
+
+    if (enrollmentError) {
+      console.error('Error fetching enrolled users:', enrollmentError);
+      return { data: [], error: enrollmentError };
+    }
+
+    if (enrolledUsers.length === 0) {
+      return { data: [], error: null }; // No enrolled users
+    }
+
+    // Get all modules for this path
+    const { data: modulesData, error: modulesError } = await supabase
+      .from('modules')
+      .select('id')
+      .eq('path_id', pathId);
+
+    if (modulesError) {
+      console.error('Error fetching modules:', modulesError);
+      return { data: [], error: modulesError };
+    }
+
+    // Get all sprints for these modules
+    const moduleIds = modulesData.map(m => m.id);
+    
+    if (moduleIds.length === 0) {
+      return { data: [], error: null };
+    }
+
+    const { data: sprintsData, error: sprintsError } = await supabase
+      .from('sprints')
+      .select('id')
+      .in('module_id', moduleIds);
+
+    if (sprintsError) {
+      console.error('Error fetching sprints:', sprintsError);
+      return { data: [], error: sprintsError };
+    }
+
+    const sprintIds = sprintsData.map(s => s.id);
+    const totalSprints = sprintIds.length;
+    
+    if (totalSprints === 0) {
+      return { data: [], error: null };
+    }
+
+    // Get all progress data for these users and sprints
+    const { data: progressData, error: progressError } = await supabase
+      .from('user_progress')
+      .select('user_id, sprint_id, is_completed, updated_at')
+      .in('user_id', enrolledUsers.map(u => u.user_id))
+      .in('sprint_id', sprintIds)
+      .eq('is_completed', true);
+
+    if (progressError) {
+      console.error('Error fetching progress data:', progressError);
+      return { data: [], error: progressError };
+    }
+
+    // Format student progress data
+    const studentProgressData = enrolledUsers.map(enrollment => {
+      const user = enrollment.user;
+      const completedSprints = progressData.filter(p => p.user_id === enrollment.user_id);
+      
+      // Find the most recent activity timestamp
+      let lastActivity = null;
+      if (completedSprints.length > 0) {
+        const timestamps = completedSprints.map(p => new Date(p.updated_at));
+        lastActivity = new Date(Math.max(...timestamps.map(t => t.getTime())));
+      }
+      
+      return {
+        userId: enrollment.user_id,
+        email: user.email,
+        name: user.user_metadata?.full_name || 'Unnamed Student',
+        completedCount: completedSprints.length,
+        totalSprints,
+        progressPercent: totalSprints > 0 
+          ? Math.round((completedSprints.length / totalSprints) * 100) 
+          : 0,
+        lastActivity: lastActivity ? lastActivity.toISOString() : null
+      };
+    });
+
+    return { data: studentProgressData, error: null };
+
+  } catch (err) {
+    console.error('Exception during fetching student progress:', err);
+    return { data: [], error: err };
+  }
+};
+
 // Create a named object for export
 const supabaseClient = {
   signUp,
@@ -1235,6 +1581,10 @@ const supabaseClient = {
   fetchRecentSprints,
   saveCodeSnippet,
   loadCodeSnippet,
+  fetchCourseEnrollmentCount,
+  fetchCourseCompletionRate,
+  fetchSprintCompletionRatesForCourse,
+  fetchStudentProgressOnCourse,
 };
 
 // Export the named object

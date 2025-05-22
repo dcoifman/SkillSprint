@@ -148,8 +148,9 @@ function Header() {
                 </MenuButton>
                   <MenuList>
                     <MenuItem as={RouterLink} to="/profile">Profile</MenuItem>
+                    <MenuItem as={RouterLink} to="/instructor-dashboard">Instructor Dashboard</MenuItem>
                     <MenuItem as={RouterLink} to="/settings">Settings</MenuItem>
-                  <MenuItem onClick={handleSignOut}>Sign Out</MenuItem>
+                    <MenuItem onClick={handleSignOut}>Sign Out</MenuItem>
                   </MenuList>
                 </Menu>
             ) : (
@@ -387,6 +388,21 @@ const NAV_ITEMS = [
   {
     label: 'Course Studio',
     href: '/course-builder',
+  },
+  {
+    label: 'Instructor Tools',
+    children: [
+      {
+        label: 'Analytics Dashboard',
+        subLabel: 'Track student progress and course performance',
+        href: '/instructor-dashboard',
+      },
+      {
+        label: 'Course Builder',
+        subLabel: 'Create and manage courses',
+        href: '/course-builder',
+      },
+    ],
   },
   {
     label: 'Community',

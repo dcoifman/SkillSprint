@@ -14,6 +14,7 @@ import CommunityPage from './pages/CommunityPage.js';
 import CourseGenerationPage from './pages/CourseGenerationPage.js';
 import HowItWorksPage from './pages/HowItWorksPage.js';
 import UnifiedCourseDashboard from './pages/UnifiedCourseDashboard.js';
+import InstructorDashboardPage from './pages/InstructorDashboardPage.js';
 import { ProtectedRoute } from './components/ProtectedRoute.js';
 
 export const router = createBrowserRouter(
@@ -32,6 +33,8 @@ export const router = createBrowserRouter(
       <Route path="/course-builder" element={<ProtectedRoute><UnifiedCourseDashboard /></ProtectedRoute>} />
       <Route path="/course-generation" element={<ProtectedRoute><CourseGenerationPage /></ProtectedRoute>} />
       <Route path="/course-builder/new" element={<ProtectedRoute><CourseBuilderPage /></ProtectedRoute>} />
+      <Route path="/instructor-dashboard" element={<ProtectedRoute><InstructorDashboardPage /></ProtectedRoute>} />
+      <Route path="/instructor-dashboard/:pathId" element={<ProtectedRoute><InstructorDashboardPage /></ProtectedRoute>} />
       <Route path="/community" element={<CommunityPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Route>
