@@ -531,15 +531,11 @@ function SprintPage() {
          return null; // Do not render if item is undefined or null
       }
 
-      // Check if item.title is accessed and is not a string
-      if (item.title !== undefined && typeof item.title !== 'string') {
-          console.error('Item has a non-string title property:', item);
-          // Optionally handle this case, e.g., display a warning or skip rendering
-      }
-
       // Add a safeguard for accessing title property if needed elsewhere in this function
-      const itemTitle = typeof item.title === 'string' ? item.title : '';
-      // Now use itemTitle instead of item.title directly if you need to ensure it's a string
+      // Use a safe way to get the title and convert to lowercase if it exists and is a string.
+      const itemTitle = typeof item.title === 'string' ? item.title.toLowerCase() : '';
+      // Now use itemTitle instead of item.title directly if you need its lowercase version
+      // If you just need the title (potentially undefined), use item.title
 
       switch (item.type) {
         case 'text':
