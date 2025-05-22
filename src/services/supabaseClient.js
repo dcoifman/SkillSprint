@@ -934,7 +934,7 @@ export const fetchPracticeProblems = async (sprintId) => {
       .select('problems_data')
       .eq('user_id', user.id)
       .eq('sprint_id', sprintId)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') { // PGRST116 means row not found, which is okay
       console.error('Error fetching saved practice problems:', error);

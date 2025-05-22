@@ -128,7 +128,7 @@ function SprintPage() {
             .select('*')
             .eq('sprint_id', sprintId)
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
 
           if (progressError) {
             console.error('Error fetching user progress:', progressError);
