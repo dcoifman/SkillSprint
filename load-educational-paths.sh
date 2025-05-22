@@ -20,7 +20,7 @@ DB_URL=$(supabase status --output json | jq -r '.db_url')
 
 # Execute SQL script using psql directly
 echo "Creating educational paths in the database..."
-PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f ./create-educational-paths.sql
+PGPASSWORD=$DB_PASSWORD psql -h 127.0.0.1 -p 54322 -U postgres -d skill-sprint -f ./create-educational-paths.sql
 
 # Verify insertion
 echo "Verifying data insertion..."

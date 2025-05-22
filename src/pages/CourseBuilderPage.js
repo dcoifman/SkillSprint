@@ -1349,15 +1349,26 @@ function CourseBuilderPage() {
                                 Module: {generatedCourse.modules[activeModule].title}
                               </Text>
                             </VStack>
-                            
-                            <Button
-                              colorScheme="purple"
-                              variant="outline"
-                              onClick={() => improveContent(activeModule, activeSprint)}
-                              isDisabled={!sprintContent[`${activeModule}-${activeSprint}`]}
-                            >
-                              Improve with AI
-                            </Button>
+
+                            <HStack spacing={2}>
+                              <Button
+                                colorScheme="purple"
+                                variant="outline"
+                                onClick={() => improveContent(activeModule, activeSprint)}
+                                isDisabled={!sprintContent[`${activeModule}-${activeSprint}`]}
+                              >
+                                Improve with AI
+                              </Button>
+                              {!sprintContent[`${activeModule}-${activeSprint}`] && (
+                                <Button
+                                  colorScheme="blue"
+                                  onClick={() => generateSprintContent(activeModule, activeSprint)}
+                                  isLoading={isLoadingSprint}
+                                >
+                                  Generate Initial Content with AI
+                                </Button>
+                              )}
+                            </HStack>
                           </HStack>
                           
                           {sprintContent[`${activeModule}-${activeSprint}`] ? (

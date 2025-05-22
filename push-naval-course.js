@@ -10,15 +10,15 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config({ path: join(__dirname, '.env.local') });
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://cwgfnvjzygxmxnvwwtth.supabase.co';
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseServiceRoleKey) {
+if (!supabaseKey) {
   throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required');
 }
 
 // Create a Supabase client with the service role key
-const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false,

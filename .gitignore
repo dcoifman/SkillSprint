@@ -41,4 +41,7 @@ debug.log
 *.sublime-workspace
 
 # Tools
-bfg.jar 
+bfg.jar
+
+# Ignore anatomy model binaries
+/public/models/anatomy/**/*.glb 

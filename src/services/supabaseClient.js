@@ -1077,6 +1077,45 @@ export const fetchUserEnrolledPathsWithNextSprint = async () => {
   }
 };
 
+// Function to fetch a user's recent sprints based on progress
+export const fetchRecentSprints = async (limit = 3) => {
+  try {
+    const { user, error: userError } = await getCurrentUser();
+    if (userError || !user) {
+      return { data: null, error: userError || { message: 'User not authenticated' } };
+    }
+
+    const { data, error } = await supabase
+      .from('user_progress')
+      .select(`
+        sprint_id,
+        sprint:sprint_id (
+          id,
+          title,
+          time
+        )
+      `)
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching recent sprints:', error);
+      return { data: null, error };
+    }
+
+    // Filter out entries where sprint data couldn't be fetched (due to RLS or data issues)
+    const recentSprints = data.filter(item => item.sprint !== null);
+
+    // Return the sprint details directly
+    return { data: recentSprints.map(item => item.sprint), error: null };
+
+  } catch (err) {
+    console.error('Exception during fetching recent sprints:', err);
+    return { data: null, error: err };
+  }
+};
+
 // Create a named object for export
 const supabaseClient = {
   signUp,
@@ -1108,6 +1147,7 @@ const supabaseClient = {
   fetchPracticeProblems,
   fetchLearningSummary,
   fetchUserEnrolledPathsWithNextSprint,
+  fetchRecentSprints,
 };
 
 // Export the named object

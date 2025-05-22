@@ -4,16 +4,14 @@ INSERT INTO learning_paths (
   title,
   description,
   category,
-  duration,
-  modules,
-  difficulty,
+  estimated_time,
+  total_sprints,
+  level,
   rating,
-  reviews,
-  image_url,
+  review_count,
+  image,
   tags,
-  featured,
-  instructor_name,
-  instructor_avatar
+  instructor_id
 ) VALUES (
   '550e8400-e29b-41d4-a716-446655440000',
   'The Great Naval Disaster: Russian Baltic Fleet''s Epic Journey',
@@ -26,7 +24,5 @@ INSERT INTO learning_paths (
   128,
   '/path-images/russian-baltic-fleet.jpg',
   ARRAY['Military History', 'Naval Warfare', 'Comedy in History'],
-  true,
-  'Dr. Naval History',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=naval'
+  (SELECT id FROM public.instructors WHERE name = 'Dr. Naval History' LIMIT 1)
 ); 

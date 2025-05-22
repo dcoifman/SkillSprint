@@ -15,17 +15,23 @@ if [ ! -f .env.local ]; then
     exit 1
 fi
 
-# Source environment variables
-source .env.local
+# Extract environment variables from .env.local
+SUPABASE_URL=$(grep REACT_APP_SUPABASE_URL .env.local | cut -d '=' -f2)
+SUPABASE_KEY=$(grep REACT_APP_SUPABASE_ANON_KEY .env.local | cut -d '=' -f2)
+GEMINI_API_KEY=$(grep REACT_APP_GEMINI_API_KEY .env.local | cut -d '=' -f2)
+
+# Extract project ID from URL
+SUPABASE_PROJECT_ID=$(echo $SUPABASE_URL | cut -d '/' -f3 | cut -d '.' -f1)
 
 # Check for required variables
-if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ] || [ -z "$GEMINI_API_KEY" ]; then
+if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ] || [ -z "$GEMINI_API_KEY" ] || [ -z "$SUPABASE_PROJECT_ID" ]; then
     echo "Error: Missing required environment variables in .env.local"
-    echo "Please ensure SUPABASE_URL, SUPABASE_KEY, and GEMINI_API_KEY are set."
+    echo "Please ensure REACT_APP_SUPABASE_URL, REACT_APP_SUPABASE_ANON_KEY, and REACT_APP_GEMINI_API_KEY are set."
     exit 1
 fi
 
 echo "Deploying Supabase Edge Functions..."
+echo "Project ID: $SUPABASE_PROJECT_ID"
 
 # Deploy the generate-personalized-path function
 echo "Deploying generate-personalized-path function..."

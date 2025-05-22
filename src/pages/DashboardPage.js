@@ -61,7 +61,7 @@ import { motion } from 'framer-motion';
 import CourseInvitationsComponent from '../components/CourseInvitationsComponent.js';
 import { getInstructorProfile } from '../services/supabaseClient.js';
 import PersonalizedPathsSection from '../components/PersonalizedPathsSection.js';
-import { fetchUserEnrolledPathsWithProgress, fetchUserStats, fetchUserEnrolledPathsWithNextSprint } from '../services/supabaseClient.js';
+import { fetchUserEnrolledPathsWithProgress, fetchUserStats } from '../services/supabaseClient.js';
 
 // Motion components for animations
 const MotionBox = motion(Box);
@@ -75,6 +75,8 @@ function DashboardPage() {
   const [isInstructor, setIsInstructor] = useState(false);
   const [enrolledPaths, setEnrolledPaths] = useState([]);
   const [loadingEnrolledPaths, setLoadingEnrolledPaths] = useState(true);
+  const [recentSprints, setRecentSprints] = useState([]);
+  const [loadingRecentSprints, setLoadingRecentSprints] = useState(true);
   
   const [userInfo, setUserInfo] = useState({
     name: user?.user_metadata?.full_name || 'Learner',
@@ -97,27 +99,28 @@ function DashboardPage() {
 
       try {
         // Fetch user stats
-        const statsResult = await fetchUserStats();
-        if (statsResult && statsResult.error) throw statsResult.error;
+        const { data: stats, error: statsError } = await fetchUserStats();
+        if (statsError) throw statsError;
 
-        if (statsResult && statsResult.data) {
+        if (stats) {
           setUserInfo(prev => ({
             ...prev,
-            streak: statsResult.data.streak || 0,
-            completedSprints: statsResult.data.completed_sprints || 0,
-            level: statsResult.data.level || 1,
-            xp: statsResult.data.xp || 0,
-            nextLevelXp: statsResult.data.next_level_xp || 1000,
-            recentActivity: statsResult.data.last_activity ? new Date(statsResult.data.last_activity).toLocaleDateString() : null
+            streak: stats.streak || 0,
+            completedSprints: stats.completed_sprints || 0,
+            level: stats.level || 1,
+            xp: stats.xp || 0,
+            nextLevelXp: stats.next_level_xp || 1000,
+            // activePaths will be calculated from enrolledPaths
+            recentActivity: stats.last_activity ? new Date(stats.last_activity).toLocaleDateString() : null
           }));
         }
 
         // Fetch enrolled paths
-        const enrolledResult = await fetchUserEnrolledPathsWithNextSprint();
-        if (enrolledResult && enrolledResult.error) throw enrolledResult.error;
+        const { data: enrolledData, error: enrolledError } = await fetchUserEnrolledPathsWithProgress();
+        if (enrolledError) throw enrolledError;
 
-        setEnrolledPaths(enrolledResult?.data || []);
-        setUserInfo(prev => ({ ...prev, activePaths: enrolledResult?.data?.length || 0 }));
+        setEnrolledPaths(enrolledData || []);
+        setUserInfo(prev => ({ ...prev, activePaths: enrolledData?.length || 0 }));
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -128,6 +131,28 @@ function DashboardPage() {
     };
 
     fetchUserStatsAndPaths();
+  }, [user]);
+
+  useEffect(() => {
+    const loadRecentSprints = async () => {
+      if (!user) {
+        setLoadingRecentSprints(false);
+        return;
+      }
+
+      setLoadingRecentSprints(true);
+      try {
+        const { data, error } = await fetchRecentSprints();
+        if (error) throw error;
+        setRecentSprints(data || []);
+      } catch (error) {
+        console.error('Error fetching recent sprints:', error);
+      } finally {
+        setLoadingRecentSprints(false);
+      }
+    };
+
+    loadRecentSprints();
   }, [user]);
 
   // Cards and text styling
@@ -548,43 +573,25 @@ function DashboardPage() {
                   </Flex>
                   <Progress value={path.progress} colorScheme="purple" size="sm" borderRadius="full" mb={4} />
                   
-                  {path.nextSprint ? (
-                    <>
-                      <Text fontWeight="medium" mb={1}>Next Sprint:</Text>
-                      <Text color={textColor}>{path.nextSprint.title}</Text>
-                      <Flex align="center" mt={1} color={textColor}>
-                        <TimeIcon mr={2} />
-                        <Text>{path.nextSprint.time}</Text>
-                      </Flex>
-                    </>
-                  ) : (path.progress === 100 ? (
-                    <Box>
-                      <Text fontWeight="medium" mb={1}>Status:</Text>
-                      <Text color="green.500" fontWeight="bold">Completed!</Text>
-                    </Box>
-                  ) : (
-                    <Box>
-                      <Text fontWeight="medium" mb={1}>Next Sprint:</Text>
-                      <Text color={textColor}>Continue where you left off</Text>
-                      <Flex align="center" mt={1} color={textColor}>
-                        <TimeIcon mr={2} />
-                        <Text>N/A</Text>
-                      </Flex>
-                    </Box>
-                  ))}
+                  <Text fontWeight="medium" mb={1}>Next Sprint:</Text>
+                  <Text color={textColor}>Continue where you left off</Text> {/* This needs to be updated with actual next sprint */}
+                  <Flex align="center" mt={1} color={textColor}>
+                    <TimeIcon mr={2} />
+                    <Text>N/A</Text> {/* This needs to be updated with actual next sprint time */}
+                  </Flex>
                 </CardBody>
                 
                 <CardFooter pt={2}>
                   <Button 
                     as={RouterLink} 
-                    to={path.nextSprint ? `/sprint/${path.nextSprint.id}` : `/paths/${path.id}`}
+                    to={`/paths/${path.id}`} /* Link to path detail for now */
                     colorScheme="purple" 
                     rightIcon={<ChevronRightIcon />}
                     variant="solid"
                     size="md"
                     width="full"
                   >
-                    {path.nextSprint ? 'Continue Learning' : (path.progress === 100 ? 'Review Path' : 'Start Learning')}
+                    Continue Learning
                   </Button>
                 </CardFooter>
               </MotionCard>
@@ -618,89 +625,46 @@ function DashboardPage() {
             borderColor={cardBorder}
             overflow="hidden"
           >
-            {/* Sprint 1 */}
-            <Skeleton isLoaded={!loading}>
-              <Box p={4} _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }} transition="background 0.2s">
-                <Flex justify="space-between" align="center">
-                  <Box>
-                    <Text fontWeight="bold">Introduction to Artificial Neural Networks</Text>
-                    <Flex align="center" color={textColor} mt={1}>
-                      <Icon as={TimeIcon} mr={1} />
-                      <Text fontSize="sm">2 hours ago • 12 min</Text>
-                    </Flex>
-                  </Box>
-                  <Badge
-                    colorScheme="green"
-                    fontSize="0.9em"
-                    px={3}
-                    py={1}
-                    borderRadius="full"
-                    fontWeight="bold"
-                  >
-                    95%
-                  </Badge>
-                </Flex>
+            {loadingRecentSprints ? (
+               <Center py={10}>
+                <Spinner size="lg" color="purple.500" thickness="3px" />
+               </Center>
+            ) : recentSprints.length === 0 ? (
+              <Box p={4} textAlign="center">
+                <Text color={textColor}>No recent sprint activity.</Text>
               </Box>
-            </Skeleton>
-            
-            <Divider />
-            
-            {/* Sprint 2 */}
-            <Skeleton isLoaded={!loading}>
-              <Box p={4} _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }} transition="background 0.2s">
-                <Flex justify="space-between" align="center">
-                  <Box>
-                    <Text fontWeight="bold">React Components and Props</Text>
-                    <Flex align="center" color={textColor} mt={1}>
-                      <Icon as={TimeIcon} mr={1} />
-                      <Text fontSize="sm">Yesterday • 8 min</Text>
-                    </Flex>
-                  </Box>
-                  <Badge
-                    colorScheme="yellow"
-                    fontSize="0.9em"
-                    px={3}
-                    py={1}
-                    borderRadius="full"
-                    fontWeight="bold"
+            ) : (
+              <VStack spacing={0} align="stretch" divider={<Divider borderColor={cardBorder} />}>
+                {recentSprints.map((sprint) => (
+                  <Box 
+                    key={sprint.id} 
+                    p={4} 
+                    _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }} 
+                    transition="background 0.2s"
                   >
-                    88%
-                  </Badge>
-                </Flex>
-              </Box>
-            </Skeleton>
-            
-            <Divider />
-            
-            {/* Sprint 3 */}
-            <Skeleton isLoaded={!loading}>
-              <Box p={4} _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }} transition="background 0.2s">
-                <Flex justify="space-between" align="center">
-                  <Box>
-                    <Text fontWeight="bold">Introduction to Functional Anatomy</Text>
-                    <Flex align="center" color={textColor} mt={1}>
-                      <Icon as={TimeIcon} mr={1} />
-                      <Text fontSize="sm">Today • 10 min</Text>
-                    </Flex>
+                     <RouterLink to={`/sprint/${sprint.id}`}>
+                      <Flex justify="space-between" align="center">
+                        <Box>
+                          <Text fontWeight="bold">{sprint.title}</Text>
+                          {sprint.time && (
+                             <Flex align="center" color={textColor} mt={1}>
+                                <Icon as={TimeIcon} mr={1} />
+                                <Text fontSize="sm">{sprint.time}</Text>
+                             </Flex>
+                          )}
+                        </Box>
+                        <Button size="sm" colorScheme="purple" variant="outline">Go to Sprint</Button>
+                      </Flex>
+                     </RouterLink>
                   </Box>
-                  <Badge
-                    colorScheme="green"
-                    fontSize="0.9em"
-                    px={3}
-                    py={1}
-                    borderRadius="full"
-                    fontWeight="bold"
-                  >
-                    100%
-                  </Badge>
-                </Flex>
-              </Box>
-            </Skeleton>
+                ))}
+              </VStack>
+            )}
           </Card>
         </MotionBox>
 
-        {/* Recommended Sprints */}
-        <MotionBox
+        {/* Recommended Sprints - Removing this section as it requires backend logic */}
+        {/* <MotionBox
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.4 }}
@@ -723,7 +687,7 @@ function DashboardPage() {
             overflow="hidden"
           >
             {/* Recommendation 1 */}
-            <Skeleton isLoaded={!loading}>
+            {/* <Skeleton isLoaded={!loading}>
               <Box p={4} _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }} transition="background 0.2s">
                 <Flex justify="space-between" align="center">
                   <Box>
@@ -736,19 +700,20 @@ function DashboardPage() {
                       </Flex>
                     </HStack>
                   </Box>
-                  <RouterLink to="/sprint/101">
-                    <Button colorScheme="purple" size="sm">
-                      Start
-                    </Button>
-                  </RouterLink>
-                </Flex>
+                  {/* Comment out or remove the RouterLink with hardcoded ID */}
+                  {/* <RouterLink to="/sprint/101"> */}
+                  {/* <Button colorScheme="purple" size="sm">
+                    Start
+                  </Button> */}
+                  {/* </RouterLink> */}
+                {/* </Flex>
               </Box>
-            </Skeleton>
+            </Skeleton> */}
             
-            <Divider />
+            {/* <Divider /> */}
             
             {/* Recommendation 2 */}
-            <Skeleton isLoaded={!loading}>
+            {/* <Skeleton isLoaded={!loading}>
               <Box p={4} _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }} transition="background 0.2s">
                 <Flex justify="space-between" align="center">
                   <Box>
@@ -761,19 +726,20 @@ function DashboardPage() {
                       </Flex>
                     </HStack>
                   </Box>
-                  <RouterLink to="/sprint/102">
-                    <Button colorScheme="purple" size="sm">
-                      Start
-                    </Button>
-                  </RouterLink>
-                </Flex>
+                  {/* Comment out or remove the RouterLink with hardcoded ID */}
+                  {/* <RouterLink to="/sprint/102"> */}
+                  {/* <Button colorScheme="purple" size="sm">
+                    Start
+                  </Button> */}
+                  {/* </RouterLink> */}
+                {/* </Flex>
               </Box>
-            </Skeleton>
+            </Skeleton> */}
             
-            <Divider />
+            {/* <Divider /> */}
             
             {/* Recommendation 3 */}
-            <Skeleton isLoaded={!loading}>
+            {/* <Skeleton isLoaded={!loading}>
               <Box p={4} _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }} transition="background 0.2s">
                 <Flex justify="space-between" align="center">
                   <Box>
@@ -786,17 +752,17 @@ function DashboardPage() {
                       </Flex>
                     </HStack>
                   </Box>
-                  <RouterLink to="/sprint/202">
-                    <Button colorScheme="purple" size="sm">
-                      Start
-                    </Button>
-                  </RouterLink>
-                </Flex>
+                  {/* Comment out or remove the RouterLink with hardcoded ID */}
+                  {/* <RouterLink to="/sprint/202"> */}
+                  {/* <Button colorScheme="purple" size="sm">
+                    Start
+                  </Button> */}
+                  {/* </RouterLink> */}
+                {/* </Flex>
               </Box>
-            </Skeleton>
-          </Card>
-        </MotionBox>
-      </SimpleGrid>
+            </Skeleton> */}
+          {/* </Card>
+        </MotionBox> */}
       
       {/* Course Invitations Section */}
       <Skeleton isLoaded={!loading}>

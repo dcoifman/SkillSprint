@@ -159,5 +159,7 @@ for dir in "${ANATOMY_DIRS[@]}"; do
   done
 done
 
+# Manual review required for GLB files: If secrets are embedded in binary GLB files, please use a GLB editor or re-export the models without sensitive metadata. Do not use sed or text tools on binary files.
+
 echo "Model check and fix complete!"
 echo "You may need to restart your application to see the changes." 

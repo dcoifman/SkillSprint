@@ -3,3 +3,61 @@ description:
 globs:
 alwaysApply: false
 ---
+/**
+ * @description Code mode rules for SkillSprint project
+ * @autoAttach {
+ *   "patterns": ["src/**/*"],
+ *   "description": "Rules for working with SkillSprint code files"
+ * }
+ */
+
+# SkillSprint Code Mode Rules
+
+## Component Structure
+
+1. All React components should follow the functional component pattern
+2. Use Chakra UI for UI components
+3. Keep components focused on a single responsibility
+4. Extract reusable logic into custom hooks
+
+## File Organization
+
+1. Place page components in `src/pages/`
+2. Place reusable components in `src/components/`
+3. Place layout components in `src/components/layout/`
+4. Place feature-specific components in `src/features/{feature-name}/`
+
+## Styling Guidelines
+
+1. Use Chakra UI's styling props for component styling
+2. Follow the theme defined in `src/index.js`
+3. Use responsive values for layout properties
+4. Maintain consistent spacing using Chakra's spacing scale
+
+## State Management
+
+1. Use React Context API for global state
+2. Keep component state local when possible
+3. Use custom hooks for complex state logic
+4. Consider performance optimizations for expensive operations
+
+## Documentation
+
+1. Document component props using JSDoc comments
+2. Update memory-bank documentation when making significant changes
+3. Add comments for complex logic or non-obvious implementations
+4. Keep code self-documenting with clear naming conventions
+
+## Performance Considerations
+
+1. Use React.memo for components that render frequently
+2. Avoid unnecessary re-renders
+3. Optimize expensive calculations with useMemo
+4. Use useCallback for functions passed as props
+
+## Accessibility
+
+1. Ensure all interactive elements are keyboard accessible
+2. Use proper ARIA attributes when needed
+3. Maintain sufficient color contrast
+4. Provide text alternatives for non-text content

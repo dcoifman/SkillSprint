@@ -33,10 +33,13 @@ import {
   useToast,
   Alert,
   AlertIcon,
+  Textarea,
 } from '@chakra-ui/react';
 import { ChevronLeftIcon, StarIcon, CheckCircleIcon, TimeIcon, LockIcon } from '@chakra-ui/icons';
-import { fetchPathDetail, enrollUserInPath } from '../services/supabaseClient.js';
+import { fetchPathDetail, enrollUserInPath, saveLearningSummary, fetchLearningSummary } from '../services/supabaseClient.js';
 import { useAuth } from '../contexts/AuthContext.js';
+import { generateLearningSummary } from '../services/geminiClient.js';
+import ReactMarkdown from 'react-markdown';
 
 function PathDetailPage() {
   const { pathId } = useParams();
@@ -44,6 +47,9 @@ function PathDetailPage() {
   const [pathDetail, setPathDetail] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [personalizedSummary, setPersonalizedSummary] = useState('');
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   
   const navigate = useNavigate();
   const toast = useToast();
@@ -181,6 +187,81 @@ function PathDetailPage() {
       setEnrolling(false);
     }
   };
+
+  // Effect to generate summary when path is completed
+  useEffect(() => {
+    if (progress === 100 && pathDetail && !personalizedSummary && !isGeneratingSummary) {
+      const generateSummary = async () => {
+        setIsGeneratingSummary(true);
+        try {
+          // Assuming pathDetail contains information about completed sprints
+          const completedSprintTitles = pathDetail.modules
+            .flatMap(module => module.sprints)
+            .filter(sprint => sprint.isCompleted)
+            .map(sprint => sprint.title);
+
+          const summary = await generateLearningSummary(pathDetail.title, completedSprintTitles);
+          setPersonalizedSummary(summary);
+          
+          // Save the generated summary to Supabase
+          const { error: saveError } = await saveLearningSummary(pathId, summary);
+          if (saveError) {
+            console.error('Error saving learning summary:', saveError);
+            toast({
+              title: 'Error saving summary',
+              description: 'Failed to save learning summary.',
+              status: 'error',
+              duration: 5000,
+              isClosable: true,
+            });
+          }
+        } catch (err) {
+          console.error('Error generating personalized summary:', err);
+          toast({
+            title: 'Error generating summary',
+            description: 'Failed to generate learning summary.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+        } finally {
+          setIsGeneratingSummary(false);
+        }
+      };
+      generateSummary();
+    } else if (progress === 100 && pathDetail && !personalizedSummary) { // Fetch existing if completed and not already generated/fetched
+      const loadSummary = async () => {
+        setIsLoadingSummary(true); // Use the same loading state
+        try {
+          const { data: savedSummary, error: fetchSummaryError } = await fetchLearningSummary(pathId);
+          if (fetchSummaryError && fetchSummaryError.code !== 'PGRST116') {
+            console.error('Error fetching saved learning summary:', fetchSummaryError);
+            toast({
+              title: 'Error loading summary',
+              description: 'Failed to load saved learning summary.',
+              status: 'error',
+              duration: 5000,
+              isClosable: true,
+            });
+          } else if (savedSummary) {
+            setPersonalizedSummary(savedSummary);
+          }
+        } catch (err) {
+          console.error('Exception during fetching learning summary:', err);
+          toast({
+            title: 'Error loading summary',
+            description: 'An unexpected error occurred while loading the summary.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+        } finally {
+          setIsLoadingSummary(false);
+        }
+      };
+      loadSummary();
+    }
+  }, [progress, pathDetail, personalizedSummary, isGeneratingSummary, toast]);
 
   // Loading state
   if (isLoading) {
@@ -565,6 +646,32 @@ function PathDetailPage() {
                       </Card>
                     ))}
                   </VStack>
+                </Box>
+              )}
+
+              {/* Personalized Learning Summary (Visible when path is 100% complete) */}
+              {progress === 100 && (
+                <Box width="100%">
+                  <Heading size="md" mb={4}>Your Learning Summary</Heading>
+                  {isGeneratingSummary ? (
+                    <Center py={4}>
+                      <Spinner size="md" color="purple.500" mr={2} />
+                      <Text>Generating summary...</Text>
+                    </Center>
+                  ) : isLoadingSummary ? (
+                    <Center py={4}>
+                      <Spinner size="md" color="purple.500" mr={2} />
+                      <Text>Loading summary...</Text>
+                    </Center>
+                  ) : personalizedSummary ? (
+                    <Box p={4} bg={useColorModeValue('green.50', 'green.700')} borderRadius="md">
+                      <ReactMarkdown>{personalizedSummary}</ReactMarkdown>
+                    </Box>
+                  ) : (
+                    <Box p={4} bg={useColorModeValue('red.50', 'red.700')} borderRadius="md">
+                      <Text color={useColorModeValue('red.800', 'red.200')}>Failed to load or generate learning summary.</Text>
+                    </Box>
+                  )}
                 </Box>
               )}
             </VStack>

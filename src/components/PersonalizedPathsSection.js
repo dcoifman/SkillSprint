@@ -49,7 +49,7 @@ function PersonalizedPathsSection() {
               title,
               description,
               category,
-              difficulty,
+              level,
               image_url
             ),
             modules:personalized_modules!personalized_path_id(
