@@ -517,12 +517,14 @@ function SprintPage() {
 
     switch (currentStep.type) {
       case 'text':
+        console.log('Rendering text step:', currentStep); // Debug logging
+        const contentToRender = currentStep.content || currentStep.value;
         return (
           <VStack spacing={6} align="stretch">
             {currentStep.title && <Heading size="lg">{currentStep.title}</Heading>}
             <Box className="markdown-content">
               <MarkdownWithMath>
-                {currentStep.content || 'Content not available.'}
+                {contentToRender || 'Content not available.'}
               </MarkdownWithMath>
             </Box>
             {renderNextButton(currentStep)}
