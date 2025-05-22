@@ -513,110 +513,21 @@ function SprintPage() {
 
   const renderStepContent = () => {
     // Add protection against undefined currentStep
-    if (!currentStep) {
-      console.error("Current step is undefined - unable to render content");
-      return (
-        <VStack spacing={6} align="stretch">
-          <Heading size="lg">Error Loading Content</Heading>
-          <Text>There was a problem loading this step. Please try refreshing the page.</Text>
-          <Button 
-            as={RouterLink}
-            to="/dashboard"
-            colorScheme="purple"
-          >
-            Return to Dashboard
-          </Button>
-        </VStack>
-      );
-    }
+    if (!currentStep) return null;
 
-    // Handle different content types
-    const renderContentItem = (item) => {
-      // Log item at the beginning of the function
-      console.log('Inside renderContentItem for item:', item);
-      // **Add a more robust check for item being a valid object**
-      if (!item || typeof item !== 'object') {
-         console.error('renderContentItem received invalid item:', item);
-         return null; // Do not render if item is undefined or null
-      }
-
-      // Use a safe way to get the title and convert to lowercase if it exists and is a string.
-      // Ensure item.title is not null or undefined before calling toLowerCase.
-      const itemTitle = (item && item.title && typeof item.title === 'string') ? item.title.toLowerCase() : '';
-      // Now use itemTitle instead of item.title directly if you need its lowercase version
-      // If you just need the title (potentially undefined), use item.title
-
-      switch (item.type) {
-        case 'text':
-          return (
-            <Text mb={4}>{
-              // Safely access item.value, defaulting to empty string if undefined
-              item.value || ''
-            }</Text>
-          );
-        case 'key_point':
-          return (
-            <Box p={4} bg="purple.50" borderRadius="md" mb={4}>
-              <Text fontWeight="bold" color="purple.700">
-                Key Point: {item.value || ''}
-              </Text>
-            </Box>
-          );
-        case 'example':
-          return (
-            <Box p={4} bg="blue.50" borderRadius="md" mb={4}>
-              <Text fontWeight="medium" color="blue.700">
-                Example: {item.value || ''}
-              </Text>
-            </Box>
-          );
-        case 'visual_tree':
-          return (
-            <Box p={4} bg="green.50" borderRadius="md" mb={4}>
-              <Text fontWeight="medium" color="green.700" whiteSpace="pre-line">
-                {item.value?.split('->').map((part, i, arr) => (
-                  <React.Fragment key={i}>
-                    {part?.trim() || ''}
-                    {i < arr.length - 1 && (
-                      <ChevronRightIcon mx={2} color="green.500" />
-                    )}
-                  </React.Fragment>
-                )) || ''}
-              </Text>
-            </Box>
-          );
-        case 'activity':
-          return (
-            <Card mb={4}>
-              <CardBody>
-                <VStack align="stretch" spacing={3}>
-                  <Heading size="sm" color="orange.500">
-                    Activity
-                  </Heading>
-                  <Text>{item.value || ''}</Text>
-                </VStack>
-              </CardBody>
-            </Card>
-          );
-        case 'reflection':
-          return (
-            <Box p={4} bg="gray.50" borderRadius="md" mb={4} borderLeft="4px solid" borderColor="gray.400">
-              <Text fontStyle="italic">
-                Reflection: {item.value || ''}
-              </Text>
-            </Box>
-          );
-        default:
-          return (
-            <Text mb={4}>
-              {item.value || ''}
-            </Text>
-          );
-      }
-    };
-
-    // Render content based on step type
     switch (currentStep.type) {
+      case 'text':
+        return (
+          <VStack spacing={6} align="stretch">
+            {currentStep.title && <Heading size="lg">{currentStep.title}</Heading>}
+            <Box className="markdown-content">
+              <MarkdownWithMath>
+                {currentStep.value || 'Content not available.'}
+              </MarkdownWithMath>
+            </Box>
+            {renderNextButton(currentStep)}
+          </VStack>
+        );
       case 'content':
         return (
           <VStack spacing={6} align="stretch">
