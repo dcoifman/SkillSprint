@@ -988,7 +988,7 @@ function SprintPage() {
             <AccordionPanel pb={4}>
               <VStack spacing={4} align="stretch">
                 <Text>
-                  What questions do you have about {currentStep.title.toLowerCase()}?
+                  What questions do you have about {currentStep?.title?.toLowerCase() || 'this topic'}?
                 </Text>
                 <Flex>
                   <Button size="sm" mr={2} variant="outline">
