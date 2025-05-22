@@ -133,7 +133,22 @@ function SprintPage() {
         }
 
         // Directly use the 'content' JSONB from the sprints table
-        const sprintContent = sprint.content; // Get the JSONB content
+        const rawSprintContent = sprint.content; // Get the raw content
+        let sprintContent = null;
+
+        // Attempt to parse the content if it's a string
+        if (typeof rawSprintContent === 'string') {
+          try {
+            sprintContent = JSON.parse(rawSprintContent);
+            console.log('Parsed sprint content string:', sprintContent);
+          } catch (parseError) {
+            console.error('Error parsing sprint content JSON string:', parseError);
+            // Keep sprintContent as null or default if parsing fails
+          }
+        } else if (typeof rawSprintContent === 'object' && rawSprintContent !== null) {
+             // If it's already an object (as expected for JSONB), use it directly
+             sprintContent = rawSprintContent;
+        }
 
         // Format the data for the component
         const formattedData = {
@@ -148,7 +163,7 @@ function SprintPage() {
           progress: progress?.progress || 0,
         };
 
-        // Handle case where steps array is empty after fetching
+        // Handle case where steps array is empty after fetching (or parsing failed)
         if (formattedData.steps.length === 0) {
              // Provide a default step if no steps are found in the content
              formattedData.steps = [{
