@@ -70,7 +70,7 @@ const estimateTokens = (text) => Math.ceil(text.length / 4);
 /**
  * Generate content using Gemini API with automatic model selection and fallback
  */
-export const generateContent = async (prompt, temperature = 0.7) => {
+const generateContent = async (prompt, temperature = 0.7) => {
   // Try Gemini 2.5 Flash first
   try {
     return await generateWithModel('FLASH_25', prompt, temperature);
