@@ -53,7 +53,7 @@ import supabaseClient, {
   fetchCourseCompletionRate,
   fetchSprintCompletionRatesForCourse,
   fetchStudentProgressOnCourse,
-} from '../services/supabaseClient';
+} from '../services/supabaseClient.js';
 
 function InstructorDashboardPage() {
   const { pathId } = useParams();
