@@ -1,27 +1,98 @@
+:root {
+  /* Modern Color Palette */
+  --primary-color: #4A90E2; /* Calming Blue */
+  --secondary-color: #50E3C2; /* Vibrant Teal */
+  --accent-color: #F5A623; /* Warm Orange */
+  
+  --text-color: #333333; /* Dark Gray for readability */
+  --text-light-color: #5F6368; /* Lighter Gray for secondary text */
+  --background-color: #F7F9FC; /* Light, clean background */
+  --surface-color: #FFFFFF; /* For cards, modals, etc. */
+  
+  --success-color: #2ECC71; /* Green for success messages */
+  --warning-color: #F1C40F; /* Yellow for warnings */
+  --error-color: #E74C3C; /* Red for errors */
+
+  /* Typography */
+  --font-family-sans: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --font-family-monospace: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --base-font-size: 16px; /* Base font size for rem calculation */
+  --line-height-base: 1.6;
+
+  /* Spacing & Sizing - Using a consistent scale */
+  --spacing-unit: 8px;
+  --spacing-xs: calc(0.5 * var(--spacing-unit));   /* 4px */
+  --spacing-sm: var(--spacing-unit);             /* 8px */
+  --spacing-md: calc(1.5 * var(--spacing-unit));  /* 12px */
+  --spacing-lg: calc(2.5 * var(--spacing-unit));  /* 20px */
+  --spacing-xl: calc(4 * var(--spacing-unit));    /* 32px */
+  --spacing-xxl: calc(6 * var(--spacing-unit));   /* 48px */
+
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px; /* Slightly more rounded for larger elements */
+
+  /* Shadows for depth - subtle and modern */
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 8px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 20px rgba(0,0,0,0.1), 0 6px 6px rgba(0,0,0,0.05);
+
+  /* Transitions for smooth animations */
+  --transition-fast: all 0.15s ease-in-out;
+  --transition-base: all 0.3s ease-in-out;
+}
+
+html {
+  font-size: var(--base-font-size); /* Set base font size on html for rem units */
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-family-sans);
+  font-size: var(--base-font-size); /* Use the variable */
+  line-height: var(--line-height-base);
+  color: var(--text-color);
+  background-color: var(--background-color);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: var(--font-family-monospace);
 }
 
-/* Global custom styles */
-:root {
-  --primary-color: #6200ea;
-  --secondary-color: #00e5ff;
-  --text-color: #333333;
-  --background-color: #ffffff;
-  --success-color: #00c853;
-  --warning-color: #ffc400;
-  --error-color: #ff3d00;
-  --border-radius: 8px;
+/* Base element styling */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
+  font-weight: 600; /* Poppins semi-bold */
+  line-height: 1.3;
+  color: var(--text-color); /* Ensure headings use the main text color */
+}
+
+h1 { font-size: 2.4rem; } 
+h2 { font-size: 1.9rem; }
+h3 { font-size: 1.6rem; }
+h4 { font-size: 1.3rem; }
+h5 { font-size: 1.1rem; }
+h6 { font-size: 1rem; }
+
+p {
+  margin-top: 0;
+  margin-bottom: var(--spacing-lg); /* Increased bottom margin for better paragraph separation */
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500; /* Medium weight for links */
+  transition: var(--transition-fast);
+}
+
+a:hover {
+  color: var(--accent-color);
+  text-decoration: underline; /* Keep underline for accessibility on hover */
 }
 
 /* Utility classes */
@@ -33,6 +104,14 @@ code {
   color: var(--secondary-color);
 }
 
+.text-accent {
+  color: var(--accent-color);
+}
+
+.text-light {
+  color: var(--text-light-color);
+}
+
 .bg-primary {
   background-color: var(--primary-color);
 }
@@ -40,3 +119,199 @@ code {
 .bg-secondary {
   background-color: var(--secondary-color);
 } 
+
+.bg-surface {
+  background-color: var(--surface-color);
+}
+
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--spacing-md); /* Use spacing variables */
+  padding-right: var(--spacing-md); /* Use spacing variables */
+}
+
+.card {
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius-lg); 
+  padding: var(--spacing-xl); 
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-base);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px); 
+}
+
+.button {
+  display: inline-block;
+  padding: var(--spacing-md) var(--spacing-lg); 
+  font-size: 1rem; /* Explicitly use 1rem, which will be 16px by default */
+  font-weight: 500; 
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-md); 
+  transition: var(--transition-base);
+  text-decoration: none; 
+}
+
+.button-primary {
+  background-color: var(--primary-color);
+  color: #FFFFFF;
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.button-primary:hover {
+  background-color: #3A7DCE; 
+  border-color: #3A7DCE;
+  color: #FFFFFF; 
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.button-secondary {
+  background-color: var(--secondary-color);
+  color: var(--text-color); 
+  border-color: var(--secondary-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.button-secondary:hover {
+  background-color: #40C2A8; 
+  border-color: #40C2A8;
+  color: var(--text-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.button-accent {
+  background-color: var(--accent-color);
+  color: #FFFFFF;
+  border-color: var(--accent-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.button-accent:hover {
+  background-color: #E0901B; 
+  border-color: #E0901B;
+  color: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.button-outline {
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color); 
+}
+
+.button-outline:hover {
+  background-color: var(--primary-color);
+  color: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.button-link {
+  background-color: transparent;
+  color: var(--primary-color);
+  border: none;
+  padding-left: var(--spacing-xs);
+  padding-right: var(--spacing-xs);
+  text-decoration: underline;
+}
+
+.button-link:hover {
+  color: var(--accent-color);
+  text-decoration: none; /* Remove underline on hover for a cleaner look if preferred */
+}
+
+
+/* Input fields */
+input[type="text"],
+input[type="email"],
+input[type="search"],
+input[type="password"],
+input[type="number"],
+textarea,
+select {
+  display: block;
+  width: 100%; /* Let it be 100% and manage padding via box-sizing */
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-lg); 
+  font-size: 1rem;
+  font-family: var(--font-family-sans);
+  line-height: var(--line-height-base);
+  color: var(--text-color);
+  background-color: var(--surface-color);
+  border: 1px solid #D1D5DB; /* Softer border color */
+  border-radius: var(--border-radius-md); 
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast); 
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="search"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--primary-color);
+  outline: 0;
+  box-shadow: var(--shadow-sm), 0 0 0 3px rgba(74, 144, 226, 0.25); /* Softer focus ring */
+}
+
+/* Styling for select elements to look consistent */
+select {
+  appearance: none; 
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235F6368'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E"); /* Use text-light-color for arrow */
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-md) center;
+  background-size: 1.2em;
+  padding-right: calc(var(--spacing-md) + 1.5em + var(--spacing-sm)); /* Adjust padding for arrow */
+}
+
+/* Form groups for labels and inputs */
+.form-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-weight: 500; 
+  color: var(--text-light-color);
+}
+
+/* Checkbox and Radio - basic styling */
+.form-check {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.form-check-input {
+  margin-right: var(--spacing-sm);
+  width: auto; /* Override full width for these inputs */
+  /* Add custom styling for checkboxes/radios here if needed, or rely on browser defaults for now */
+}
+
+/* Helper for visually hidden elements, for accessibility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

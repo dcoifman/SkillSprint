@@ -58,11 +58,17 @@ function SprintPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sprintData, setSprintData] = useState(null);
-  const [practiceProblems, setPracticeProblems] = useState('');
-  const [isGeneratingProblems, setIsGeneratingProblems] = useState(false);
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
+  const bgColor = useColorModeValue('var(--surface-color)', 'gray.800'); // Use CSS var
+  const cardBgColor = useColorModeValue('white', 'gray.700'); // For cards, distinct from page bg if needed
+  const borderColor = useColorModeValue('gray.300', 'gray.600'); // Slightly adjusted border color
+  const primaryColor = useColorModeValue('var(--primary-color)', 'blue.300'); // CSS var for light, Chakra for dark
+  const textColor = useColorModeValue('var(--text-color)', 'whiteAlpha.900');
+  const textLightColor = useColorModeValue('var(--text-light-color)', 'gray.400');
+  const successColorLight = useColorModeValue('green.50', 'green.900'); // For backgrounds
+  const errorColorLight = useColorModeValue('red.50', 'red.900'); // For backgrounds
+  const successColorDark = useColorModeValue('green.600', 'green.300'); // For text
+  const errorColorDark = useColorModeValue('red.600', 'red.300'); // For text
+
 
   // Combine the two useEffects that watch currentStep into one
   useEffect(() => {
@@ -405,8 +411,8 @@ function SprintPage() {
   // Show loading state while auth is initializing
   if (authLoading) {
     return (
-      <Center h="100vh">
-        <Spinner size="xl" color="purple.500" thickness="4px" />
+      <Center h="100vh" bg={bgColor}>
+        <Spinner size="xl" color={primaryColor} thickness="4px" />
       </Center>
     );
   }
@@ -414,7 +420,7 @@ function SprintPage() {
   // Show error state
   if (error && !isLoading) {
     return (
-      <Container maxW="6xl" py={8}>
+      <Container maxW="6xl" py={8} bg={bgColor}>
         <Alert
           status="error"
           variant="subtle"
@@ -422,10 +428,12 @@ function SprintPage() {
           alignItems="center"
           justifyContent="center"
           textAlign="center"
-          height="200px"
-          borderRadius="lg"
+          bg={errorColorLight}
+          color={errorColorDark}
+          borderRadius="var(--border-radius-lg)" // Use CSS var
+          p={6} // Added padding
         >
-          <AlertIcon boxSize="40px" mr={0} />
+          <AlertIcon boxSize="40px" mr={0} color={errorColorDark} />
           <AlertTitle mt={4} mb={1} fontSize="lg">
             Error Loading Sprint
           </AlertTitle>
@@ -434,7 +442,7 @@ function SprintPage() {
           </AlertDescription>
           <Button
             mt={4}
-            colorScheme="red"
+            colorScheme="red" // Keep red for error emphasis
             onClick={() => navigate('/dashboard')}
           >
             Return to Dashboard
@@ -447,11 +455,11 @@ function SprintPage() {
   // Show loading state while fetching sprint data
   if (isLoading) {
     return (
-      <Container maxW="6xl" py={8}>
+      <Container maxW="6xl" py={8} bg={bgColor}>
         <Center>
           <VStack spacing={4}>
-            <Spinner size="xl" color="purple.500" thickness="4px" />
-            <Text>Loading sprint content...</Text>
+            <Spinner size="xl" color={primaryColor} thickness="4px" />
+            <Text color={textColor}>Loading sprint content...</Text>
           </VStack>
         </Center>
       </Container>
@@ -492,17 +500,20 @@ function SprintPage() {
           onClick={handlePrevStep}
           leftIcon={<ChevronLeftIcon />}
           isDisabled={currentStepIndex === 0}
-          variant="ghost"
+          variant="outline" // Changed for consistency
+          colorScheme="gray" // Neutral color
+          _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }}
         >
           Previous
         </Button>
         {!isLastStep && (
           <Button
             onClick={handleNextStep}
-            colorScheme="purple"
+            colorScheme="blue" // Use new primary color scheme
             isDisabled={!canProgress}
             data-testid="next-button"
             rightIcon={<ChevronRightIcon />}
+            _disabled={{ bg: useColorModeValue('blue.200', 'blue.700'), cursor: 'not-allowed' }}
           >
             {isQuizStep && !showFeedback ? 'Check Answer' : 'Next'}
           </Button>
@@ -535,22 +546,65 @@ function SprintPage() {
           <VStack spacing={6} align="stretch">
             {currentStep?.title && <Heading size="lg">{currentStep.title}</Heading>}
             
-            {/* Handle direct text content */}
-            {typeof currentStep.content === 'string' && (
-              <Box className="markdown-content">
-                <MarkdownWithMath>
-                  {currentStep.content}
-                </MarkdownWithMath>
-              </Box>
+            {currentStep.introduction && (
+              <Text fontSize="lg" color="gray.600" mb={4}>
+                {currentStep.introduction}
+              </Text>
             )}
             
-            {/* Handle structured content */}
-            {currentStep.content?.steps?.map((item, index) => (
-              <Box key={index}>
-                {renderContentItem(item)}
+            {currentStep.useThreeDModel ? (
+              <Box borderRadius="md" overflow="hidden" my={4}>
+                <ErrorBoundary fallback={
+                  <Box p={4} bg="red.50" borderRadius="md">
+                    <Text>Error loading the 3D model. You can still continue with the course.</Text>
+                  </Box>
+                }>
+                  {isLoading ? (
+                    <Flex justify="center" align="center" height="300px">
+                      <Spinner size="xl" color={primaryColor} thickness="4px" />
+                      <Text ml={4} color={textColor}>Loading 3D model...</Text>
+                    </Flex>
+                  ) : (
+                    <ThreeDAnatomyModel 
+                      systemType={currentStep.modelType || 'skeletal'} 
+                      initialView="anterior"
+                      onSelectStructure={(structure) => toast({
+                        title: structure,
+                        description: `You selected the ${structure}`,
+                        status: 'info',
+                        duration: 2000,
+                      })}
+                      onError={handleModelError}
+                    />
+                  )}
+                </ErrorBoundary>
               </Box>
-            ))}
-
+            ) : currentStep.image ? (
+              <AspectRatio ratio={16/9} maxH="400px" my={4}>
+                <Image
+                  src={currentStep.image}
+                  alt={currentStep.title}
+                  objectFit="cover"
+                  borderRadius="var(--border-radius-lg)" // Use CSS var
+                />
+              </AspectRatio>
+            ) : null}
+            
+            {Array.isArray(currentStep.content) ? (
+              currentStep.content.map((item, index) => (
+                <Box key={index}>
+                  {renderContentItem(item)}
+                </Box>
+              ))
+            ) : (
+            <Box className="markdown-content" color={textColor}>
+              <MarkdownWithMath>
+                  {currentStep.content || 'Content not available.'}
+              </MarkdownWithMath>
+            </Box>
+            )}
+            
+            {/* Always render navigation buttons, even if there's an error */}
             {renderNextButton(currentStep)}
           </VStack>
         );
@@ -570,7 +624,7 @@ function SprintPage() {
                       <Button 
                         mt={2} 
                         size="sm" 
-                        colorScheme="purple" 
+                        colorScheme="blue" // Use new primary color
                         onClick={() => setIsLoading(false)}
                       >
                         Try Again
@@ -579,8 +633,8 @@ function SprintPage() {
                   }>
                     {isLoading ? (
                       <Flex justify="center" align="center" height="300px">
-                        <Spinner size="xl" color="purple.500" thickness="4px" />
-                        <Text ml={4}>Loading 3D model...</Text>
+                        <Spinner size="xl" color={primaryColor} thickness="4px" />
+                        <Text ml={4} color={textColor}>Loading 3D model...</Text>
                       </Flex>
                     ) : (
                       <ThreeDAnatomyModel 
@@ -609,8 +663,8 @@ function SprintPage() {
       case 'quiz':
         return (
           <VStack spacing={6} align="flex-start" width="full">
-            <Heading size="md">{currentStep.title}</Heading>
-            <Text fontWeight="medium">{currentStep.question}</Text>
+            <Heading size="md" color={textColor}>{currentStep.title}</Heading>
+            <Text fontWeight="medium" color={textColor}>{currentStep.question}</Text>
             
             <FormControl width="full" isRequired={!showFeedback}>
               <RadioGroup 
@@ -619,44 +673,63 @@ function SprintPage() {
                 isDisabled={showFeedback}
                 width="full"
               >
-                <VStack spacing={3} align="flex-start" width="full">
-                  {currentStep.options.map((option, idx) => (
-                    <Box
-                      key={idx}
-                      p={3}
-                      borderWidth="1px"
-                      borderRadius="md"
-                      width="full"
-                      bg={
-                        showFeedback
-                          ? idx === currentStep.correctAnswer
-                            ? 'green.50'
-                            : idx === userAnswers[currentStepIndex]
-                            ? 'red.50'
-                            : 'white'
-                          : userAnswers[currentStepIndex] === idx
-                          ? 'purple.50'
-                          : 'white'
-                      }
-                      borderColor={
-                        showFeedback
-                          ? idx === currentStep.correctAnswer
-                            ? 'green.400'
-                            : idx === userAnswers[currentStepIndex]
-                            ? 'red.400'
-                            : 'gray.200'
-                          : userAnswers[currentStepIndex] === idx
-                          ? 'purple.400'
-                          : 'gray.200'
-                      }
-                      cursor={showFeedback ? 'default' : 'pointer'}
-                      onClick={() => !showFeedback && handleAnswer(idx.toString())}
-                    >
-                      <Radio value={idx.toString()} width="full">
-                        {option}
-                      </Radio>
-                    </Box>
-                  ))}
+                <VStack spacing={4} align="flex-start" width="full"> {/* Increased spacing */}
+                  {currentStep.options.map((option, idx) => {
+                    const isSelected = userAnswers[currentStepIndex] === idx;
+                    const isCorrect = idx === currentStep.correctAnswer;
+                    const feedbackBg = isCorrect ? successColorLight : errorColorLight;
+                    const feedbackBorder = isCorrect ? successColorDark : errorColorDark;
+                    const selectedBg = useColorModeValue('blue.50', 'blue.800'); // Primary theme color
+                    const selectedBorder = primaryColor;
+
+                    return (
+                      <Box
+                        key={idx}
+                        p={4} // Increased padding
+                        borderWidth="2px" // Slightly thicker border
+                        borderRadius="var(--border-radius-md)" // Use CSS var
+                        width="full"
+                        bg={
+                          showFeedback
+                            ? isCorrect
+                              ? successColorLight
+                              : isSelected // Incorrectly selected
+                              ? errorColorLight
+                              : cardBgColor // Default for non-selected after feedback
+                            : isSelected
+                            ? selectedBg
+                            : cardBgColor // Default before feedback
+                        }
+                        borderColor={
+                          showFeedback
+                            ? isCorrect
+                              ? successColorDark
+                              : isSelected // Incorrectly selected
+                              ? errorColorDark
+                              : borderColor // Default for non-selected after feedback
+                            : isSelected
+                            ? selectedBorder
+                            : borderColor // Default before feedback
+                        }
+                        cursor={showFeedback ? 'default' : 'pointer'}
+                        onClick={() => !showFeedback && handleAnswer(idx.toString())}
+                        transition="background-color 0.2s ease-in-out, border-color 0.2s ease-in-out"
+                        _hover={!showFeedback ? { 
+                          borderColor: selectedBorder, 
+                          bg: useColorModeValue('gray.50', 'gray.700') 
+                        } : {}}
+                      >
+                        <Radio 
+                          value={idx.toString()} 
+                          width="full" 
+                          colorScheme="blue" // Use new primary color for radio check
+                          sx={{'.chakra-radio__label': {color: textColor}}} // Ensure label color
+                        >
+                          {option}
+                        </Radio>
+                      </Box>
+                    );
+                  })}
                 </VStack>
               </RadioGroup>
             </FormControl>
@@ -664,22 +737,29 @@ function SprintPage() {
             {showFeedback && (
               <Box 
                 p={4} 
-                bg={isCorrectAnswer(currentStepIndex) ? 'green.50' : 'red.50'} 
-                borderRadius="md"
+                bg={isCorrectAnswer(currentStepIndex) ? successColorLight : errorColorLight} 
+                borderRadius="var(--border-radius-md)" // Use CSS var
                 width="full"
-                boxShadow="md"
+                boxShadow="var(--shadow-md)" // Use CSS var
+                borderWidth="1px"
+                borderColor={isCorrectAnswer(currentStepIndex) ? successColorDark : errorColorDark}
               >
                 <Flex justify="space-between" align="center" mb={2}>
-                  <Text fontWeight="bold" color={isCorrectAnswer(currentStepIndex) ? 'green.600' : 'red.600'}>
+                  <Text fontWeight="bold" color={isCorrectAnswer(currentStepIndex) ? successColorDark : errorColorDark}>
                     {isCorrectAnswer(currentStepIndex) ? 'Correct!' : 'Not quite right'}
                   </Text>
                 </Flex>
                 
-                <Text mb={3}>
+                <Text mb={3} color={textColor}>
                   {isCorrectAnswer(currentStepIndex)
                     ? 'Good job! You\'ve got it right.'
                     : `The correct answer is: ${currentStep.options[currentStep.correctAnswer]}`}
                 </Text>
+                {currentStep.explanation && (
+                  <Text fontSize="sm" color={textLightColor} mt={2}>
+                    <strong>Explanation:</strong> {currentStep.explanation}
+                  </Text>
+                )}
               </Box>
             )}
             
@@ -690,24 +770,24 @@ function SprintPage() {
       case 'completion':
         return (
           <VStack spacing={6} align="flex-start" width="full">
-            <Heading size="md">{currentStep.title}</Heading>
-            <Text whiteSpace="pre-line">{currentStep.content}</Text>
+            <Heading size="md" color={textColor}>{currentStep.title}</Heading>
+            <Text whiteSpace="pre-line" color={textColor}>{currentStep.content}</Text>
             <Box pt={4} width="full">
               <HStack justifyContent="space-between">
                 <Button 
                   as={RouterLink}
                   to="/dashboard"
-                  colorScheme="purple"
+                  colorScheme="blue" // Use new primary color
                   variant="outline"
                 >
                   Back to Dashboard
                 </Button>
                 <Button 
-                  colorScheme="purple"
+                  colorScheme="blue" // Use new primary color
                   as={RouterLink}
-                  to={`/sprint/${parseInt(currentSprintData.id) + 1}`}
+                  to={`/sprint/${parseInt(currentSprintData.id) + 1}`} // Consider if next sprint logic is robust
                 >
-                  Next Sprint: {currentStep.nextSprintTitle}
+                  Next Sprint: {currentStep.nextSprintTitle || 'Unnamed Sprint'}
                 </Button>
               </HStack>
             </Box>
@@ -725,66 +805,82 @@ function SprintPage() {
   };
 
   return (
-    <Container maxW="6xl" py={8}>
+    <Container maxW="6xl" py={8} bg={bgColor}> {/* Ensure page background is applied */}
       <style dangerouslySetInnerHTML={{
         __html: `
         .markdown-content h1 {
           font-size: 1.8rem;
-          font-weight: 700;
-          margin-top: 1rem;
-          margin-bottom: 1rem;
+          font-weight: 700; /* Corresponds to var(--font-weight-bold) or similar */
+          margin-top: var(--spacing-lg); /* Use CSS var */
+          margin-bottom: var(--spacing-md); /* Use CSS var */
+          color: ${textColor};
         }
         .markdown-content h2 {
-          font-size: 1.5rem;
+          font-size: 1.5rem; /* Corresponds to h2 */
           font-weight: 600;
-          margin-top: 1rem;
-          margin-bottom: 0.5rem;
+          margin-top: var(--spacing-lg);
+          margin-bottom: var(--spacing-sm);
+          color: ${textColor};
         }
         .markdown-content h3 {
-          font-size: 1.2rem;
+          font-size: 1.2rem; /* Corresponds to h3 */
           font-weight: 600;
-          margin-top: 0.75rem;
-          margin-bottom: 0.5rem;
+          margin-top: var(--spacing-md);
+          margin-bottom: var(--spacing-xs);
+          color: ${textColor};
         }
         .markdown-content p {
-          margin-bottom: 1rem;
+          margin-bottom: var(--spacing-md);
+          line-height: var(--line-height-base);
+          color: ${textColor};
         }
         .markdown-content ul, .markdown-content ol {
-          margin-left: 1.5rem;
-          margin-bottom: 1rem;
+          margin-left: var(--spacing-lg);
+          margin-bottom: var(--spacing-md);
+          color: ${textColor};
         }
         .markdown-content li {
-          margin-bottom: 0.25rem;
+          margin-bottom: var(--spacing-sm);
         }
         .markdown-content strong {
-          font-weight: 600;
+          font-weight: 600; /* Poppins semi-bold */
         }
         .markdown-content em {
           font-style: italic;
         }
         .markdown-content blockquote {
-          border-left: 4px solid #e2e8f0;
-          padding-left: 1rem;
+          border-left: 4px solid ${borderColor}; /* Use theme border color */
+          padding-left: var(--spacing-md);
           margin-left: 0;
           margin-right: 0;
           font-style: italic;
+          color: ${textLightColor};
         }
         .markdown-content code {
-          background-color: #f7fafc;
+          background-color: ${useColorModeValue('gray.100', 'gray.700')}; /* Subtle code background */
           padding: 0.2rem 0.4rem;
-          border-radius: 0.25rem;
-          font-family: monospace;
+          border-radius: var(--border-radius-sm);
+          font-family: var(--font-family-monospace);
+          font-size: 0.9em; /* Slightly smaller for code */
+          color: ${textColor};
         }
         .markdown-content pre {
-          background-color: #f7fafc;
-          padding: 1rem;
-          border-radius: 0.25rem;
+          background-color: ${useColorModeValue('gray.100', 'gray.700')};
+          padding: var(--spacing-md);
+          border-radius: var(--border-radius-md);
           overflow-x: auto;
-          margin-bottom: 1rem;
+          margin-bottom: var(--spacing-md);
+        }
+        .markdown-content pre code {
+          background-color: transparent; /* No double background */
+          padding: 0;
         }
         .markdown-content a {
-          color: #3182ce;
+          color: ${primaryColor}; /* Use theme primary color */
           text-decoration: underline;
+        }
+        .markdown-content a:hover {
+          color: ${useColorModeValue('var(--accent-color)', 'blue.200')}; /* Use accent color */
         }
       `}} />
       
@@ -798,90 +894,100 @@ function SprintPage() {
               leftIcon={<ChevronLeftIcon />}
               variant="ghost"
               size="sm"
+              color={textLightColor}
+              _hover={{ bg: useColorModeValue('gray.100', 'gray.700')}}
             >
               Back
             </Button>
-            <Text color="gray.500">|</Text>
-            <Text fontWeight="medium">{currentSprintData.path}</Text>
+            <Text color={textLightColor}>|</Text>
+            <Text fontWeight="medium" color={textColor}>{currentSprintData.path}</Text>
           </HStack>
-          <Badge colorScheme="purple" fontSize="0.8em" px={2} py={1}>
+          <Badge colorScheme="blue" variant="subtle" fontSize="0.8em" px={3} py={1} borderRadius="var(--border-radius-md)"> {/* Use new primary color */}
             {currentSprintData.estimatedTime}
           </Badge>
         </Flex>
         
-        <Heading size="lg">{currentSprintData.title}</Heading>
+        <Heading size="xl" color={textColor}>{currentSprintData.title}</Heading> {/* Larger heading */}
         
         <Progress
-          value={(currentStepIndex / (currentSprintData.totalSteps - 1)) * 100}
+          value={(currentSprintData.totalSteps <= 1) ? 100 : (currentStepIndex / (currentSprintData.totalSteps - 1)) * 100}
           size="sm"
-          colorScheme="purple"
-          borderRadius="full"
+          colorScheme="blue" // Use new primary color
+          bg={useColorModeValue('gray.200', 'gray.600')} // Explicit background for progress
+          borderRadius="var(--border-radius-full)" // More rounded
         />
         
         <Flex justify="space-between">
-          <Text fontSize="sm" fontWeight="medium">
-            {currentStepIndex + 1} of {currentSprintData.totalSteps}
+          <Text fontSize="sm" fontWeight="medium" color={textColor}>
+            Step {currentStepIndex + 1} of {currentSprintData.totalSteps}
           </Text>
-          <Text fontSize="sm" color="gray.500">
-            {Math.round((currentStepIndex / (currentSprintData.totalSteps - 1)) * 100)}% Complete
+          <Text fontSize="sm" color={textLightColor}>
+            { (currentSprintData.totalSteps <= 1) ? '100' : Math.round((currentStepIndex / (currentSprintData.totalSteps - 1)) * 100)}% Complete
           </Text>
         </Flex>
       </VStack>
 
-      {/* Main Content */}
+      {/* Main Content Card */}
       <Card
-        bg={bgColor}
+        bg={cardBgColor} // Use specific card background
         borderWidth="1px"
         borderColor={borderColor}
-        borderRadius="lg"
+        borderRadius="var(--border-radius-lg)" // Use CSS var
+        boxShadow="var(--shadow-md)" // Use CSS var
         overflow="hidden"
         mb={6}
       >
-        <CardBody p={6}>{renderStepContent()}</CardBody>
+        <CardBody p={{ base: 4, md: 6 }}>{renderStepContent()}</CardBody> {/* Responsive padding */}
       </Card>
       
-      {/* AI Tutor */}
+      {/* AI Tutor Accordion */}
       <Box mt={10}>
         <Accordion allowToggle>
-          <AccordionItem border="1px" borderColor={borderColor} borderRadius="md">
+          <AccordionItem 
+            border="1px" 
+            borderColor={borderColor} 
+            borderRadius="var(--border-radius-lg)" // Use CSS var
+            bg={cardBgColor} // Use card background
+          >
             <h2>
-              <AccordionButton bg={bgColor} _hover={{ bg: 'gray.50' }}>
-                <Box flex="1" textAlign="left" fontWeight="medium">
+              <AccordionButton _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }} borderRadius="var(--border-radius-lg)">
+                <Box flex="1" textAlign="left" fontWeight="medium" color={textColor}>
                   Need help? Ask the AI tutor
                 </Box>
-                <AccordionIcon />
+                <AccordionIcon color={textColor} />
               </AccordionButton>
             </h2>
-            <AccordionPanel pb={4}>
+            <AccordionPanel pb={4} borderTopWidth="1px" borderTopColor={borderColor}>
               <VStack spacing={4} align="stretch">
                 <Text>
                   What questions do you have about {currentStep?.title?.toLowerCase() || 'this topic'}?
                 </Text>
-                <Flex>
-                  <Button size="sm" mr={2} variant="outline">
+                <Flex wrap="wrap"> {/* Allow buttons to wrap on smaller screens */}
+                  <Button size="sm" mr={2} mb={2} variant="outline" colorScheme="gray">
                     Explain in simpler terms
                   </Button>
-                  <Button size="sm" mr={2} variant="outline">
+                  <Button size="sm" mr={2} mb={2} variant="outline" colorScheme="gray">
                     Give an example
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" mb={2} variant="outline" colorScheme="gray">
                     Why is this important?
                   </Button>
                 </Flex>
                 
-                <Divider />
+                <Divider borderColor={borderColor} />
                 
                 <HStack>
-                  <Box
+                  <Box // This would ideally be a proper Input/Textarea component
                     flex="1"
-                    p={2}
+                    p={3} // Increased padding
                     borderWidth="1px"
-                    borderRadius="md"
-                    _hover={{ borderColor: 'purple.400' }}
+                    borderRadius="var(--border-radius-md)" // Use CSS var
+                    borderColor={borderColor}
+                    _hover={{ borderColor: primaryColor }}
                   >
-                    <Text color="gray.500">Type your question...</Text>
+                    <Text color={textLightColor}>Type your question...</Text>
                   </Box>
-                  <Button colorScheme="purple">Ask</Button>
+                  <Button colorScheme="blue">Ask</Button> {/* Use new primary color */}
                 </HStack>
 
                 <HStack spacing={4}>

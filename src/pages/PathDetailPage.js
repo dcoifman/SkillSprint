@@ -55,12 +55,18 @@ function PathDetailPage() {
   const toast = useToast();
   const { isAuthenticated } = useAuth();
 
-  // Define color mode values at the top level
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const highlightColor = useColorModeValue('gray.50', 'gray.700');
-  const heroBg = useColorModeValue('gray.50', 'gray.900');
-  const infoBoxBg = useColorModeValue('gray.50', 'gray.700');
+  // Define color mode values using CSS variables and Chakra fallbacks
+  const pageBg = useColorModeValue('var(--background-color)', 'gray.800');
+  const heroBg = useColorModeValue('var(--surface-color)', 'gray.800'); // Hero on a slightly elevated surface or matching page bg
+  const cardBg = useColorModeValue('var(--surface-color)', 'gray.700'); // For cards, accordions
+  const altCardBg = useColorModeValue('gray.50', 'gray.700'); // For highlighted items or subtle contrast
+  const borderColor = useColorModeValue('gray.200', 'gray.600'); // Adjusted for better visibility on new bg
+  const primaryColor = useColorModeValue('var(--primary-color)', 'blue.300');
+  const textColor = useColorModeValue('var(--text-color)', 'whiteAlpha.900');
+  const textLightColor = useColorModeValue('var(--text-light-color)', 'gray.400');
+  const successColor = useColorModeValue('var(--success-color)', 'green.300');
+  const accentColor = useColorModeValue('var(--accent-color)', 'orange.300');
+
 
   // Fetch path details from Supabase
   useEffect(() => {
@@ -293,11 +299,11 @@ function PathDetailPage() {
   // Loading state
   if (isLoading) {
     return (
-      <Container maxW="7xl" py={20}>
+      <Container maxW="7xl" py={20} bg={pageBg}>
         <Center>
           <VStack spacing={4}>
-            <Spinner size="xl" color="purple.500" thickness="4px" />
-            <Text>Loading path details...</Text>
+            <Spinner size="xl" color={primaryColor} thickness="4px" />
+            <Text color={textColor}>Loading path details...</Text>
           </VStack>
         </Center>
       </Container>
@@ -307,18 +313,18 @@ function PathDetailPage() {
   // Error state
   if (error) {
     return (
-      <Container maxW="7xl" py={20}>
+      <Container maxW="7xl" py={20} bg={pageBg}>
         <Center>
           <VStack spacing={4} maxW="md" textAlign="center">
-            <Alert status="error" borderRadius="md">
-              <AlertIcon />
-              Failed to load path details
+            <Alert status="error" borderRadius="var(--border-radius-md)" bg={useColorModeValue('red.50', 'red.900')} p={4}>
+              <AlertIcon color={useColorModeValue('var(--error-color)', 'red.300')} />
+              <Heading size="sm" color={useColorModeValue('var(--error-color)', 'red.300')} ml={2}>Failed to load path details</Heading>
             </Alert>
-            <Text>{error}</Text>
+            <Text color={textLightColor}>{error}</Text>
             <Button
               leftIcon={<ChevronLeftIcon />}
               onClick={() => navigate('/explore')}
-              colorScheme="purple"
+              colorScheme="blue" // Updated color scheme
               mt={4}
             >
               Back to Explore
@@ -332,16 +338,16 @@ function PathDetailPage() {
   // Not found state
   if (!pathDetail) {
     return (
-      <Container maxW="7xl" py={20}>
+      <Container maxW="7xl" py={20} bg={pageBg}>
         <Center>
           <VStack spacing={4} maxW="md" textAlign="center">
-            <Heading>Path Not Found</Heading>
-            <Text>The learning path you're looking for doesn't exist or has been removed.</Text>
+            <Heading color={textColor}>Path Not Found</Heading>
+            <Text color={textLightColor}>The learning path you're looking for doesn't exist or has been removed.</Text>
             <Button
               leftIcon={<ChevronLeftIcon />}
               as={RouterLink}
               to="/explore"
-              colorScheme="purple"
+              colorScheme="blue" // Updated color scheme
               mt={4}
             >
               Browse Learning Paths
@@ -366,9 +372,9 @@ function PathDetailPage() {
   }, 0) || 0;
 
   return (
-    <Box>
+    <Box bg={pageBg}> {/* Applied pageBg to the root Box */}
       {/* Hero Section */}
-      <Box bg={heroBg} py={8}>
+      <Box bg={heroBg} py={10} borderBottom="1px" borderColor={borderColor}> {/* Themed hero section */}
         <Container maxW="7xl">
           <Button
             as={RouterLink}
@@ -376,45 +382,47 @@ function PathDetailPage() {
             leftIcon={<ChevronLeftIcon />}
             variant="ghost"
             size="sm"
-            mb={4}
+            mb={6} // Increased margin
+            color={textLightColor}
+            _hover={{ bg: useColorModeValue('gray.100', 'gray.700')}}
           >
             Back to Explore
           </Button>
           
-          <Flex direction={{ base: 'column', md: 'row' }} gap={8}>
+          <Flex direction={{ base: 'column', md: 'row' }} gap={10}> {/* Increased gap */}
             <Box flex="2">
-              <VStack align="start" spacing={4}>
+              <VStack align="start" spacing={5}> {/* Increased spacing */}
                 <HStack>
-                  <Badge colorScheme="purple">{pathDetail.category}</Badge>
-                  <Badge>{pathDetail.level}</Badge>
+                  <Badge colorScheme="blue" variant="subtle" px={3} py={1} borderRadius="var(--border-radius-md)">{pathDetail.category}</Badge> {/* Themed badge */}
+                  <Badge colorScheme="gray" variant="subtle" px={3} py={1} borderRadius="var(--border-radius-md)">{pathDetail.level}</Badge> {/* Themed badge */}
                 </HStack>
                 
-                <Heading as="h1" size="2xl">
+                <Heading as="h1" size="2xl" color={textColor}>
                   {pathDetail.title}
                 </Heading>
                 
-                <Text fontSize="lg" color="gray.600">
+                <Text fontSize="lg" color={textLightColor}>
                   {pathDetail.description}
                 </Text>
                 
-                <HStack spacing={6} mt={2}>
+                <HStack spacing={6} mt={2} color={textLightColor}>
                   <HStack>
-                    <StarIcon color="yellow.400" />
-                    <Text fontWeight="medium">{pathDetail.rating || 'N/A'}</Text>
-                    <Text color="gray.500">({pathDetail.review_count || 0} reviews)</Text>
+                    <Icon as={StarIcon} color={accentColor} /> {/* Themed icon */}
+                    <Text fontWeight="medium" color={textColor}>{pathDetail.rating || 'N/A'}</Text>
+                    <Text>({pathDetail.review_count || 0} reviews)</Text>
                   </HStack>
                   
                   <HStack>
-                    <TimeIcon />
-                    <Text>{pathDetail.estimated_time || 'N/A'}</Text>
+                    <Icon as={TimeIcon} />
+                    <Text color={textColor}>{pathDetail.estimated_time || 'N/A'}</Text>
                   </HStack>
                   
-                  <Text>{pathDetail.total_sprints || 0} sprints</Text>
+                  <Text color={textColor}>{pathDetail.total_sprints || 0} sprints</Text>
                 </HStack>
                 
                 <HStack flexWrap="wrap" mt={2}>
                   {pathDetail.tags && pathDetail.tags.map(tag => (
-                    <Tag key={tag} size="md" colorScheme="blue" m={1}>
+                    <Tag key={tag} size="md" colorScheme="blue" variant="solid" m={1} borderRadius="var(--border-radius-md)"> {/* Themed tag */}
                       {tag}
                     </Tag>
                   ))}
@@ -426,10 +434,11 @@ function PathDetailPage() {
               <Image
                 src={pathDetail.image}
                 alt={pathDetail.title}
-                borderRadius="lg"
+                borderRadius="var(--border-radius-lg)" // Use CSS var
                 width="100%"
-                height="250px"
+                height="280px" // Slightly increased height
                 objectFit="cover"
+                boxShadow="var(--shadow-lg)" // Added shadow
                 fallbackSrc="https://placehold.co/500x300/e2e8f0/1a202c?text=No+Image"
               />
             </Box>
@@ -437,20 +446,20 @@ function PathDetailPage() {
         </Container>
       </Box>
       
-      <Container maxW="7xl" py={8}>
-        <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={8}>
+      <Container maxW="7xl" py={10}> {/* Increased padding */}
+        <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={10}> {/* Increased spacing */}
           {/* Main Content */}
           <Box gridColumn={{ lg: 'span 2' }}>
             {/* Instructor Section */}
             {pathDetail.instructor && (
-              <Box mb={8}>
-                <Heading size="md" mb={4}>About the Instructor</Heading>
+              <Box mb={8} p={6} bg={cardBg} borderRadius="var(--border-radius-lg)" boxShadow="var(--shadow-md)"> {/* Themed card */}
+                <Heading size="md" mb={4} color={textColor}>About the Instructor</Heading>
                 <HStack spacing={4} align="start">
-                  <Avatar size="xl" src={pathDetail.instructor.avatar} />
+                  <Avatar size="xl" src={pathDetail.instructor.avatar_url || pathDetail.instructor.avatar} name={pathDetail.instructor.name} /> {/* Added name for fallback */}
                   <Box>
-                    <Heading size="sm">{pathDetail.instructor.name}</Heading>
-                    <Text color="gray.500">{pathDetail.instructor.title}</Text>
-                    <Text mt={2}>{pathDetail.instructor.bio}</Text>
+                    <Heading size="sm" color={textColor}>{pathDetail.instructor.name}</Heading>
+                    <Text color={textLightColor}>{pathDetail.instructor.title}</Text>
+                    <Text mt={2} color={textColor}>{pathDetail.instructor.bio}</Text>
                   </Box>
                 </HStack>
               </Box>
@@ -460,12 +469,12 @@ function PathDetailPage() {
             
             {/* Learning Objectives */}
             {pathDetail.objectives && (
-              <Box mb={8}>
-                <Heading size="md" mb={4}>What You'll Learn</Heading>
+              <Box mb={8} p={6} bg={altCardBg} borderRadius="var(--border-radius-lg)" boxShadow="var(--shadow-sm)"> {/* Themed box */}
+                <Heading size="md" mb={4} color={textColor}>What You'll Learn</Heading>
                 <List spacing={3}>
                   {pathDetail.objectives.map((objective, index) => (
-                    <ListItem key={index} display="flex">
-                      <ListIcon as={CheckCircleIcon} color="green.500" mt={1} />
+                    <ListItem key={index} display="flex" color={textColor}>
+                      <ListIcon as={CheckCircleIcon} color={successColor} mt={1} /> {/* Themed icon */}
                       <Text>{objective}</Text>
                     </ListItem>
                   ))}
@@ -473,16 +482,14 @@ function PathDetailPage() {
               </Box>
             )}
             
-            <Divider my={6} />
-            
             {/* Prerequisites */}
             {pathDetail.prerequisites && (
-              <Box mb={8}>
-                <Heading size="md" mb={4}>Prerequisites</Heading>
+              <Box mb={8} p={6} bg={altCardBg} borderRadius="var(--border-radius-lg)" boxShadow="var(--shadow-sm)"> {/* Themed box */}
+                <Heading size="md" mb={4} color={textColor}>Prerequisites</Heading>
                 <List spacing={3}>
                   {pathDetail.prerequisites.map((req, index) => (
-                    <ListItem key={index} display="flex">
-                      <ListIcon as={CheckCircleIcon} color="purple.500" mt={1} />
+                    <ListItem key={index} display="flex" color={textColor}>
+                      <ListIcon as={CheckCircleIcon} color={primaryColor} mt={1} /> {/* Themed icon */}
                       <Text>{req}</Text>
                     </ListItem>
                   ))}
@@ -490,80 +497,116 @@ function PathDetailPage() {
               </Box>
             )}
             
-            <Divider my={6} />
-            
             {/* Course Content */}
             {pathDetail.modules && pathDetail.modules.length > 0 && (
               <Box>
-                <Heading size="md" mb={4}>Path Content</Heading>
-                <Text mb={4}>
+                <Heading size="lg" mb={3} color={textColor}>Path Content</Heading> {/* Increased size */}
+                <Text mb={6} color={textLightColor}> {/* Increased margin */}
                   {pathDetail.modules.length} modules • {pathDetail.total_sprints} sprints • Total {totalMinutes} minutes
                 </Text>
                 
                 <Accordion allowMultiple defaultIndex={[0]}>
                   {pathDetail.modules.map((module, moduleIndex) => (
-                    <AccordionItem key={moduleIndex} borderWidth="1px" borderRadius="md" mb={4} bg={cardBg} borderColor={borderColor}>
-                      <AccordionButton py={4}>
+                    <AccordionItem 
+                      key={moduleIndex} 
+                      borderWidth="0px" // Remove default border, rely on card styling
+                      borderRadius="var(--border-radius-lg)" // Use CSS var
+                      mb={6} // Increased spacing
+                      bg={cardBg} 
+                      boxShadow="var(--shadow-md)" // Use CSS var
+                      _hover={{ boxShadow: "var(--shadow-lg)" }}
+                      transition="box-shadow 0.2s ease-in-out"
+                    >
+                      <AccordionButton 
+                        py={5} // Increased padding
+                        px={6} // Increased padding
+                        borderRadius="var(--border-radius-lg)"
+                        _hover={{ bg: useColorModeValue('gray.50', 'gray.600') }}
+                      >
                         <Box flex="1" textAlign="left">
-                          <Heading size="sm">{module.title}</Heading>
-                          <Text color="gray.500" fontSize="sm" mt={1}>
+                          <Heading size="sm" color={textColor}>{module.title}</Heading>
+                          <Text color={textLightColor} fontSize="sm" mt={1}>
                             {module.sprints.length} sprints
                           </Text>
                         </Box>
-                        <AccordionIcon />
+                        <AccordionIcon color={primaryColor} />
                       </AccordionButton>
-                      <AccordionPanel pb={4}>
-                        <Text mb={4} color="gray.600">
+                      <AccordionPanel pb={5} px={6}> {/* Increased padding */}
+                        <Text mb={4} color={textLightColor} fontSize="sm">
                           {module.description}
                         </Text>
                         
-                        <VStack spacing={3} align="stretch">
-                          {module.sprints.map((sprint) => (
-                            <Flex 
-                              key={sprint.id} 
-                              p={3} 
-                              borderRadius="md" 
-                              justify="space-between"
-                              align="center"
-                              bg={sprint.isUnlocked ? highlightColor : 'transparent'}
-                              opacity={sprint.isUnlocked ? 1 : 0.7}
-                            >
-                              <HStack>
-                                {sprint.isCompleted ? (
-                                  <Icon as={CheckCircleIcon} color="green.500" boxSize={5} />
-                                ) : sprint.isUnlocked ? (
-                                  <Icon viewBox="0 0 24 24" boxSize={5} color="purple.500">
-                                    <path
-                                      fill="currentColor"
-                                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"
-                                    />
-                                  </Icon>
-                                ) : (
-                                  <LockIcon color="gray.500" />
-                                )}
-                                <Text fontWeight={sprint.isUnlocked ? "medium" : "normal"}>
-                                  {sprint.title}
-                                </Text>
-                              </HStack>
-                              
-                              <HStack spacing={4}>
-                                <Text fontSize="sm" color="gray.500">
-                                  {sprint.time}
-                                </Text>
-                                {sprint.isUnlocked && (
-                                  <Button 
-                                    size="sm" 
-                                    colorScheme="purple" 
-                                    variant={sprint.isCompleted ? "outline" : "solid"}
-                                    as={RouterLink}
-                                    to={`/sprint/${sprint.id}`}
-                                  >
-                                    {sprint.isCompleted ? "Review" : "Start"}
-                                  </Button>
-                                )}
-                              </HStack>
-                            </Flex>
-                          ))}
+                        <VStack spacing={4} align="stretch"> {/* Increased spacing */}
+                          {module.sprints.map((sprint) => {
+                            const isLocked = !sprint.isUnlocked; // Assuming isUnlocked is available
+                            const isCompleted = sprint.isCompleted; // Assuming isCompleted is available
+                            const isNextUp = sprint.isUnlocked && !sprint.isCompleted; // Basic next up logic
+
+                            let sprintIcon = <Icon as={TimeIcon} color={textLightColor} boxSize={5} />;
+                            let sprintBg = altCardBg;
+                            let sprintOpacity = 1;
+                            let titleColor = textColor;
+                            let buttonVariant = "solid";
+                            let buttonColorScheme = "blue";
+                            let buttonText = "Start";
+
+                            if (isLocked) {
+                              sprintIcon = <Icon as={LockIcon} color={textLightColor} boxSize={5} />;
+                              sprintOpacity = 0.6;
+                              titleColor = textLightColor;
+                              buttonText = "Locked";
+                            } else if (isCompleted) {
+                              sprintIcon = <Icon as={CheckCircleIcon} color={successColor} boxSize={5} />;
+                              sprintBg = useColorModeValue('green.50', 'green.900');
+                              titleColor = textLightColor;
+                              buttonVariant = "outline";
+                              buttonText = "Review";
+                            } else if (isNextUp) { // Highlight next up
+                              sprintIcon = <Icon as={TimeIcon} color={primaryColor} boxSize={5} />; // Or FiPlayCircle
+                              sprintBg = useColorModeValue('blue.50', 'rgba(74,144,226,0.2)'); // Light primary bg
+                            }
+
+                            return (
+                              <Flex 
+                                key={sprint.id} 
+                                p={4} // Increased padding
+                                borderRadius="var(--border-radius-md)" // Use CSS var
+                                justify="space-between"
+                                align="center"
+                                bg={sprintBg}
+                                opacity={sprintOpacity}
+                                borderWidth={isNextUp ? "1px" : "1px"}
+                                borderColor={isNextUp ? primaryColor : borderColor}
+                                _hover={!isLocked ? { borderColor: primaryColor, bg: useColorModeValue('gray.100', 'gray.600')} : {}}
+                                transition="background-color 0.2s, border-color 0.2s"
+                              >
+                                <HStack spacing={4}> {/* Increased spacing */}
+                                  {sprintIcon}
+                                  <Text fontWeight={isNextUp ? "semibold" : "medium"} color={titleColor}>
+                                    {sprint.title}
+                                  </Text>
+                                </HStack>
+                                
+                                <HStack spacing={4}>
+                                  <Text fontSize="sm" color={textLightColor}>
+                                    {sprint.time} min
+                                  </Text>
+                                  {!isLocked && (
+                                    <Button 
+                                      size="sm" 
+                                      colorScheme={buttonColorScheme}
+                                      variant={buttonVariant}
+                                      as={RouterLink}
+                                      to={`/sprint/${sprint.id}`}
+                                      isDisabled={isLocked}
+                                    >
+                                      {buttonText}
+                                    </Button>
+                                  )}
+                                </HStack>
+                              </Flex>
+                            );
+                          })}
                         </VStack>
 
                         {/* Add this after the sprints list: */}
@@ -606,58 +649,59 @@ function PathDetailPage() {
           
           {/* Sidebar */}
           <Box>
-            <VStack spacing={8} position="sticky" top="100px">
+            <VStack spacing={8} position={{ base: 'static', lg: 'sticky' }} top={{ lg: 'var(--spacing-xl)' }}> {/* Sticky top with var */}
               {/* Enrollment Card */}
               <Card
                 bg={cardBg}
-                borderWidth="1px"
-                borderColor={borderColor}
-                borderRadius="lg"
-                overflow="hidden"
+                borderRadius="var(--border-radius-lg)" // Use CSS var
+                boxShadow="var(--shadow-lg)" // Prominent shadow
                 width="100%"
-                boxShadow="lg"
+                borderWidth="0px" // No border if shadow is strong
               >
-                <CardBody>
-                  <VStack spacing={4} align="stretch">
+                <CardBody p={6}> {/* Increased padding */}
+                  <VStack spacing={5} align="stretch"> {/* Increased spacing */}
                     {progress > 0 ? (
                       <>
-                        <Heading size="md">Your Progress</Heading>
+                        <Heading size="md" color={textColor}>Your Progress</Heading>
                         <Box>
                           <Flex justify="space-between">
-                            <Text fontWeight="medium">{progress}% complete</Text>
-                            <Text>{pathDetail.completedSprints}/{pathDetail.total_sprints} sprints</Text>
+                            <Text fontWeight="medium" color={textColor}>{progress}% complete</Text>
+                            <Text color={textLightColor}>{pathDetail.completedSprints}/{pathDetail.total_sprints} sprints</Text>
                           </Flex>
-                          <Progress value={progress} colorScheme="purple" size="sm" mt={2} borderRadius="full" />
+                          <Progress value={progress} colorScheme="blue" size="md" mt={2} borderRadius="var(--border-radius-full)" bg={useColorModeValue('gray.200', 'gray.600')} /> {/* Themed progress */}
                         </Box>
                         
                         <Button 
                           as={RouterLink}
-                          to={`/sprint/${pathDetail.modules[0].sprints[0].id}`}
-                          colorScheme="purple" 
+                          // TODO: Ensure this links to the correct next available sprint, not just the first one.
+                          to={`/sprint/${pathDetail.modules[0]?.sprints[0]?.id}`} 
+                          colorScheme="blue" 
                           size="lg" 
                           width="100%"
+                          mt={2} // Added margin
                         >
                           Continue Learning
                         </Button>
                       </>
                     ) : (
                       <>
-                        <Heading size="md">Join This Learning Path</Heading>
-                        <HStack>
+                        <Heading size="md" color={textColor}>Join This Learning Path</Heading>
+                        <HStack color={textLightColor}>
                           <Icon as={TimeIcon} />
-                          <Text>{pathDetail.estimated_time || 'N/A'}</Text>
+                          <Text color={textColor}>{pathDetail.estimated_time || 'N/A'}</Text>
                         </HStack>
                         
-                        <Text>
+                        <Text color={textColor}>
                           {pathDetail.students_count ? `${pathDetail.students_count.toLocaleString()} learners enrolled` : 'Be the first to enroll!'}
                         </Text>
                         
                         <Button 
-                          colorScheme="purple" 
+                          colorScheme="blue" 
                           size="lg" 
                           width="100%"
                           isLoading={enrolling}
                           onClick={handleEnroll}
+                          mt={2} // Added margin
                         >
                           Enroll Now - Free
                         </Button>
@@ -669,36 +713,40 @@ function PathDetailPage() {
               
               {/* Related Paths */}
               {pathDetail.relatedPaths && pathDetail.relatedPaths.length > 0 && (
-                <Box width="100%">
-                  <Heading size="md" mb={4}>Related Learning Paths</Heading>
+                <Box width="100%" mt={4}> {/* Added margin top */}
+                  <Heading size="md" mb={4} color={textColor}>Related Learning Paths</Heading>
                   <VStack spacing={4} align="stretch">
                     {pathDetail.relatedPaths.map(path => (
                       <Card 
                         key={path.id} 
-                        direction="row"
+                        direction={{ base: 'column', sm: 'row' }} // Responsive direction
                         overflow="hidden"
                         variant="outline"
+                        bg={cardBg} // Themed background
+                        borderColor={borderColor}
+                        borderRadius="var(--border-radius-md)" // Use CSS var
                         size="sm"
                         as={RouterLink}
                         to={`/paths/${path.id}`}
-                        _hover={{ shadow: 'md', transform: 'translateY(-2px)' }}
-                        transition="all 0.2s"
+                        _hover={{ boxShadow: "var(--shadow-md)", transform: 'translateY(-2px)' }} // Use CSS var for shadow
+                        transition="all 0.2s ease-in-out"
                       >
                         <Image
                           objectFit="cover"
-                          maxW="80px"
+                          w={{ base: '100%', sm: '100px' }} // Responsive width
+                          h={{ base: '100px', sm: 'auto' }} // Responsive height
                           src={path.image}
                           alt={path.title}
-                          fallbackSrc="https://placehold.co/80x80/e2e8f0/1a202c?text=Path"
+                          fallbackSrc="https://placehold.co/100x80/e2e8f0/1a202c?text=Path"
                         />
-                        <CardBody py={2}>
-                          <Heading size="xs">{path.title}</Heading>
-                          <HStack mt={1} fontSize="xs" color="gray.500" spacing={2}>
+                        <CardBody py={3} px={4}> {/* Adjusted padding */}
+                          <Heading size="xs" color={textColor} mb={1}>{path.title}</Heading>
+                          <HStack fontSize="xs" color={textLightColor} spacing={2} wrap="wrap"> {/* Allow wrap */}
                             <Text>{path.level}</Text>
                             <Text>•</Text>
                             <Text>{path.total_sprints} sprints</Text>
-                            <Text>•</Text>
-                            <Text>{path.estimated_time}</Text>
+                            <Text display={{ base: 'none', md: 'inline' }}>•</Text> {/* Hide on smaller screens */}
+                            <Text display={{ base: 'none', md: 'inline' }}>{path.estimated_time}</Text>
                           </HStack>
                         </CardBody>
                       </Card>

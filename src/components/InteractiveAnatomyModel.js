@@ -77,29 +77,36 @@ function InteractiveAnatomyModel({
   // Get appropriate anatomy image based on current settings
   const getAnatomyImage = () => {
     try {
-    // In a production app, these would be actual anatomical images for each view and system
-    
-    // For skeleton
-    if (currentSystem === 'skeletal') {
-      if (currentView === 'anterior') return '/img/skeleton_anterior.png';
-      if (currentView === 'posterior') return '/img/skeleton_posterior.png';
-      if (currentView === 'lateral') return '/img/skeleton_lateral.png';
-      return 'https://images.unsplash.com/photo-1594056113173-cc8e97693535?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHNrZWxldG9ufGVufDB8fDB8fHww';
-    }
-    
-    // For muscular system
-    if (currentSystem === 'muscular') {
-      if (currentView === 'anterior') return '/img/muscular_anterior.png';
-      if (currentView === 'posterior') return '/img/muscular_posterior.png';
-      if (currentView === 'lateral') return '/img/muscular_lateral.png';
-      return 'https://images.unsplash.com/photo-1576086135878-bd1e26324036?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8bXVzY2xlc3xlbnwwfHwwfHx8MA%3D%3D';
-    }
-    
-    // Default/fallback image
-    return 'https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YW5hdG9teXxlbnwwfHwwfHx8MA%3D%3D';
+      // Royalty-free image URLs (primarily from Wikimedia Commons)
+      const skeletalImages = {
+        anterior: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Human_skeleton_anterior_view_no_labels.svg/800px-Human_skeleton_anterior_view_no_labels.svg.png',
+        posterior: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Human_skeleton_posterior_view_no_labels.svg/800px-Human_skeleton_posterior_view_no_labels.svg.png',
+        lateral: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Human_skeleton_lateral_view_no_labels.svg/800px-Human_skeleton_lateral_view_no_labels.svg.png',
+      };
+
+      const muscularImages = {
+        anterior: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Anterior_view_of_human_muscles_no_labels.svg/800px-Anterior_view_of_human_muscles_no_labels.svg.png',
+        posterior: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Posterior_view_of_human_muscles_no_labels.svg/800px-Posterior_view_of_human_muscles_no_labels.svg.png',
+        lateral: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Lateral_view_of_human_muscles_no_labels.svg/800px-Lateral_view_of_human_muscles_no_labels.svg.png',
+      };
+
+      const defaultFallbackImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Missing_image_placeholder.svg/800px-Missing_image_placeholder.svg.png';
+
+      if (currentSystem === 'skeletal') {
+        return skeletalImages[currentView] || skeletalImages.anterior; // Default to anterior if view is not specific
+      }
+      
+      if (currentSystem === 'muscular') {
+        return muscularImages[currentView] || muscularImages.anterior; // Default to anterior if view is not specific
+      }
+      
+      // Default/fallback image if system is unknown or view doesn't match
+      return defaultFallbackImage;
+
     } catch (err) {
-      setError('Failed to load anatomy image');
-      return null;
+      console.error("Error in getAnatomyImage:", err); // Log the error
+      setError('Failed to determine anatomy image URL.'); // More specific error message
+      return 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Missing_image_placeholder.svg/800px-Missing_image_placeholder.svg.png'; // Return a fallback in case of error too
     }
   };
   
