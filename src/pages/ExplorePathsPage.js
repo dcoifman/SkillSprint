@@ -110,6 +110,16 @@ const pulse = `${pulseAnimation} 2s infinite`;
 const grow = `${growAnimation} 1.5s ease-out`;
 const treeSway = `${sway} 5s ease-in-out infinite`;
 
+// Define theme color variables at the top of the component scope
+const pageBg = useColorModeValue('var(--background-color)', 'var(--chakra-colors-gray-800)');
+const cardBgGlobal = useColorModeValue('var(--surface-color)', 'var(--chakra-colors-gray-700)'); // Renamed to avoid conflict
+const borderColorGlobal = useColorModeValue('var(--chakra-colors-gray-200)', 'var(--chakra-colors-gray-600)');
+const textColorGlobal = useColorModeValue('var(--text-color)', 'whiteAlpha.900');
+const textLightColorGlobal = useColorModeValue('var(--text-light-color)', 'var(--chakra-colors-gray-400)');
+const primaryColorGlobal = useColorModeValue('var(--primary-color)', 'var(--chakra-colors-blue-300)');
+const accentColorGlobal = useColorModeValue('var(--accent-color)', 'var(--chakra-colors-orange-300)');
+
+
 // Tree geometry creation function
 function Tree({ path, position, scale = 1.0, onClick, isHovered, setHovered }) {
   const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.4, 2, 8);
@@ -200,15 +210,22 @@ function Tree({ path, position, scale = 1.0, onClick, isHovered, setHovered }) {
       {isHovered && (
         <Html position={[0, treeHeight + 2, 0]} center>
           <Box 
-            bg="white" 
-            p={2} 
-            borderRadius="md" 
-            boxShadow="lg" 
+            bg={useColorModeValue('var(--surface-color)', 'var(--chakra-colors-gray-700)')} // Themed Tooltip
+            color={useColorModeValue('var(--text-color)', 'whiteAlpha.900')} // Themed Tooltip Text
+            p={'var(--spacing-sm)'} 
+            borderRadius="var(--border-radius-md)" 
+            boxShadow="var(--shadow-lg)" 
             minW="150px"
             textAlign="center"
+            borderWidth="1px"
+            borderColor={useColorModeValue('var(--chakra-colors-gray-200)', 'var(--chakra-colors-gray-600)')}
           >
             <Text fontWeight="bold">{path.title}</Text>
-            <Badge colorScheme={path.level === 'Beginner' ? 'green' : path.level === 'Intermediate' ? 'blue' : 'purple'}>
+            <Badge 
+              colorScheme={path.level === 'Beginner' ? 'green' : path.level === 'Intermediate' ? 'blue' : 'purple'}
+              variant="subtle" // Softer badge
+              px={2} py={0.5} borderRadius="full" // Pill shape
+            >
               {path.level}
             </Badge>
           </Box>
@@ -493,44 +510,56 @@ function ExplorePathsPage() {
   });
   
   // Styling
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const textColor = useColorModeValue('gray.600', 'gray.400');
+  // Styling - use the globally defined theme variables
+  const currentCardBg = useColorModeValue('var(--surface-color)', 'var(--chakra-colors-gray-800)'); // cardBg is already a prop for TreePathCard
+  const currentBorderColor = useColorModeValue('var(--chakra-colors-gray-200)', 'var(--chakra-colors-gray-700)');
+  const currentTextColor = useColorModeValue('var(--text-color)', 'whiteAlpha.900');
+  const currentTextLightColor = useColorModeValue('var(--text-light-color)', 'var(--chakra-colors-gray-400)');
+  const primaryColor = useColorModeValue('var(--primary-color)', 'var(--chakra-colors-blue-300)');
+  const searchInputBg = useColorModeValue('white', 'var(--chakra-colors-gray-700)');
+
 
   return (
-    <Container maxW="7xl" py={8}>
+    <Container maxW="7xl" py={'var(--spacing-xl)'} bg={pageBg}> {/* Themed Page BG & Padding */}
       {/* Header */}
       <MotionBox
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        mb={8}
+        mb={'var(--spacing-lg)'} // Themed margin
       >
-        <Heading size="2xl" mb={4}>Explore Learning Paths</Heading>
-        <Text fontSize="lg" color={textColor}>
+        <Heading size="2xl" mb={'var(--spacing-sm)'} color={currentTextColor}>Explore Learning Paths</Heading> {/* Themed Text Color */}
+        <Text fontSize="lg" color={currentTextLightColor}> {/* Themed Text Light Color */}
           Discover curated learning paths across various disciplines, from historical adventures to cutting-edge technology.
         </Text>
       </MotionBox>
 
       {/* Search and Filter */}
-      <Stack direction={{ base: 'column', md: 'row' }} spacing={4} mb={8}>
+      <Stack direction={{ base: 'column', md: 'row' }} spacing={'var(--spacing-md)'} mb={'var(--spacing-lg)'}> {/* Themed Spacing & Margin */}
         <InputGroup maxW={{ base: 'full', md: '400px' }}>
               <InputLeftElement pointerEvents="none">
-                <SearchIcon color="gray.400" />
+                <SearchIcon color={currentTextLightColor} /> {/* Themed Icon Color */}
               </InputLeftElement>
               <Input 
                 placeholder="Search paths..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-            borderRadius="full"
+                borderRadius="var(--border-radius-full)" // Themed border radius
+                bg={searchInputBg} // Themed input background
+                borderColor={currentBorderColor} // Themed border color
+                _hover={{ borderColor: primaryColor }}
+                _focus={{ borderColor: primaryColor, boxShadow: `0 0 0 1px ${primaryColor}` }}
               />
             </InputGroup>
         <Flex wrap="wrap" gap={2}>
           <Button
             variant={selectedCategory === '' ? 'solid' : 'outline'}
-            colorScheme="purple"
-            borderRadius="full"
+            bg={selectedCategory === '' ? primaryColor : 'transparent'} // Themed active BG
+            color={selectedCategory === '' ? useColorModeValue('white', 'gray.900') : currentTextColor} // Themed active color
+            borderColor={selectedCategory === '' ? primaryColor : currentBorderColor} // Themed border
+            borderRadius="var(--border-radius-full)" // Themed
             onClick={() => setSelectedCategory('')}
+            _hover={{ bg: selectedCategory === '' ? primaryColor : useColorModeValue('gray.100', 'gray.700') }}
               >
             All
           </Button>
@@ -538,10 +567,13 @@ function ExplorePathsPage() {
               <Button 
               key={category.name}
               variant={selectedCategory === category.name ? 'solid' : 'outline'}
-              colorScheme={category.color}
-              borderRadius="full"
+              bg={selectedCategory === category.name ? primaryColor : 'transparent'} // Themed active BG
+              color={selectedCategory === category.name ? useColorModeValue('white', 'gray.900') : currentTextColor} // Themed active color
+              borderColor={selectedCategory === category.name ? primaryColor : currentBorderColor} // Themed border
+              borderRadius="var(--border-radius-full)" // Themed
               leftIcon={<Icon as={category.icon} />}
               onClick={() => setSelectedCategory(category.name)}
+              _hover={{ bg: selectedCategory === category.name ? primaryColor : useColorModeValue('gray.100', 'gray.700') }}
               >
               {category.name}
               </Button>

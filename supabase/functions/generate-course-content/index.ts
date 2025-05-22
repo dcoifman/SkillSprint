@@ -139,7 +139,7 @@ Target audience: {audience}
 Skill level: {level}
 Duration target: {duration} minutes
 
-Format the response as a JSON object with the following structure:
+Format the response as a JSON object with the following structure. Ensure a variety of content types are used, including text, key points, examples, visual trees, activities, reflections, and consider adding interactive scenarios, video placeholders, and diagram suggestions where appropriate to enhance engagement.
 {
   "title": "Sprint title",
   "introduction": "A brief engaging introduction to the sprint topic (2-3 sentences)",
@@ -167,34 +167,61 @@ Format the response as a JSON object with the following structure:
     {
       "type": "reflection",
       "value": "A prompt for self-reflection to deepen understanding"
+    },
+    {
+      "type": "interactive_scenario",
+      "scenario_description": "Describe a situation or problem relevant to the sprint topic.",
+      "possible_choices": ["Choice A description", "Choice B description", "Choice C description"],
+      "ideal_outcome_description": "Describe what happens if the learner makes the best choice or series of choices."
+    },
+    {
+      "type": "video_placeholder",
+      "suggested_video_topic": "A concise description of what the video should cover to enhance this part of the sprint.",
+      "reasoning": "Explain why a video format would be particularly beneficial here (e.g., for visual demonstration of a process, expert interview, complex animation)."
+    },
+    {
+      "type": "diagram_suggestion",
+      "diagram_topic": "Clearly state what the diagram should illustrate or explain.",
+      "preferred_style": "flowchart, mindmap, venn, conceptual, comparison table, or process diagram"
     }
   ],
   "quiz": [
     {
-      "question": "Question text?",
+      "question": "Question text for a multiple-choice question?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correctAnswer": 0,
       "explanation": "Explanation of why this answer is correct",
       "type": "multiple_choice" 
     },
     {
-      "question": "Fill in the blank question?",
-      "correctAnswer": "The correct answer text",
+      "question": "Fill in the blank: The capital of France is ______.",
+      "correctAnswer": "Paris",
       "type": "fill_blank"
     },
     {
-      "question": "Drag and drop these concepts in the correct order",
-      "options": ["Item A", "Item B", "Item C", "Item D"],
+      "question": "Drag and drop these historical events into chronological order:",
+      "options": ["Event A", "Event B", "Event C", "Event D"],
       "correctOrder": [2, 0, 3, 1], 
       "type": "ordering"
+    },
+    {
+      "type": "matching_pairs",
+      "question": "Match the following terms with their correct definitions:",
+      "pairs": [
+        {"term": "Term A", "definition": "Definition for Term A"},
+        {"term": "Term B", "definition": "Definition for Term B"},
+        {"term": "Term C", "definition": "Definition for Term C"}
+      ],
+      "distractors": ["Extra definition not matching any term", "Another distractor definition"]
     }
   ],
   "summary": "A concise summary of what was learned in this sprint (2-3 sentences)",
   "nextSteps": "Suggestion for what to learn next"
 }
 
-Include at least one visual tree and one non-multiple-choice assessment.
-Vary teaching methods and assessment types across the content.
+Include at least one visual tree OR diagram suggestion. Aim for a mix of assessment types, including the new matching pairs type where suitable. 
+Vary teaching methods and assessment types across the content to maximize engagement.
+Consider incorporating interactive scenarios and video placeholders to make the content more dynamic.
 Output ONLY valid JSON. Do not include markdown, code fences, or any explanation.`
 };
 
