@@ -61,7 +61,7 @@ import { motion } from 'framer-motion';
 import CourseInvitationsComponent from '../components/CourseInvitationsComponent.js';
 import { getInstructorProfile } from '../services/supabaseClient.js';
 import PersonalizedPathsSection from '../components/PersonalizedPathsSection.js';
-import { fetchUserEnrolledPathsWithProgress, fetchUserStats, fetchUserEnrolledPathsWithNextSprint, fetchRecentSprints } from '../services/supabaseClient.js';
+import { fetchUserStats, fetchUserEnrolledPathsWithNextSprint, fetchRecentSprints } from '../services/supabaseClient.js';
 
 // Motion components for animations
 const MotionBox = motion(Box);
@@ -116,7 +116,7 @@ function DashboardPage() {
         }
 
         // Fetch enrolled paths
-        const { data: enrolledData, error: enrolledError } = await fetchUserEnrolledPathsWithProgress();
+        const { data: enrolledData, error: enrolledError } = await fetchUserEnrolledPathsWithNextSprint();
         if (enrolledError) throw enrolledError;
 
         setEnrolledPaths(enrolledData || []);
