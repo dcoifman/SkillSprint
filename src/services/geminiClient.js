@@ -288,7 +288,7 @@ Provide an improved version maintaining the same overall structure.
 Output ONLY valid JSON. Do not include markdown, code fences, or any explanation.`
 };
 
-// Helper to strip code fences from Gemini responses
+// Helper function to strip code fences from Gemini responses
 export function stripCodeFences(response) {
   let clean = response.trim();
   if (clean.startsWith('```json')) {
@@ -311,12 +311,47 @@ export function stripCodeFences(response) {
   return clean;
 }
 
+// Function to generate practice problems
+const generatePracticeProblems = async (sprintTitle, sprintContent) => {
+  const prompt = `Generate 3-5 practice problems based on the following sprint content:\n\nSprint Title: ${sprintTitle}\n\nSprint Content:\n${sprintContent}\n\nProvide the problems in a clear, numbered list format.`;
+
+  try {
+    const response = await generateContent(prompt);
+    return response;
+  } catch (error) {
+    console.error('Error in generatePracticeProblems:', error);
+    throw error;
+  }
+};
+
+// Function to generate learning summary
+const generateLearningSummary = async (pathTitle, completedSprintTitles) => {
+  const prompt = `Generate a personalized learning summary for the course "${pathTitle}" based on the following completed sprints:\n\n${completedSprintTitles.map(title => `- ${title}`).join('\n')}\n\nHighlight the key concepts covered in these sprints and provide a brief overall summary of the user's progress in the course. The summary should be encouraging and informative.`;
+
+  try {
+    const response = await generateContent(prompt);
+    return response;
+  } catch (error) {
+    console.error('Error in generateLearningSummary:', error);
+    throw error;
+  }
+};
+
 // Create a named object for export
 const geminiClient = {
   generateContent,
   PROMPT_TEMPLATES,
-  stripCodeFences
+  stripCodeFences,
+  generatePracticeProblems, // Reference the standalone function
+  generateLearningSummary, // Reference the standalone function
 };
 
-// Export the named object
-export default geminiClient; 
+// Export the named object and specific functions
+export {
+  generateContent,
+  PROMPT_TEMPLATES,
+  stripCodeFences,
+  generatePracticeProblems, // Export the standalone function
+  generateLearningSummary,  // Export the standalone function
+  geminiClient as default, 
+}; 
