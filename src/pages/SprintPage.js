@@ -129,29 +129,32 @@ function SprintPage() {
           progress = progressData;
         }
 
-        // Get sprint content
-        const { data: contentData } = await supabaseClient.supabase
-          .from('sprint_contents')
-          .select('content')
-          .eq('request_id', sprint.module.path.course_generation_request_id)
-          .eq('module_index', sprint.module.order_index)
-          .eq('sprint_index', sprint.order_index)
-          .single();
-    
+        // Directly use the 'content' JSONB from the sprints table
+        const sprintContent = sprint.content; // Get the JSONB content
+
         // Format the data for the component
         const formattedData = {
           id: sprint.id,
           title: sprint.title,
-          path: sprint.module.path.title,
-          totalSteps: contentData?.content?.steps?.length || 1,
+          path: sprint.module.path.title, // Access path title via nested relation
+          // Use the steps array directly from the parsed sprintContent, default to empty array if not found or invalid
+          steps: Array.isArray(sprintContent?.steps) ? sprintContent.steps : [],
+          // Calculate total steps based on the actual steps array
+          totalSteps: Array.isArray(sprintContent?.steps) ? sprintContent.steps.length : 1,
           estimatedTime: sprint.time || '10 min',
           progress: progress?.progress || 0,
-          steps: contentData?.content?.steps || [{
-            type: 'content',
-            title: sprint.title,
-            content: sprint.content || 'Content not available.',
-          }]
         };
+
+        // Handle case where steps array is empty after fetching
+        if (formattedData.steps.length === 0) {
+             // Provide a default step if no steps are found in the content
+             formattedData.steps = [{
+                type: 'content',
+                title: sprint.title,
+                content: 'Content not available or improperly formatted.',
+             }];
+             formattedData.totalSteps = 1;
+        }
 
         setSprintData(formattedData);
         setError(null);
