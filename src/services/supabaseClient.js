@@ -1077,7 +1077,7 @@ export const fetchUserEnrolledPathsWithNextSprint = async () => {
   }
 };
 
-// Function to fetch a user's recent sprints based on progress
+// Function to fetch user's most recent sprints
 export const fetchRecentSprints = async (limit = 3) => {
   try {
     const { user, error: userError } = await getCurrentUser();
@@ -1096,7 +1096,8 @@ export const fetchRecentSprints = async (limit = 3) => {
         )
       `)
       .eq('user_id', user.id)
-      .order('updated_at', { ascending: false })
+      .not('sprint', 'is', null) // Ensure sprint data is fetched
+      .order('updated_at', { ascending: false }) // Order by last activity
       .limit(limit);
 
     if (error) {
@@ -1104,11 +1105,10 @@ export const fetchRecentSprints = async (limit = 3) => {
       return { data: null, error };
     }
 
-    // Filter out entries where sprint data couldn't be fetched (due to RLS or data issues)
-    const recentSprints = data.filter(item => item.sprint !== null);
+    // Extract sprint data and filter out any nulls
+    const recentSprintsData = data.map(item => item.sprint).filter(sprint => sprint !== null);
 
-    // Return the sprint details directly
-    return { data: recentSprints.map(item => item.sprint), error: null };
+    return { data: recentSprintsData, error: null };
 
   } catch (err) {
     console.error('Exception during fetching recent sprints:', err);

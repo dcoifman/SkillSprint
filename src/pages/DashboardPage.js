@@ -61,7 +61,7 @@ import { motion } from 'framer-motion';
 import CourseInvitationsComponent from '../components/CourseInvitationsComponent.js';
 import { getInstructorProfile } from '../services/supabaseClient.js';
 import PersonalizedPathsSection from '../components/PersonalizedPathsSection.js';
-import { fetchUserEnrolledPathsWithProgress, fetchUserStats } from '../services/supabaseClient.js';
+import { fetchUserEnrolledPathsWithProgress, fetchUserStats, fetchUserEnrolledPathsWithNextSprint, fetchRecentSprints } from '../services/supabaseClient.js';
 
 // Motion components for animations
 const MotionBox = motion(Box);
@@ -636,9 +636,9 @@ function DashboardPage() {
             ) : (
               <VStack spacing={0} align="stretch" divider={<Divider borderColor={cardBorder} />}>
                 {recentSprints.map((sprint) => (
-                  <Box 
-                    key={sprint.id} 
-                    p={4} 
+                  <Box
+                    key={sprint.id}
+                    p={4}
                     _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }} 
                     transition="background 0.2s"
                   >
@@ -662,108 +662,8 @@ function DashboardPage() {
             )}
           </Card>
         </MotionBox>
+      </SimpleGrid>
 
-        {/* Recommended Sprints - Removing this section as it requires backend logic */}
-        {/* <MotionBox
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.4 }}
-        >
-          <Flex justify="space-between" align="center" mb={4}>
-            <Heading size="lg">Recommended for You</Heading>
-            <RouterLink to="/explore-paths">
-              <Button size="sm" variant="ghost" colorScheme="purple">
-                View all
-              </Button>
-            </RouterLink>
-          </Flex>
-          
-          <Card
-            bg={cardBg}
-            shadow="md"
-            borderRadius="lg"
-            borderWidth="1px"
-            borderColor={cardBorder}
-            overflow="hidden"
-          >
-            {/* Recommendation 1 */}
-            {/* <Skeleton isLoaded={!loading}>
-              <Box p={4} _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }} transition="background 0.2s">
-                <Flex justify="space-between" align="center">
-                  <Box>
-                    <Text fontWeight="bold">Deep Learning: Convolutional Networks</Text>
-                    <HStack spacing={2} mt={1}>
-                      <Badge colorScheme="purple" variant="subtle">Machine Learning</Badge>
-                      <Flex align="center" color={textColor}>
-                        <Icon as={TimeIcon} mr={1} />
-                        <Text fontSize="sm">10 min</Text>
-                      </Flex>
-                    </HStack>
-                  </Box>
-                  {/* Comment out or remove the RouterLink with hardcoded ID */}
-                  {/* <RouterLink to="/sprint/101"> */}
-                  {/* <Button colorScheme="purple" size="sm">
-                    Start
-                  </Button> */}
-                  {/* </RouterLink> */}
-                {/* </Flex>
-              </Box>
-            </Skeleton> */}
-            
-            {/* <Divider /> */}
-            
-            {/* Recommendation 2 */}
-            {/* <Skeleton isLoaded={!loading}>
-              <Box p={4} _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }} transition="background 0.2s">
-                <Flex justify="space-between" align="center">
-                  <Box>
-                    <Text fontWeight="bold">React State Management</Text>
-                    <HStack spacing={2} mt={1}>
-                      <Badge colorScheme="blue" variant="subtle">Web Development</Badge>
-                      <Flex align="center" color={textColor}>
-                        <Icon as={TimeIcon} mr={1} />
-                        <Text fontSize="sm">12 min</Text>
-                      </Flex>
-                    </HStack>
-                  </Box>
-                  {/* Comment out or remove the RouterLink with hardcoded ID */}
-                  {/* <RouterLink to="/sprint/102"> */}
-                  {/* <Button colorScheme="purple" size="sm">
-                    Start
-                  </Button> */}
-                  {/* </RouterLink> */}
-                {/* </Flex>
-              </Box>
-            </Skeleton> */}
-            
-            {/* <Divider /> */}
-            
-            {/* Recommendation 3 */}
-            {/* <Skeleton isLoaded={!loading}>
-              <Box p={4} _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }} transition="background 0.2s">
-                <Flex justify="space-between" align="center">
-                  <Box>
-                    <Text fontWeight="bold">Skeletal System Basics</Text>
-                    <HStack spacing={2} mt={1}>
-                      <Badge colorScheme="orange" variant="subtle">Anatomy</Badge>
-                      <Flex align="center" color={textColor}>
-                        <Icon as={TimeIcon} mr={1} />
-                        <Text fontSize="sm">10 min</Text>
-                      </Flex>
-                    </HStack>
-                  </Box>
-                  {/* Comment out or remove the RouterLink with hardcoded ID */}
-                  {/* <RouterLink to="/sprint/202"> */}
-                  {/* <Button colorScheme="purple" size="sm">
-                    Start
-                  </Button> */}
-                  {/* </RouterLink> */}
-                {/* </Flex>
-              </Box>
-            </Skeleton> */}
-          {/* </Card>
-        </MotionBox> */}
-      
       {/* Course Invitations Section */}
       <Skeleton isLoaded={!loading}>
         <MotionCard
