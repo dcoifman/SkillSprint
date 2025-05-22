@@ -532,9 +532,9 @@ function SprintPage() {
          return null; // Do not render if item is undefined or null
       }
 
-      // Add a safeguard for accessing title property if needed elsewhere in this function
       // Use a safe way to get the title and convert to lowercase if it exists and is a string.
-      const itemTitle = (item && typeof item.title === 'string') ? item.title.toLowerCase() : '';
+      // Ensure item.title is not null or undefined before calling toLowerCase.
+      const itemTitle = (item && item.title && typeof item.title === 'string') ? item.title.toLowerCase() : '';
       // Now use itemTitle instead of item.title directly if you need its lowercase version
       // If you just need the title (potentially undefined), use item.title
 
