@@ -68,6 +68,7 @@ function InteractiveAnatomyModel({
   const [zoomLevel, setZoomLevel] = useState(1);
   const [highlightMode, setHighlightMode] = useState('none');
   const [error, setError] = useState(null);
+  const [isImageLoading, setIsImageLoading] = useState(false); // For image transition loading
   
   // Background and border colors based on color mode
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -199,14 +200,16 @@ function InteractiveAnatomyModel({
   
   // Handle view change
   const handleViewChange = (view) => {
+    setIsImageLoading(true);
     setCurrentView(view);
-    setError(null);
+    setError(null); // Reset error when changing view
   };
   
   // Handle system change
   const handleSystemChange = (system) => {
+    setIsImageLoading(true);
     setCurrentSystem(system);
-    setError(null);
+    setError(null); // Reset error when changing system
   };
   
   // Handle zoom
@@ -225,6 +228,7 @@ function InteractiveAnatomyModel({
   
   // Reset all views
   const handleReset = () => {
+    setIsImageLoading(true);
     setCurrentView(initialView);
     setCurrentSystem(systemType);
     setZoomLevel(1);
@@ -366,13 +370,24 @@ function InteractiveAnatomyModel({
               alignItems="center"
               justifyContent="center"
             >
+              {isImageLoading && (
+                <Box position="absolute" zIndex={2} backdropFilter="blur(2px)">
+                  <Spinner size="xl" color="purple.500" />
+                </Box>
+              )}
               <Image 
                 src={getAnatomyImage()} 
                 alt={`${currentSystem} system ${currentView} view`}
                 objectFit="contain"
                 maxH="100%"
                 transform={`scale(${zoomLevel})`}
-                transition="transform 0.3s ease"
+                transition="transform 0.3s ease, opacity 0.2s ease-in-out"
+                onLoad={() => setIsImageLoading(false)}
+                onError={() => {
+                  setIsImageLoading(false);
+                  setError(`Failed to load image for ${currentSystem} - ${currentView}`);
+                }}
+                opacity={isImageLoading ? 0.5 : 1}
               />
               
               {/* Structure labels/hotspots */}

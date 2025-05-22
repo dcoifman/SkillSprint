@@ -35,6 +35,9 @@ import {
   useDisclosure,
   Tag,
   Tooltip,
+  Icon, // Added for error icons
+  UnorderedList, // Added for listing sprint errors
+  ListItem, // Added for listing sprint errors
 } from '@chakra-ui/react';
 import { 
   FiRefreshCw, 
@@ -44,7 +47,9 @@ import {
   FiClock,
   FiCheckCircle,
   FiAlertCircle,
-  FiPlayCircle
+  FiPlayCircle,
+  FiStopCircle, // Added for Cancel button
+  FiAlertTriangle // Added for inline sprint error indication
 } from 'react-icons/fi';
 import { supabase } from '../services/supabaseClient.js';
 import { formatRelative } from 'date-fns';
@@ -87,8 +92,14 @@ const StatusBadge = ({ status }) => {
 const CourseGenerationPage = () => {
   const [generationRequests, setGenerationRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [selectedRequest, setSelectedRequest] = useState(null); // For details modal
+  const { isOpen: isDetailModalOpen, onOpen: onOpenDetailModal, onClose: onCloseDetailModal } = useDisclosure(); // For details modal
+  
+  // State for cancellation modal
+  const [cancellingRequest, setCancellingRequest] = useState(null);
+  const { isOpen: isCancelModalOpen, onOpen: onOpenCancelModal, onClose: onCloseCancelModal } = useDisclosure();
+  const [isCancelling, setIsCancelling] = useState(false);
+
   const toast = useToast();
   const bgColor = useColorModeValue('white', 'gray.800');
   const highlightColor = useColorModeValue('blue.50', 'blue.900');
@@ -155,7 +166,47 @@ const CourseGenerationPage = () => {
   // View details of a specific request
   const viewRequestDetails = (request) => {
     setSelectedRequest(request);
-    onOpen();
+    onOpenDetailModal();
+  };
+
+  // Open cancellation confirmation modal
+  const handleOpenCancelDialog = (request) => {
+    setCancellingRequest(request);
+    onOpenCancelModal();
+  };
+
+  // Confirm and execute cancellation
+  const handleConfirmCancel = async () => {
+    if (!cancellingRequest) return;
+    setIsCancelling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('cancel-course-generation', {
+        body: { requestId: cancellingRequest.id },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Cancellation Requested',
+        description: data?.message || `Cancellation successfully requested for ${cancellingRequest.id}. Status will update shortly.`,
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Error cancelling request:', error);
+      toast({
+        title: 'Cancellation Error',
+        description: error.data?.error || error.message || 'Could not request cancellation.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsCancelling(false);
+      onCloseCancelModal();
+      setCancellingRequest(null);
+    }
   };
   
   // Delete a request
@@ -338,6 +389,18 @@ const CourseGenerationPage = () => {
                         onClick={() => deleteRequest(request.id)}
                       />
                     </Tooltip>
+
+                    <Tooltip label="Cancel generation">
+                       <IconButton
+                        icon={<FiStopCircle />}
+                        aria-label="Cancel Generation"
+                        size="sm"
+                        colorScheme="orange"
+                        variant="ghost"
+                        isDisabled={!(request.status === 'pending' || request.status === 'processing')}
+                        onClick={() => handleOpenCancelDialog(request)}
+                      />
+                    </Tooltip>
                   </HStack>
                 </CardFooter>
               </Card>
@@ -354,7 +417,7 @@ const CourseGenerationPage = () => {
       </VStack>
       
       {/* Detail Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
+      <Modal isOpen={isDetailModalOpen} onClose={onCloseDetailModal} size="xl" scrollBehavior="inside">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
@@ -419,6 +482,18 @@ const CourseGenerationPage = () => {
                     <Text color="red.700">{selectedRequest.error_message}</Text>
                   </Box>
                 )}
+
+                {/* Display Sprint-Specific Errors */}
+                {selectedRequest?.course_data?.generationStats?.sprintErrors?.length > 0 && (
+                  <Box mt={2} p={3} bg="orange.50" borderRadius="md">
+                    <Heading size="sm" color="orange.700" mb={2}>Sprint Generation Issues</Heading>
+                    <UnorderedList spacing={1}>
+                      {selectedRequest.course_data.generationStats.sprintErrors.map((err, i) => (
+                        <ListItem key={i} fontSize="sm" color="orange.800">{err}</ListItem>
+                      ))}
+                    </UnorderedList>
+                  </Box>
+                )}
                 
                 {selectedRequest.content_generated && selectedRequest.course_data && (
                   <Box>
@@ -441,13 +516,69 @@ const CourseGenerationPage = () => {
                       <Box>
                         <Text fontWeight="bold">Modules ({selectedRequest.course_data.course?.modules?.length || 0})</Text>
                         <VStack align="stretch" mt={2} spacing={2}>
-                          {selectedRequest.course_data.course?.modules?.map((module, i) => (
-                            <Box key={i} p={2} borderWidth="1px" borderRadius="md">
-                              <Text fontWeight="bold">{module.title}</Text>
-                              <Text fontSize="sm">{module.description}</Text>
-                              <Text fontSize="xs" mt={1} fontWeight="medium">
-                                {module.sprints?.length || 0} sprints
-                              </Text>
+                          {selectedRequest.course_data.course?.modules?.map((module, moduleIndex) => (
+                            <Box key={moduleIndex} p={3} borderWidth="1px" borderRadius="lg" bg={useColorModeValue('gray.50', 'gray.700')}>
+                              <Heading size="xs" mb={2}>{module.title}</Heading>
+                              <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }} mb={3}>{module.description}</Text>
+                              <VStack align="stretch" spacing={2}>
+                                {module.sprints?.map((sprintOutline, sprintIndex) => {
+                                  const sprintKey = `${moduleIndex}-${sprintIndex}`;
+                                  const sprintFullContent = selectedRequest.course_data.sprints?.[sprintKey];
+                                  
+                                  let isFailedSprint = false;
+                                  let sprintErrorMessage = '';
+
+                                  if (sprintFullContent?.introduction?.includes("(Content generation error:") || 
+                                      sprintFullContent?.quiz?.[0]?.explanation?.includes("placeholder quiz question due to a content generation error")) {
+                                    isFailedSprint = true;
+                                    sprintErrorMessage = sprintFullContent.introduction; // Contains the error context
+                                  }
+                                  
+                                  // Check against generationStats.sprintErrors for more specific messages
+                                  // This is a basic check; more sophisticated mapping might be needed if titles aren't unique
+                                  const generalErrorForSprint = selectedRequest.course_data.generationStats?.sprintErrors?.find(
+                                    err => err.includes(`Sprint "${sprintOutline.title}" failed`)
+                                  );
+                                  if(generalErrorForSprint) {
+                                    isFailedSprint = true; // Ensure it's marked as failed
+                                    // Prefer the general error message if it exists and sprintErrorMessage is still the default intro
+                                    if(!sprintErrorMessage.includes("(Content generation error:")) {
+                                       sprintErrorMessage = generalErrorForSprint;
+                                    } else {
+                                       // If both exist, append for more info, or choose one.
+                                       // For now, let's assume the intro from placeholder is more specific.
+                                    }
+                                  }
+
+
+                                  return (
+                                    <Box 
+                                      key={sprintIndex} 
+                                      p={2} 
+                                      borderWidth="1px" 
+                                      borderRadius="md" 
+                                      bg={isFailedSprint ? useColorModeValue("orange.50", "orange.800") : useColorModeValue("white", "gray.600")}
+                                      borderColor={isFailedSprint ? "orange.300" : useColorModeValue("gray.200", "gray.500")}
+                                    >
+                                      <HStack justifyContent="space-between">
+                                        <Text fontWeight="bold" fontSize="sm">
+                                          {sprintOutline.title}
+                                          {isFailedSprint && <Icon as={FiAlertTriangle} color="orange.500" ml={2} verticalAlign="middle" />}
+                                        </Text>
+                                        <Text fontSize="xs" color="gray.500">{sprintOutline.duration}</Text>
+                                      </HStack>
+                                      <Text fontSize="xs" color={isFailedSprint ? "orange.600" : "gray.500"} _dark={{ color: isFailedSprint ? "orange.300" : "gray.400" }}>
+                                        {sprintOutline.description}
+                                      </Text>
+                                      {isFailedSprint && sprintErrorMessage && (
+                                        <Text fontSize="xs" color="orange.700" _dark={{ color: "orange.200" }} mt={1} whiteSpace="pre-wrap">
+                                          {sprintErrorMessage.startsWith("Sprint ") ? sprintErrorMessage.substring(sprintErrorMessage.indexOf("failed: ") + 8) : sprintErrorMessage}
+                                        </Text>
+                                      )}
+                                    </Box>
+                                  );
+                                })}
+                              </VStack>
                             </Box>
                           ))}
                         </VStack>
@@ -470,7 +601,40 @@ const CourseGenerationPage = () => {
                 Download JSON
               </Button>
             )}
-            <Button onClick={onClose}>Close</Button>
+            <Button onClick={onCloseDetailModal}>Close</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Cancellation Confirmation Modal */}
+      <Modal isOpen={isCancelModalOpen} onClose={onCloseCancelModal} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Confirm Cancellation</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text>
+              Are you sure you want to request cancellation for course:
+            </Text>
+            <Text fontWeight="bold" mt={2}>
+              {cancellingRequest?.request_data?.topic || cancellingRequest?.id || 'Selected Request'}?
+            </Text>
+            <Text fontSize="sm" color="gray.500" mt={2}>
+              This action will attempt to stop the generation process.
+            </Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onCloseCancelModal} isDisabled={isCancelling}>
+              Back
+            </Button>
+            <Button
+              colorScheme="red"
+              onClick={handleConfirmCancel}
+              isLoading={isCancelling}
+              leftIcon={<FiStopCircle />}
+            >
+              Confirm Cancel
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

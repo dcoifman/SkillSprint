@@ -738,35 +738,36 @@ ThreeDAnatomyModel.propTypes = {
 };
 
 // Preload all models to improve subsequent performance
-Object.keys(MODELS).forEach(type => {
-  const loader = new GLTFLoader();
-  const dracoLoader = new DRACOLoader();
-  dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-  loader.setDRACOLoader(dracoLoader);
+// --- THIS GLOBAL PRELOADING LOOP IS REMOVED DUE TO PERFORMANCE CONCERNS ---
+// Object.keys(MODELS).forEach(type => {
+//   const loader = new GLTFLoader();
+//   const dracoLoader = new DRACOLoader();
+//   dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+//   loader.setDRACOLoader(dracoLoader);
   
-  // For initial preloading, prioritize the male_body model as it's our reliable fallback
-  const modelToLoad = type === 'male_body' 
-    ? MODELS[type].path 
-    : modelCache.has('male_body') // Only try loading others if we have a fallback cached
-      ? MODELS[type].path
-      : MODELS['male_body'].path;
+//   // For initial preloading, prioritize the male_body model as it's our reliable fallback
+//   const modelToLoad = type === 'male_body' 
+//     ? MODELS[type].path 
+//     : modelCache.has('male_body') // Only try loading others if we have a fallback cached
+//       ? MODELS[type].path
+//       : MODELS['male_body'].path;
   
-  loader.load(
-    modelToLoad,
-    (gltf) => {
-      if (gltf && gltf.scene) {
-        modelCache.set(type, gltf);
-        console.log(`Preloaded ${type} model`);
-      } else {
-        console.error(`Invalid model format for ${type}`);
-      }
-    },
-    undefined,
-    (error) => {
-      console.error(`Error preloading ${type} model:`, error);
-      // Don't try to cache failed models
-    }
-  );
-});
+//   loader.load(
+//     modelToLoad,
+//     (gltf) => {
+//       if (gltf && gltf.scene) {
+//         modelCache.set(type, gltf);
+//         console.log(`Preloaded ${type} model`);
+//       } else {
+//         console.error(`Invalid model format for ${type}`);
+//       }
+//     },
+//     undefined,
+//     (error) => {
+//       console.error(`Error preloading ${type} model:`, error);
+//       // Don't try to cache failed models
+//     }
+//   );
+// });
 
 export default ThreeDAnatomyModel; 
