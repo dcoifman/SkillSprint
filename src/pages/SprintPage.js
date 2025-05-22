@@ -122,6 +122,7 @@ function SprintPage() {
         // Get user progress if authenticated
         let progress = null;
         if (user) {
+          console.log('Authenticated user object before fetching progress:', user);
           console.log('Attempting to fetch user progress for sprintId:', sprintId, 'and userId:', user.id);
           const { data: progressData, error: progressError } = await supabaseClient.supabase
             .from('user_progress') // This corresponds to user_sprint_progress in DB

@@ -862,6 +862,7 @@ export const savePracticeProblems = async (sprintId, problems) => {
       return { data: null, error: userError || { message: 'User not authenticated' } };
     }
 
+    console.log('Authenticated user object before saving practice problems:', user);
     console.log('Attempting to save practice problems for sprintId:', sprintId, 'and userId:', user.id);
     // Assuming a 'user_practice_problems' table with columns: user_id, sprint_id, problems_data (jsonb)
     const { data, error } = await supabase
@@ -928,6 +929,7 @@ export const fetchPracticeProblems = async (sprintId) => {
       return { data: null, error: userError || { message: 'User not authenticated' } };
     }
 
+    console.log('Authenticated user object before fetching practice problems:', user);
     console.log('Attempting to fetch practice problems for sprintId:', sprintId, 'and userId:', user.id);
     const { data, error } = await supabase
       .from('user_practice_problems')
