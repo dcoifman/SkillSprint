@@ -522,7 +522,7 @@ function SprintPage() {
             {currentStep.title && <Heading size="lg">{currentStep.title}</Heading>}
             <Box className="markdown-content">
               <MarkdownWithMath>
-                {currentStep.value || 'Content not available.'}
+                {currentStep.content || 'Content not available.'}
               </MarkdownWithMath>
             </Box>
             {renderNextButton(currentStep)}
@@ -712,7 +712,13 @@ function SprintPage() {
           </VStack>
         );
       default:
-        return null;
+        return (
+          <VStack spacing={6} align="stretch">
+            <Heading size="lg">Unsupported Content Type</Heading>
+            <Text>This type of content cannot be displayed.</Text>
+            {renderNextButton(currentStep)}
+          </VStack>
+        );
     }
   };
 
