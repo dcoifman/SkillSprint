@@ -48,7 +48,8 @@ import {
   Line,
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext.js';
-import supabaseClient, {
+import { supabase } from '../services/supabaseClient.js';
+import {
   fetchCourseEnrollmentCount,
   fetchCourseCompletionRate,
   fetchSprintCompletionRatesForCourse,
@@ -76,7 +77,7 @@ function InstructorDashboardPage() {
       if (!user) return;
       
       try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
           .from('learning_paths')
           .select('id, title, description, image_url')
           .eq('instructor_id', user.id);
@@ -117,7 +118,7 @@ function InstructorDashboardPage() {
       
       try {
         // Fetch basic path info
-        const { data: pathData, error: pathError } = await supabaseClient
+        const { data: pathData, error: pathError } = await supabase
           .from('learning_paths')
           .select('*')
           .eq('id', selectedCourseId)

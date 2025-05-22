@@ -530,18 +530,30 @@ function SprintPage() {
          console.error('renderContentItem received undefined or null item.');
          return null; // Do not render if item is undefined or null
       }
+
+      // Check if item.title is accessed and is not a string
+      if (item.title !== undefined && typeof item.title !== 'string') {
+          console.error('Item has a non-string title property:', item);
+          // Optionally handle this case, e.g., display a warning or skip rendering
+      }
+
+      // Add a safeguard for accessing title property if needed elsewhere in this function
+      const itemTitle = typeof item.title === 'string' ? item.title : '';
+      // Now use itemTitle instead of item.title directly if you need to ensure it's a string
+
       switch (item.type) {
         case 'text':
           return (
-            <Text mb={4}>
-              {item.value}
-            </Text>
+            <Text mb={4}>{
+              // Safely access item.value, defaulting to empty string if undefined
+              item.value || ''
+            }</Text>
           );
         case 'key_point':
           return (
             <Box p={4} bg="purple.50" borderRadius="md" mb={4}>
               <Text fontWeight="bold" color="purple.700">
-                Key Point: {item.value}
+                Key Point: {item.value || ''}
               </Text>
             </Box>
           );
@@ -549,7 +561,7 @@ function SprintPage() {
           return (
             <Box p={4} bg="blue.50" borderRadius="md" mb={4}>
               <Text fontWeight="medium" color="blue.700">
-                Example: {item.value}
+                Example: {item.value || ''}
               </Text>
             </Box>
           );
@@ -557,14 +569,14 @@ function SprintPage() {
           return (
             <Box p={4} bg="green.50" borderRadius="md" mb={4}>
               <Text fontWeight="medium" color="green.700" whiteSpace="pre-line">
-                {item.value.split('->').map((part, i, arr) => (
+                {item.value?.split('->').map((part, i, arr) => (
                   <React.Fragment key={i}>
-                    {part.trim()}
+                    {part?.trim() || ''}
                     {i < arr.length - 1 && (
                       <ChevronRightIcon mx={2} color="green.500" />
                     )}
                   </React.Fragment>
-                ))}
+                )) || ''}
               </Text>
             </Box>
           );
@@ -576,7 +588,7 @@ function SprintPage() {
                   <Heading size="sm" color="orange.500">
                     Activity
                   </Heading>
-                  <Text>{item.value}</Text>
+                  <Text>{item.value || ''}</Text>
                 </VStack>
               </CardBody>
             </Card>
@@ -585,14 +597,14 @@ function SprintPage() {
           return (
             <Box p={4} bg="gray.50" borderRadius="md" mb={4} borderLeft="4px solid" borderColor="gray.400">
               <Text fontStyle="italic">
-                Reflection: {item.value}
+                Reflection: {item.value || ''}
               </Text>
             </Box>
           );
         default:
           return (
             <Text mb={4}>
-              {item.value}
+              {item.value || ''}
             </Text>
           );
       }

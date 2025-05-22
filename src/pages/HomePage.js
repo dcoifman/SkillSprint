@@ -38,6 +38,7 @@ import CourseCarousel from '../components/CourseCarousel.js';
 import LoadingSkeleton from '../components/LoadingSkeleton.js';
 import { css } from '@emotion/react';
 import { useAuth } from '../contexts/AuthContext.js';
+import useApiErrorHandler from '../hooks/useApiErrorHandler.js';
 
 // Lazy load below-the-fold components
 const CommunitySpotlight = lazy(() => import('../components/CommunitySpotlight.js'));
@@ -92,6 +93,7 @@ function HomePage() {
   const [courses, setCourses] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const { handleApiError } = useApiErrorHandler();
 
   const loadCourses = async () => {
     try {
@@ -99,12 +101,15 @@ function HomePage() {
       setError(null);
       const { data, error: fetchError } = await fetchLearningPaths({});
       if (fetchError) {
-        throw new Error(fetchError.message);
+        handleApiError(fetchError, 'Failed to fetch learning paths');
+        setError(fetchError.message);
+        return;
       }
       console.log('Fetched courses:', data);
       setCourses(data || []);
     } catch (err) {
       console.error('Error loading courses:', err);
+      handleApiError(err, 'An unexpected error occurred while fetching courses');
       setError(err.message);
     } finally {
       setIsLoading(false);
