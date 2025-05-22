@@ -985,7 +985,23 @@ export const fetchUserEnrolledPathsWithNextSprint = async () => {
       .from('user_paths')
       .select(`
         path:path_id (
-          *,
+          id,
+          title,
+          description,
+          category,
+          level,
+          image,
+          total_sprints,
+          estimated_time,
+          rating,
+          review_count,
+          students_count,
+          tags,
+          objectives,
+          prerequisites,
+          instructor_id,
+          created_at,
+          updated_at,
           modules (
             *,
             sprints (*)
