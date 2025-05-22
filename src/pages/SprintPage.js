@@ -524,6 +524,12 @@ function SprintPage() {
 
     // Handle different content types
     const renderContentItem = (item) => {
+      // Log item at the beginning of the function
+      console.log('Inside renderContentItem for item:', item);
+      if (!item) {
+         console.error('renderContentItem received undefined or null item.');
+         return null; // Do not render if item is undefined or null
+      }
       switch (item.type) {
         case 'text':
           return (
@@ -644,11 +650,19 @@ function SprintPage() {
             ) : null}
             
             {Array.isArray(currentStep.content) ? (
-              currentStep.content.map((item, index) => (
-                <Box key={index}>
-                  {renderContentItem(item)}
-                </Box>
-              ))
+              currentStep.content.map((item, index) => {
+                // Log each item before rendering
+                console.log('Rendering content item:', item, 'at index:', index);
+                if (!item) {
+                  console.warn('Encountered undefined or null item in steps array at index:', index);
+                  return null; // Skip rendering for undefined/null items
+                }
+                return (
+                  <Box key={index}>
+                    {renderContentItem(item)}
+                  </Box>
+                );
+              })
             ) : (
             <Box className="markdown-content">
               <MarkdownWithMath>
