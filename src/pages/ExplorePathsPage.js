@@ -412,82 +412,35 @@ const CATEGORIES = [
   { name: 'Literature', icon: FaBookReader, color: 'pink' },
 ];
 
-const LEARNING_PATHS = [
-  {
-    id: '550e8400-e29b-41d4-a716-446655440000',
-    title: 'The Great Naval Disaster: Russian Baltic Fleet\'s Epic Journey',
-    description: 'Experience the incredible (and incredibly disastrous) journey of the Russian Baltic Fleet during the Russo-Japanese War (1904-1905).',
-    category: 'History',
-    duration: '5 hours',
-    modules: 5,
-    difficulty: 'Intermediate',
-    rating: 4.8,
-    reviews: 128,
-    image: '/path-images/russian-baltic-fleet.jpg',
-    tags: ['Military History', 'Naval Warfare', 'Comedy in History'],
-    featured: true,
-    instructor: {
-      name: 'Dr. Naval History',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=naval'
-    }
-  },
-  {
-    id: 'machine-learning',
-    title: 'Machine Learning Fundamentals',
-    description: 'Master the basics of machine learning, from algorithms to practical applications.',
-    category: 'Technology',
-    duration: '8 hours',
-    modules: 6,
-    difficulty: 'Advanced',
-    rating: 4.7,
-    reviews: 245,
-    image: '/path-images/machine-learning.jpg',
-    tags: ['AI', 'Data Science', 'Python'],
-  },
-  {
-    id: 'web-dev',
-    title: 'Web Development with React',
-    description: 'Build modern web applications using React and related technologies.',
-    category: 'Technology',
-    duration: '10 hours',
-    modules: 8,
-    difficulty: 'Intermediate',
-    rating: 4.9,
-    reviews: 312,
-    image: '/path-images/web-dev.jpg',
-    tags: ['React', 'JavaScript', 'Frontend'],
-  },
-  {
-    id: 'business-comm',
-    title: 'Business Communication',
-    description: 'Enhance your professional communication skills for the modern workplace.',
-    category: 'Business',
-    duration: '6 hours',
-    modules: 5,
-    difficulty: 'Beginner',
-    rating: 4.6,
-    reviews: 189,
-    image: '/path-images/business-comm.jpg',
-    tags: ['Communication', 'Professional Skills'],
-  },
-];
-
 function ExplorePathsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [loading, setLoading] = useState(true);
+  const [paths, setPaths] = useState([]); // State to store fetched paths
+  const toast = useToast();
+  const { handleError } = useApiErrorHandler();
 
-  // Simulate loading state
+  // Fetch paths on component mount
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    const loadPaths = async () => {
+      setLoading(true);
+      const { data, error } = await fetchLearningPaths({}); // Fetch all paths initially
+      if (error) {
+        handleError(error, 'Failed to fetch learning paths');
+      } else {
+        setPaths(data || []);
+      }
+      setLoading(false);
+    };
 
-  // Filter paths based on search and category
-  const filteredPaths = LEARNING_PATHS.filter(path => {
+    loadPaths();
+  }, []); // Empty dependency array to run only once on mount
+
+  // Filter paths based on search and category (now applied to fetched data)
+  const filteredPaths = paths.filter(path => {
     const matchesSearch = path.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         path.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         path.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+                         (path.description && path.description.toLowerCase().includes(searchQuery.toLowerCase())) || // Add check for null description
+                         (path.tags && path.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))); // Add check for null tags
     const matchesCategory = !selectedCategory || path.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
