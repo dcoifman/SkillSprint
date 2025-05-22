@@ -116,6 +116,9 @@ function SprintPage() {
         if (sprintError) throw sprintError;
         if (!sprint) throw new Error('Sprint not found');
   
+        // Log the raw sprint data
+        console.log('Fetched sprint data:', sprint);
+
         // Get user progress if authenticated
         let progress = null;
         if (user) {
@@ -155,6 +158,9 @@ function SprintPage() {
              }];
              formattedData.totalSteps = 1;
         }
+
+        // Log the formatted data
+        console.log('Formatted sprint data:', formattedData);
 
         setSprintData(formattedData);
         setError(null);
