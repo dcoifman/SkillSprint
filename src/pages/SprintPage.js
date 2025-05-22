@@ -526,9 +526,9 @@ function SprintPage() {
     const renderContentItem = (item) => {
       // Log item at the beginning of the function
       console.log('Inside renderContentItem for item:', item);
-      // Ensure item is not null or undefined before proceeding
-      if (!item) {
-         console.error('renderContentItem received undefined or null item.');
+      // **Add a more robust check for item being a valid object**
+      if (!item || typeof item !== 'object') {
+         console.error('renderContentItem received invalid item:', item);
          return null; // Do not render if item is undefined or null
       }
 
