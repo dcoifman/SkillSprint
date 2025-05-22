@@ -47,7 +47,7 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext.js';
 import supabaseClient, {
   fetchCourseEnrollmentCount,
   fetchCourseCompletionRate,
