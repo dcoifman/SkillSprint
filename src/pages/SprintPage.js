@@ -46,7 +46,6 @@ import supabaseClient from '../services/supabaseClient.js';
 import { useAuth } from '../contexts/AuthContext.js';
 import { generatePracticeProblems } from '../services/geminiClient.js';
 import { savePracticeProblems, fetchPracticeProblems } from '../services/supabaseClient.js';
-import PracticeProblemItem from '../components/PracticeProblemItem.js';
 
 function SprintPage() {
   const { sprintId } = useParams();
