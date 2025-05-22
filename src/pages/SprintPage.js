@@ -34,6 +34,7 @@ import {
   AlertTitle,
   AlertDescription,
   Textarea,
+  Select,
 } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import ReactMarkdown from 'react-markdown';
@@ -45,6 +46,7 @@ import supabaseClient from '../services/supabaseClient.js';
 import { useAuth } from '../contexts/AuthContext.js';
 import { generatePracticeProblems } from '../services/geminiClient.js';
 import { savePracticeProblems, fetchPracticeProblems } from '../services/supabaseClient.js';
+import PracticeProblemItem from '../components/PracticeProblemItem.js';
 
 function SprintPage() {
   const { sprintId } = useParams();
@@ -61,6 +63,7 @@ function SprintPage() {
   const [isGeneratingProblems, setIsGeneratingProblems] = useState(false);
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
 
   // Combine the two useEffects that watch currentStep into one
   useEffect(() => {
@@ -239,7 +242,7 @@ function SprintPage() {
     return step?.type === 'quiz' && userAnswers[stepIndex] === step.correctAnswer;
   };
 
-  const handleGeneratePracticeProblems = async () => {
+  const handleGeneratePracticeProblems = async (difficulty) => {
     if (!sprintData || !sprintData.steps || currentStepIndex >= sprintData.steps.length) {
       toast({
         title: 'Cannot generate problems',
@@ -267,7 +270,7 @@ function SprintPage() {
         return;
       }
 
-      const problems = await generatePracticeProblems(sprintData.title, currentStepContent);
+      const problems = await generatePracticeProblems(sprintData.title, currentStepContent, difficulty);
       setPracticeProblems(problems);
       
       // Save the generated problems to Supabase
@@ -299,25 +302,69 @@ function SprintPage() {
 
   // Function to parse the practice problems string
   const parsePracticeProblems = (problemsString) => {
+    if (!problemsString) return [];
+    
     const problems = [];
-    const problemBlocks = problemsString.split(/Problem \d+:\s*/).filter(block => block.trim() !== '');
+    const problemBlocks = problemsString.split(/\n\n(?=\d+\.)/);
 
     problemBlocks.forEach(block => {
       const lines = block.trim().split('\n');
-      if (lines.length < 6) return; // Minimum lines: question, 4 options, answer
+      if (lines.length < 2) return;
 
-      const question = lines[0].trim();
-      const options = lines.slice(1, 5).map(optionLine => optionLine.substring(3).trim()); // Remove A) , B) etc.
-      const answerLine = lines[5];
-      const correctAnswerMatch = answerLine.match(/^Answer:\s*([A-D])/);
-      const correctAnswer = correctAnswerMatch ? correctAnswerMatch[1] : null;
-
-      if (question && options.length === 4 && correctAnswer) {
-        problems.push({
-          question,
-          options,
-          correctAnswer
-        });
+      const question = lines[0].replace(/^\d+\.\s*/, '').trim();
+      
+      // Multiple Choice
+      if (block.includes('A)') && block.includes('Answer:')) {
+        const options = [];
+        let correctAnswer = null;
+        let explanation = '';
+        
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (line.match(/^[A-D]\)/)) {
+            options.push(line.substring(3).trim());
+          } else if (line.startsWith('Answer:')) {
+            correctAnswer = line.match(/[A-D]/)?.[0];
+          } else if (line.startsWith('Explanation:')) {
+            explanation = line.substring('Explanation:'.length).trim();
+          }
+        }
+        
+        if (question && options.length >= 2 && correctAnswer) {
+          problems.push({
+            type: 'multiple_choice',
+            question,
+            options,
+            correctAnswer,
+            explanation
+          });
+        }
+      } 
+      // Fill in Blank
+      else if (block.includes('Answer:') && question.includes('____')) {
+        const answerLine = lines.find(l => l.startsWith('Answer:'));
+        const explanationLine = lines.find(l => l.startsWith('Explanation:'));
+        
+        if (answerLine) {
+          problems.push({
+            type: 'fill_blank',
+            question,
+            correctAnswer: answerLine.substring('Answer:'.length).trim(),
+            explanation: explanationLine ? explanationLine.substring('Explanation:'.length).trim() : ''
+          });
+        }
+      }
+      // Short Answer
+      else if (block.includes('Answer:')) {
+        const answerLine = lines.find(l => l.startsWith('Answer:'));
+        
+        if (answerLine) {
+          problems.push({
+            type: 'short_answer',
+            question,
+            correctAnswer: answerLine.substring('Answer:'.length).trim()
+          });
+        }
       }
     });
 
@@ -914,14 +961,50 @@ function SprintPage() {
                   <Button colorScheme="purple">Ask</Button>
                 </HStack>
 
+                <HStack spacing={4}>
+                  <Select 
+                    value={selectedDifficulty}
+                    onChange={(e) => setSelectedDifficulty(e.target.value)}
+                    width="150px"
+                    isDisabled={isGeneratingProblems}
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </Select>
+                  <Button 
+                    colorScheme="purple"
+                    onClick={() => handleGeneratePracticeProblems(selectedDifficulty)}
+                    isLoading={isGeneratingProblems}
+                  >
+                    Generate Practice Problems
+                  </Button>
+                </HStack>
+
                 {practiceProblems && (
                   <Box mt={4} p={4} bg={useColorModeValue('gray.100', 'gray.700')} borderRadius="md">
                     <Heading size="sm" mb={2}>Practice Problems</Heading>
-                    <VStack align="stretch" spacing={3}>
-                      {/* Render parsed practice problems */}
+                    <VStack align="stretch" spacing={4}>
                       {parsePracticeProblems(practiceProblems).map((problem, index) => (
-                        <Box key={index}>
-                          {problem.question}
+                        <Box key={index} p={4} borderWidth="1px" borderRadius="md" bg={useColorModeValue('white', 'gray.800')}>
+                          <Text fontWeight="bold" mb={2}>{problem.question}</Text>
+                          
+                          {problem.type === 'multiple_choice' && (
+                            <VStack align="stretch" spacing={2}>
+                              {problem.options.map((option, i) => (
+                                <HStack key={i}>
+                                  <Text>{String.fromCharCode(65 + i)})</Text>
+                                  <Text>{option}</Text>
+                                </HStack>
+                              ))}
+                            </VStack>
+                          )}
+                          
+                          {problem.explanation && (
+                            <Box mt={3} p={2} bg={useColorModeValue('blue.50', 'blue.900')} borderRadius="md">
+                              <Text fontSize="sm"><strong>Explanation:</strong> {problem.explanation}</Text>
+                            </Box>
+                          )}
                         </Box>
                       ))}
                     </VStack>

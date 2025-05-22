@@ -190,51 +190,22 @@ function PathDetailPage() {
 
   // Effect to generate summary when path is completed
   useEffect(() => {
-    if (progress === 100 && pathDetail && !personalizedSummary && !isGeneratingSummary) {
-      const generateSummary = async () => {
-        setIsGeneratingSummary(true);
-        try {
-          // Assuming pathDetail contains information about completed sprints
-          const completedSprintTitles = pathDetail.modules
-            .flatMap(module => module.sprints)
-            .filter(sprint => sprint.isCompleted)
-            .map(sprint => sprint.title);
+    // Calculate progress inside the effect to ensure pathDetail is available
+    const progress = pathDetail?.completedSprints > 0
+      ? Math.round((pathDetail.completedSprints / pathDetail.total_sprints) * 100)
+      : 0;
 
-          const summary = await generateLearningSummary(pathDetail.title, completedSprintTitles);
-          setPersonalizedSummary(summary);
-          
-          // Save the generated summary to Supabase
-          const { error: saveError } = await saveLearningSummary(pathId, summary);
-          if (saveError) {
-            console.error('Error saving learning summary:', saveError);
-            toast({
-              title: 'Error saving summary',
-              description: 'Failed to save learning summary.',
-              status: 'error',
-              duration: 5000,
-              isClosable: true,
-            });
-          }
-        } catch (err) {
-          console.error('Error generating personalized summary:', err);
-          toast({
-            title: 'Error generating summary',
-            description: 'Failed to generate learning summary.',
-            status: 'error',
-            duration: 5000,
-            isClosable: true,
-          });
-        } finally {
-          setIsGeneratingSummary(false);
-        }
-      };
-      generateSummary();
-    } else if (progress === 100 && pathDetail && !personalizedSummary) { // Fetch existing if completed and not already generated/fetched
-      const loadSummary = async () => {
-        setIsLoadingSummary(true); // Use the same loading state
+    const loadAndGenerateSummary = async () => {
+      if (progress === 100 && pathDetail) {
+        setIsLoadingSummary(true); // Start loading state
         try {
+          // 1. Attempt to load existing summary
           const { data: savedSummary, error: fetchSummaryError } = await fetchLearningSummary(pathId);
-          if (fetchSummaryError && fetchSummaryError.code !== 'PGRST116') {
+
+          if (savedSummary) {
+            setPersonalizedSummary(savedSummary);
+            setIsLoadingSummary(false); // Stop loading on success
+          } else if (fetchSummaryError && fetchSummaryError.code !== 'PGRST116') { // PGRST116 means no rows found
             console.error('Error fetching saved learning summary:', fetchSummaryError);
             toast({
               title: 'Error loading summary',
@@ -243,25 +214,81 @@ function PathDetailPage() {
               duration: 5000,
               isClosable: true,
             });
-          } else if (savedSummary) {
-            setPersonalizedSummary(savedSummary);
+            setIsLoadingSummary(false); // Stop loading on error
+          } else {
+            // 2. If no existing summary, generate a new one
+            setIsGeneratingSummary(true); // Start generating state
+            setIsLoadingSummary(false); // Stop loading state as we are now generating
+
+            try {
+              // Assuming pathDetail contains information about completed sprints
+              const completedSprintTitles = pathDetail.modules
+                .flatMap(module => module.sprints)
+                .filter(sprint => sprint.isCompleted)
+                .map(sprint => sprint.title);
+
+              const summary = await generateLearningSummary(pathDetail.title, completedSprintTitles);
+              setPersonalizedSummary(summary);
+
+              // Save the generated summary to Supabase
+              const { error: saveError } = await saveLearningSummary(pathId, summary);
+              if (saveError) {
+                console.error('Error saving learning summary:', saveError);
+                toast({
+                  title: 'Error saving summary',
+                  description: 'Failed to save learning summary.',
+                  status: 'warning',
+                  duration: 3000,
+                  isClosable: true,
+                });
+              }
+            } catch (err) {
+              console.error('Error generating personalized summary:', err);
+              toast({
+                title: 'Error generating summary',
+                description: 'Failed to generate learning summary.',
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+              });
+            } finally {
+              setIsGeneratingSummary(false); // Stop generating state
+            }
           }
         } catch (err) {
-          console.error('Exception during fetching learning summary:', err);
+          console.error('Exception during loading/generating learning summary:', err);
           toast({
-            title: 'Error loading summary',
-            description: 'An unexpected error occurred while loading the summary.',
+            title: 'Error',
+            description: 'An unexpected error occurred while processing the summary.',
             status: 'error',
             duration: 5000,
             isClosable: true,
           });
-        } finally {
-          setIsLoadingSummary(false);
+          setIsLoadingSummary(false); // Stop loading on exception
+          setIsGeneratingSummary(false); // Stop generating on exception
         }
-      };
-      loadSummary();
+      }
+    };
+
+    // Only run if pathDetail is loaded and progress is 100, and no summary is currently being generated or loaded
+    if (pathDetail && (pathDetail.completedSprints / pathDetail.total_sprints) * 100 === 100 && !personalizedSummary && !isGeneratingSummary && !isLoadingSummary) {
+       loadAndGenerateSummary();
     }
-  }, [progress, pathDetail, personalizedSummary, isGeneratingSummary, toast]);
+
+  }, [pathId, pathDetail, personalizedSummary, isGeneratingSummary, isLoadingSummary, toast]); // Add all relevant dependencies
+
+  // Add this function near other utility functions in the component
+  const generateModuleSummary = async (moduleTitle, completedSprintTitles) => {
+    const prompt = `Generate a concise learning summary for the module "${moduleTitle}" covering these sprints:\n\n${completedSprintTitles.map(title => `- ${title}`).join('\n')}\n\nHighlight key connections between concepts and overall module takeaways.`;
+
+    try {
+      const response = await generateContent(prompt);
+      return response;
+    } catch (error) {
+      console.error('Error in generateModuleSummary:', error);
+      throw error;
+    }
+  };
 
   // Loading state
   if (isLoading) {
@@ -538,6 +565,37 @@ function PathDetailPage() {
                             </Flex>
                           ))}
                         </VStack>
+
+                        {/* Add this after the sprints list: */}
+                        {module.sprints.filter(s => s.isCompleted).length > 0 && (
+                          <Box mt={4} p={3} bg={useColorModeValue('blue.50', 'blue.900')} borderRadius="md">
+                            <Heading size="sm" mb={2}>Module Summary</Heading>
+                            {module.summary ? (
+                              <ReactMarkdown>{module.summary}</ReactMarkdown>
+                            ) : (
+                              <Button 
+                                size="sm" 
+                                onClick={async () => {
+                                  const completedSprints = module.sprints.filter(s => s.isCompleted);
+                                  const summary = await generateModuleSummary(
+                                    module.title, 
+                                    completedSprints.map(s => s.title)
+                                  );
+                                  // Update module state with new summary
+                                  setPathDetail(prev => ({
+                                    ...prev,
+                                    modules: prev.modules.map(m => 
+                                      m.id === module.id ? { ...m, summary } : m
+                                    )
+                                  }));
+                                }}
+                                isLoading={isGeneratingSummary}
+                              >
+                                Generate Summary
+                              </Button>
+                            )}
+                          </Box>
+                        )}
                       </AccordionPanel>
                     </AccordionItem>
                   ))}
@@ -650,26 +708,21 @@ function PathDetailPage() {
               )}
 
               {/* Personalized Learning Summary (Visible when path is 100% complete) */}
-              {progress === 100 && (
+              {progress === 100 && (pathDetail?.completedSprints / pathDetail?.total_sprints) * 100 === 100 && (
                 <Box width="100%">
                   <Heading size="md" mb={4}>Your Learning Summary</Heading>
-                  {isGeneratingSummary ? (
+                  {isGeneratingSummary || isLoadingSummary ? (
                     <Center py={4}>
                       <Spinner size="md" color="purple.500" mr={2} />
-                      <Text>Generating summary...</Text>
-                    </Center>
-                  ) : isLoadingSummary ? (
-                    <Center py={4}>
-                      <Spinner size="md" color="purple.500" mr={2} />
-                      <Text>Loading summary...</Text>
+                      <Text>{isGeneratingSummary ? 'Generating summary...' : 'Loading summary...'}</Text>
                     </Center>
                   ) : personalizedSummary ? (
                     <Box p={4} bg={useColorModeValue('green.50', 'green.700')} borderRadius="md">
                       <ReactMarkdown>{personalizedSummary}</ReactMarkdown>
                     </Box>
                   ) : (
-                    <Box p={4} bg={useColorModeValue('red.50', 'red.700')} borderRadius="md">
-                      <Text color={useColorModeValue('red.800', 'red.200')}>Failed to load or generate learning summary.</Text>
+                    <Box p={4} bg={useColorModeValue('yellow.50', 'yellow.700')} borderRadius="md">
+                      <Text color={useColorModeValue('yellow.800', 'yellow.200')}>No learning summary available yet.</Text>
                     </Box>
                   )}
                 </Box>

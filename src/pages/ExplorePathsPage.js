@@ -586,12 +586,19 @@ function ExplorePathsPage() {
                 
             <CardFooter pt={2}>
               <Skeleton isLoaded={!loading}>
+                {/* Check if instructor exists before rendering */}          
+                {path.instructor && (
+                  <Flex align="center" mb={4}>
+                    <Avatar size="sm" src={path.instructor.avatar} name={path.instructor.name} mr={2} />
+                    <Text fontSize="sm" color={textColor}>{path.instructor.name}</Text>
+                  </Flex>
+                )}
                 <Button 
                   as={RouterLink}
                   to={`/path/${path.id}`}
-              colorScheme="purple"
+                  colorScheme="purple"
                   width="full"
-                  rightIcon={<ChevronRightIcon />}
+                  rightIcon={<ChevronRightIcon />}    
                 >
                   Start Learning
                 </Button>

@@ -41,6 +41,7 @@ import {
   Skeleton,
   Spinner,
   Center,
+  TabPanel,
 } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
 import { 
@@ -535,73 +536,41 @@ function DashboardPage() {
             </Button>
           </Box>
         ) : (
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
+          <VStack spacing={4} align="stretch">
             {enrolledPaths.map((path) => (
-              <MotionCard
-                key={path.id}
-                bg={cardBg}
-                shadow="md"
-                borderRadius="lg"
-                borderWidth="1px"
-                borderColor={cardBorder}
-                overflow="hidden"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }} /* Delay relative to previous card in grid */
-                transition={{ duration: 0.3, delay: 0.2 + (enrolledPaths.indexOf(path) * 0.05) }} /* Stagger delay */
-                whileHover={{ y: -5, boxShadow: "lg" }}
-              >
-                <Box h="120px" bg={`${path.category}.500`} position="relative">
-                  <Box 
-                    position="absolute" 
-                    bottom="-20px" 
-                    left="20px" 
-                    bg="blue.500"
-                    borderRadius="lg" 
-                    boxSize="48px" 
-                    display="flex" 
-                    alignItems="center" 
-                    justifyContent="center"
-                    boxShadow="md"
-                  >
-                    <Icon as={InfoIcon} color="white" boxSize="24px" />
-                  </Box>
-                </Box>
+              <Box key={path.path_id} p={4} borderWidth="1px" borderRadius="md" boxShadow="sm">
+                <Heading size="md" mb={2}>{path.title}</Heading>
+                {/* Display progress details - assuming these fields exist in the fetched data */}                
+                {(path.completed_sprints !== undefined && path.total_sprints !== undefined) ? (
+                  <Text fontSize="sm" color="gray.500">Progress: {path.completed_sprints}/{path.total_sprints} Sprints Completed ({path.completion_percentage || 0}% complete)</Text>
+                ) : (
+                  <Text fontSize="sm" color="gray.500">Progress information not available.</Text>
+                )}          
+                {path.last_accessed && (
+                  <Text fontSize="sm" color="gray.500">Last accessed: {new Date(path.last_accessed).toLocaleDateString()}</Text>
+                )}          
+                {/* Add more detailed stats if available, e.g., average score, time spent */}                
+                {path.average_score && <Text fontSize="sm" color="gray.500">Average Score: {path.average_score}</Text>}
+                {path.time_spent && <Text fontSize="sm" color="gray.500">Time Spent: {path.time_spent} hours</Text>}
                 
-                <CardHeader pt={8} pb={2}>
-                  <Heading size="md">{path.title}</Heading>
-                </CardHeader>
+                {/* Display Next Sprint Information */}          
+                {path.next_sprint_id && path.next_sprint_title && (          
+                  <Box mt={3}>
+                    <Text fontSize="sm" fontWeight="bold">Next Sprint:</Text>
+                    <Flex align="center" mt={1}>
+                      <Icon as={ChevronRightIcon} mr={1} color="purple.500" />
+                      <Text fontSize="sm" color="gray.600">{path.next_sprint_title}</Text>
+                    </Flex>
+                  </Box>          
+                )}          
                 
-                <CardBody py={2}>
-                  <Flex justify="space-between" mb={2}>
-                    <Text fontWeight="medium">Progress</Text>
-                    <Text>{path.progress}%</Text>
-                  </Flex>
-                  <Progress value={path.progress} colorScheme="purple" size="sm" borderRadius="full" mb={4} />
-                  
-                  <Text fontWeight="medium" mb={1}>Next Sprint:</Text>
-                  <Text color={textColor}>Continue where you left off</Text> {/* This needs to be updated with actual next sprint */}
-                  <Flex align="center" mt={1} color={textColor}>
-                    <TimeIcon mr={2} />
-                    <Text>N/A</Text> {/* This needs to be updated with actual next sprint time */}
-                  </Flex>
-                </CardBody>
-                
-                <CardFooter pt={2}>
-                  <Button 
-                    as={RouterLink} 
-                    to={`/paths/${path.id}`} /* Link to path detail for now */
-                    colorScheme="purple" 
-                    rightIcon={<ChevronRightIcon />}
-                    variant="solid"
-                    size="md"
-                    width="full"
-                  >
-                    Continue Learning
-                  </Button>
-                </CardFooter>
-              </MotionCard>
+                {/* Link to continue the path */}                
+                <Button size="sm" mt={3} colorScheme="purple" onClick={() => navigate(`/path/${path.path_id}`)}>
+                  Continue Path
+                </Button>
+              </Box>
             ))}
-          </SimpleGrid>
+          </VStack>
         )}
       </Box>
 

@@ -63,6 +63,7 @@ import { keyframes } from '@emotion/react';
 import geminiClient, { PROMPT_TEMPLATES, generateContent, stripCodeFences } from '../services/geminiClient.js';
 import supabaseClient from '../services/supabaseClient.js';
 import { useAuth } from '../contexts/AuthContext.js';
+import { z } from 'zod';
 
 // Default course structure
 const defaultCourseForm = {
@@ -118,11 +119,77 @@ const BulkGenerationProgress = ({ current, total, isComplete }) => {
   );
 };
 
+// Content validation schemas
+const contentSchemas = {
+  courseOutline: z.object({
+    title: z.string().min(5),
+    description: z.string().min(20),
+    learningObjectives: z.array(z.string().min(10)).min(3),
+    modules: z.array(
+      z.object({
+        title: z.string().min(5),
+        description: z.string().min(20),
+        sprints: z.array(
+          z.object({
+            title: z.string().min(5),
+            description: z.string().min(20),
+            contentOutline: z.array(z.string().min(5)).min(1)
+          })
+        ).min(1)
+      })
+    ).min(1)
+  }),
+  sprintContent: z.object({
+    title: z.string().min(5),
+    introduction: z.string().min(20),
+    content: z.array(
+      z.object({
+        type: z.enum(['text', 'key_point', 'example', 'visual_tree', 'activity', 'reflection']),
+        value: z.string().min(10)
+      })
+    ).min(3),
+    quiz: z.array(
+      z.object({
+        question: z.string().min(10),
+        options: z.array(z.string().min(1)).min(2),
+        correctAnswer: z.number().or(z.string()),
+        explanation: z.string().min(10).optional(),
+        type: z.enum(['multiple_choice', 'fill_blank', 'ordering'])
+      })
+    ).min(1),
+    summary: z.string().min(20),
+    nextSteps: z.string().min(10)
+  })
+};
+
+// Add validation to generateCourseOutline
+const validateContent = (content, type) => {
+  try {
+    const schema = contentSchemas[type];
+    const result = schema.safeParse(content);
+    if (!result.success) {
+      console.error('Validation errors:', result.error.flatten());
+      return {
+        isValid: false,
+        errors: result.error.flatten().fieldErrors
+      };
+    }
+    return { isValid: true };
+  } catch (error) {
+    console.error('Validation error:', error);
+    return {
+      isValid: false,
+      errors: { general: ['Validation failed'] }
+    };
+  }
+};
+
 function CourseBuilderPage() {
   const { user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingInitialCourse, setIsGeneratingInitialCourse] = useState(false);
   const [courseForm, setCourseForm] = useState(defaultCourseForm);
   const [generatedCourse, setGeneratedCourse] = useState(null);
   const [activeModule, setActiveModule] = useState(null);
@@ -140,6 +207,9 @@ function CourseBuilderPage() {
   const [generationRequestId, setGenerationRequestId] = useState(null);
   const [generationStatus, setGenerationStatus] = useState(null);
   const [pollingActive, setPollingActive] = useState(false);
+  const [initialGenerationTotal, setInitialGenerationTotal] = useState(0);
+  const [initialGenerationCurrent, setInitialGenerationCurrent] = useState(0);
+  const [initialGenerationProgress, setInitialGenerationProgress] = useState(0);
   
   // Rate limit warning threshold (8 out of 10 free requests)
   const RATE_LIMIT_WARNING = 8;
@@ -430,13 +500,27 @@ function CourseBuilderPage() {
         try {
           // Parse the JSON response
           const courseData = JSON.parse(stripCodeFences(response));
+          
+          // Validate the content
+          const { isValid, errors } = validateContent(courseData, 'courseOutline');
+          if (!isValid) {
+            toast({
+              title: 'Content Validation Failed',
+              description: 'The generated content did not meet quality standards.',
+              status: 'error',
+              duration: 5000,
+              isClosable: true,
+            });
+            return;
+          }
+          
           setGeneratedCourse(courseData);
           
           // Success message
           toast({
             title: "Course outline generated",
-            description: "Your course outline has been created successfully.",
-            status: "success",
+            description: "Generating sprint content...",
+            status: "info",
             duration: 3000,
             isClosable: true,
           });
@@ -515,6 +599,19 @@ function CourseBuilderPage() {
       try {
         // Parse the JSON response
         const content = JSON.parse(stripCodeFences(response));
+        
+        // Validate sprint content
+        const { isValid, errors } = validateContent(content, 'sprintContent');
+        if (!isValid) {
+          toast({
+            title: 'Content Validation Failed',
+            description: 'The generated sprint content did not meet quality standards.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+          return;
+        }
         
         // Update sprint content state
         setSprintContent(prev => ({
@@ -614,6 +711,158 @@ function CourseBuilderPage() {
       });
     } finally {
       setIsLoadingSprint(false);
+    }
+  };
+
+  // Generate initial course structure and content
+  const generateInitialCourse = async () => {
+    // Validate form
+    if (!courseForm.topic || !courseForm.audience || !courseForm.goals) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in the topic, target audience, and learning goals.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsGeneratingInitialCourse(true);
+    setGeneratedCourse(null); // Clear previous course data
+    setSprintContent({}); // Clear previous sprint content
+    setGenerationStatus(null); // Clear previous status
+    setGenerationRequestId(null); // Clear previous request id
+    setPollingActive(false); // Ensure polling is off initially
+
+    try {
+      // Step 1: Generate Course Outline
+      // If using backend generation, the backend will handle content generation.
+      // If using frontend generation, we'll proceed to generate sprint content after the outline is set.
+
+      if (useBackendGeneration) {
+        // Trigger backend generation which handles both outline and content
+        await generateCourseOutline(); // This will set request ID and start polling
+      } else {
+        // Frontend generation: Generate outline first
+        const outlinePrompt = PROMPT_TEMPLATES.COURSE_OUTLINE
+          .replace('{topic}', courseForm.topic)
+          .replace('{audience}', courseForm.audience)
+          .replace('{level}', courseForm.level)
+          .replace('{duration}', courseForm.duration)
+          .replace('{goals}', courseForm.goals);
+
+        const outlineResponse = await generateContent(outlinePrompt, 0.7);
+        setRequestCount(prevCount => prevCount + 1);
+
+        try {
+          const courseData = JSON.parse(stripCodeFences(outlineResponse));
+          setGeneratedCourse(courseData); // Set the generated outline
+
+          toast({
+            title: "Course outline generated",
+            description: "Generating sprint content...",
+            status: "info",
+            duration: 3000,
+            isClosable: true,
+          });
+
+          // Step 2: Generate Sprint Content for all sprints (frontend only)
+          const sprintsToGenerate = [];
+          courseData.modules.forEach((module, moduleIndex) => {
+            module.sprints.forEach((sprint, sprintIndex) => {
+              sprintsToGenerate.push({ moduleIndex, sprintIndex, sprint, module });
+            });
+          });
+
+          onOpen(); // Open the progress modal
+          const totalSprints = sprintsToGenerate.length;
+          setInitialGenerationTotal(totalSprints); // Set total sprints for progress
+          setInitialGenerationCurrent(0); // Reset current count
+          setInitialGenerationProgress(0); // Reset progress
+
+          // Generate content in batches and update progress
+          const batchSize = 3; // Keep batch size reasonable for frontend
+          for (let i = 0; i < sprintsToGenerate.length; i += batchSize) {
+            const batch = sprintsToGenerate.slice(i, i + batchSize);
+            await Promise.allSettled(
+              batch.map(async ({ moduleIndex, sprintIndex, sprint, module }) => {
+                try {
+                  const contentPrompt = PROMPT_TEMPLATES.SPRINT_CONTENT
+                    .replace('{title}', sprint.title)
+                    .replace('{module}', module.title)
+                    .replace('{course}', courseData.title) // Use courseData here
+                    .replace('{outline}', sprint.contentOutline.join(', '))
+                    .replace('{audience}', courseForm.audience)
+                    .replace('{level}', courseForm.level)
+                    .replace('{duration}', sprint.duration || '10');
+
+                  const contentResponse = await generateContent(contentPrompt, 0.7);
+                  setRequestCount(prevCount => prevCount + 1);
+
+                  const content = JSON.parse(stripCodeFences(contentResponse));
+                  setSprintContent(prev => ({
+                    ...prev,
+                    [`${moduleIndex}-${sprintIndex}`]: content
+                  }));
+                   // Update progress state for modal
+                  setInitialGenerationCurrent(prev => {
+                    const updatedCount = prev + 1;
+                    setInitialGenerationProgress((updatedCount / totalSprints) * 100);
+                    return updatedCount;
+                  });
+                  return { success: true };
+                } catch (error) {
+                  console.error(`Error generating sprint content for sprint ${moduleIndex}-${sprintIndex}:`, error);
+                   // Note: We are not decrementing the count on failure for simplicity
+                  setGenerationStatus(prev => ({ ...prev, message: `Failed to generate sprint ${initialGenerationCurrent + 1}/${totalSprints}` })); // Use initialGenerationCurrent + 1 for the failing one
+                  return { success: false, error: error.message };
+                }
+              })
+            );
+
+             // Small delay between batches to avoid hitting rate limits too hard
+             await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+
+          onClose(); // Close progress modal
+
+          toast({
+            title: "Initial content generated",
+            description: "Course structure and initial sprint content are ready for review.",
+            status: "success",
+            duration: 5000,
+            isClosable: true,
+          });
+
+          // Move to the course structure tab
+          setSelectedTab(1);
+
+        } catch (parseError) {
+          console.error('Error parsing outline JSON response:', parseError);
+          toast({
+            title: "Error parsing outline",
+            description: "The AI generated an invalid outline response. Please try again.",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+        }
+      }
+
+    } catch (error) {
+      console.error('Error in initial course generation:', error);
+      toast({
+        title: "Generation Failed",
+        description: "An error occurred during initial course generation. Please try again.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsGeneratingInitialCourse(false);
+      // Ensure modal is closed even on error
+      if (isOpen) onClose();
     }
   };
 
@@ -1056,12 +1305,24 @@ function CourseBuilderPage() {
                       colorScheme="purple"
                       size="lg"
                       leftIcon={<AddIcon />}
-                      isLoading={isGenerating}
+                      isLoading={isGenerating || isGeneratingInitialCourse}
                       loadingText="Generating..."
                       onClick={generateCourseOutline}
                       mt={4}
                     >
                       Generate Course Outline
+                    </Button>
+                    
+                    <Button
+                      colorScheme="blue"
+                      size="lg"
+                      leftIcon={<AddIcon />}
+                      isLoading={isGeneratingInitialCourse}
+                      loadingText="Generating initial content..."
+                      onClick={generateInitialCourse}
+                      mt={4}
+                    >
+                      Generate Initial Course Structure & Content
                     </Button>
                     
                     {/* Display generation status if using backend generation */}
@@ -1596,11 +1857,19 @@ function CourseBuilderPage() {
         <ModalOverlay />
         <ModalContent>
           <ModalBody py={8}>
-            <BulkGenerationProgress 
-              current={Object.keys(sprintContent).length} 
-              total={generatedCourse?.modules.reduce((acc, module) => acc + module.sprints.length, 0) || 0}
-              isComplete={!isGenerating}
-            />
+            {isGeneratingInitialCourse ? (
+              <BulkGenerationProgress 
+                current={initialGenerationCurrent}
+                total={initialGenerationTotal}
+                isComplete={!isGeneratingInitialCourse && initialGenerationCurrent === initialGenerationTotal}
+              />
+            ) : (
+              <BulkGenerationProgress 
+                current={Object.keys(sprintContent).length}
+                total={generatedCourse?.modules.reduce((acc, module) => acc + module.sprints.length, 0) || 0}
+                isComplete={!isGenerating}
+              />
+            )}
           </ModalBody>
         </ModalContent>
       </Modal>
