@@ -122,12 +122,19 @@ function SprintPage() {
         // Get user progress if authenticated
         let progress = null;
         if (user) {
-          const { data: progressData } = await supabaseClient.supabase
-            .from('user_progress')
+          console.log('Attempting to fetch user progress for sprintId:', sprintId, 'and userId:', user.id);
+          const { data: progressData, error: progressError } = await supabaseClient.supabase
+            .from('user_progress') // This corresponds to user_sprint_progress in DB
             .select('*')
             .eq('sprint_id', sprintId)
             .eq('user_id', user.id)
             .single();
+
+          if (progressError) {
+            console.error('Error fetching user progress:', progressError);
+          } else {
+            console.log('Successfully fetched user progress:', progressData);
+          }
           
           progress = progressData;
         }
