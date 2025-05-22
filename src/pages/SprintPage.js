@@ -45,7 +45,6 @@ import supabaseClient from '../services/supabaseClient.js';
 import { useAuth } from '../contexts/AuthContext.js';
 import { generatePracticeProblems } from '../services/geminiClient.js';
 import { savePracticeProblems, fetchPracticeProblems } from '../services/supabaseClient.js';
-import PracticeProblemItem from '../components/PracticeProblemItem.js';
 
 function SprintPage() {
   const { sprintId } = useParams();
@@ -915,23 +914,15 @@ function SprintPage() {
                   <Button colorScheme="purple">Ask</Button>
                 </HStack>
 
-                <Button 
-                  colorScheme="purple"
-                  onClick={handleGeneratePracticeProblems}
-                  isLoading={isGeneratingProblems}
-                  isDisabled={!sprintData || !sprintData.steps || currentStepIndex >= sprintData.steps.length}
-                  mt={4}
-                >
-                  Generate Practice Problems
-                </Button>
-
                 {practiceProblems && (
                   <Box mt={4} p={4} bg={useColorModeValue('gray.100', 'gray.700')} borderRadius="md">
                     <Heading size="sm" mb={2}>Practice Problems</Heading>
                     <VStack align="stretch" spacing={3}>
                       {/* Render parsed practice problems */}
                       {parsePracticeProblems(practiceProblems).map((problem, index) => (
-                        <PracticeProblemItem key={index} problem={problem} />
+                        <Box key={index}>
+                          {problem.question}
+                        </Box>
                       ))}
                     </VStack>
                   </Box>
