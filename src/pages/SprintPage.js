@@ -620,107 +620,24 @@ function SprintPage() {
       case 'content':
         return (
           <VStack spacing={6} align="stretch">
-            {/* Safely render title only if it exists */}
-            {currentStep && currentStep.title && <Heading size="lg">{currentStep.title}</Heading>}
+            {currentStep?.title && <Heading size="lg">{currentStep.title}</Heading>}
             
-            {currentStep && currentStep.introduction && (
-              <Text fontSize="lg" color="gray.600" mb={4}>
-                {currentStep.introduction}
-              </Text>
-            )}
-            
-            {currentStep.useThreeDModel ? (
-              <Box borderRadius="md" overflow="hidden" my={4}>
-                <ErrorBoundary fallback={
-                  <Box p={4} bg="red.50" borderRadius="md">
-                    <Text>Error loading the 3D model. You can still continue with the course.</Text>
-                  </Box>
-                }>
-                  {isLoading ? (
-                    <Flex justify="center" align="center" height="300px">
-                      <Spinner size="xl" color="purple.500" thickness="4px" />
-                      <Text ml={4}>Loading 3D model...</Text>
-                    </Flex>
-                  ) : (
-                    <ThreeDAnatomyModel 
-                      systemType={currentStep.modelType || 'skeletal'} 
-                      initialView="anterior"
-                      onSelectStructure={(structure) => toast({
-                        title: structure,
-                        description: `You selected the ${structure}`,
-                        status: 'info',
-                        duration: 2000,
-                      })}
-                      onError={handleModelError}
-                    />
-                  )}
-                </ErrorBoundary>
+            {/* Handle direct text content */}
+            {typeof currentStep.content === 'string' && (
+              <Box className="markdown-content">
+                <MarkdownWithMath>
+                  {currentStep.content}
+                </MarkdownWithMath>
               </Box>
-            ) : currentStep.image ? (
-              <AspectRatio ratio={16/9} maxH="400px" my={4}>
-                <Image
-                  src={currentStep.image}
-                  alt={currentStep.title}
-                  objectFit="cover"
-                  borderRadius="md"
-                />
-              </AspectRatio>
-            ) : null}
-            
-            {/* Safely check if currentStep.content is an object with a steps array, or just an array */}
-            {typeof currentStep?.content === 'object' && Array.isArray(currentStep.content?.steps) ? (
-              // Render content items if content is an object with a steps array
-              currentStep.content.steps.map((item, index) => {
-                // Log each item before rendering
-                console.log('Rendering content item:', item, 'at index:', index);
-                // Ensure item is not null or undefined
-                if (!item) {
-                  console.warn('Encountered undefined or null item in steps array at index:', index);
-                  return null; // Skip rendering for undefined/null items
-                }
-                 // Ensure item.type is a string before using it in switch
-                if (typeof item.type !== 'string') {
-                   console.warn('Encountered item with non-string type at index:', index, ':', item);
-                   return null; // Skip rendering if type is not a string
-                }
-
-                return (
-                  <Box key={index}>
-                    {renderContentItem(item)}
-                  </Box>
-                );
-              })
-            ) : Array.isArray(currentStep?.content) ? (
-              // Fallback for if content is just an array (less common now with JSONB change, but good to keep)
-              currentStep.content.map((item, index) => {
-                // Log each item before rendering
-                console.log('Rendering content item:', item, 'at index:', index);
-                // Ensure item is not null or undefined
-                if (!item) {
-                  console.warn('Encountered undefined or null item in steps array at index:', index);
-                  return null; // Skip rendering for undefined/null items
-                }
-                 // Ensure item.type is a string before using it in switch
-                if (typeof item.type !== 'string') {
-                   console.warn('Encountered item with non-string type at index:', index, ':', item);
-                   return null; // Skip rendering if type is not a string
-                }
-
-                return (
-                  <Box key={index}>
-                    {renderContentItem(item)}
-                  </Box>
-                );
-              })
-            ) : (
-            <Box className="markdown-content">
-              <MarkdownWithMath>
-                  {currentStep.content || 'Content not available.'}
-              </MarkdownWithMath>
-            </Box>
             )}
             
-            {/* Always render navigation buttons, even if there's an error */}
+            {/* Handle structured content */}
+            {currentStep.content?.steps?.map((item, index) => (
+              <Box key={index}>
+                {renderContentItem(item)}
+              </Box>
+            ))}
+
             {renderNextButton(currentStep)}
           </VStack>
         );
