@@ -1,0 +1,246 @@
+{
+  "course": {
+    "title": "Pharaohs & Pyramids: The Dramatic Rise and Fall of Ancient Egyptian Dynasties",
+    "description": "Journey through 3,000 years of Ancient Egyptian civilization! This course charts the spectacular rises and dramatic falls of history's longest-lasting civilization. From the first pharaohs to Cleopatra's tragic end, you'll explore the politics, culture, engineering marvels, and palace intrigues that defined one of humanity's greatest civilizations. Discover how Egypt's kingdoms flourished and collapsed through natural disasters, assassinations, religious revolutions, and foreign invasions in this entertaining and educational exploration of ancient history.",
+    "learningObjectives": [
+      "Understand the chronology and major periods of Ancient Egyptian history",
+      "Identify the key achievements and failures of significant pharaohs and dynasties",
+      "Analyze the technological innovations and architectural wonders of Ancient Egypt",
+      "Explore the cultural, religious, and social structures that defined Egyptian civilization",
+      "Examine the causes of dynastic collapses and transitions of power",
+      "Appreciate the lasting impact of Ancient Egyptian civilization on world history"
+    ],
+    "prerequisites": [
+      "No prior knowledge of Ancient Egypt required",
+      "Basic understanding of world geography",
+      "Interest in ancient history and civilizations"
+    ],
+    "modules": [
+      {
+        "title": "Module 1: The Birth of a Civilization",
+        "description": "Explore the origins of Ancient Egyptian civilization, from predynastic cultures to the establishment of the Old Kingdom and its first great rulers.",
+        "sprints": [
+          {
+            "title": "Sprint 1.1: 'Before the Pharaohs' - Predynastic Egypt",
+            "description": "Discover how Neolithic communities along the Nile laid the groundwork for one of history's greatest civilizations.",
+            "duration": "10 minutes",
+            "contentOutline": [
+              "The Gift of the Nile: Geography and Early Settlement (Map/Visuals)",
+              "From Hunter-Gatherers to Farmers: The Neolithic Revolution in Egypt (Timeline)",
+              "Early Cultures: Badarian, Naqada, and Hierakonpolis (Visual Comparison)",
+              "The Emergence of Social Hierarchy and Early Political Units (Visual Explanation)",
+              "The Road to Unification: Upper and Lower Egypt (Interactive Map)"
+            ]
+          },
+          {
+            "title": "Sprint 1.2: 'The First Pharaohs' - Narmer and Dynasty 1",
+            "description": "Witness the dramatic unification of Egypt and the establishment of the first dynasty under King Narmer (Menes).",
+            "duration": "12 minutes",
+            "contentOutline": [
+              "Narmer's Conquest: The Unification of Upper and Lower Egypt (Narmer Palette Analysis)",
+              "The Symbols of Power: Crown, Scepter, and Royal Titles (Visual Exploration)",
+              "Memphis: Building the First Capital (City Layout/Reconstruction)",
+              "Early Writing and Record Keeping: Proto-Hieroglyphics (Visual Examples)",
+              "Life and Death of Egypt's First Kings (Tombs at Abydos/Artifacts)",
+              "Quiz: Identifying Symbols of Egyptian Unification (Interactive Quiz)"
+            ]
+          },
+          {
+            "title": "Sprint 1.3: 'Pyramid Age Begins' - The Old Kingdom Rises",
+            "description": "Explore the extraordinary early dynasties that established the foundations of Egyptian civilization and began the age of pyramid building.",
+            "duration": "15 minutes",
+            "contentOutline": [
+              "The Third Dynasty: Djoser and the Step Pyramid Revolution (3D Reconstruction)",
+              "Sneferu's Experiments: The Bent Pyramid and Red Pyramid (Visual Comparison)",
+              "Political Organization and the Growth of Royal Power (Diagram)",
+              "Religious Developments: The Rising Cult of Ra (Visual Explanation)",
+              "Early Egyptian Art: Establishing the Canonical Style (Gallery of Examples)",
+              "Activity: Design Your Own Egyptian Royal Titulary (Interactive Exercise)"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Module 2: Golden Age and Collapse: Old Kingdom Drama",
+        "description": "Witness the height of Old Kingdom power with the Great Pyramids, followed by the dramatic collapse of central authority.",
+        "sprints": [
+          {
+            "title": "Sprint 2.1: 'Khufu's Grand Obsession' - The Great Pyramid",
+            "description": "Examine the reign of Pharaoh Khufu and the construction of history's most iconic monument, the Great Pyramid of Giza.",
+            "duration": "15 minutes",
+            "contentOutline": [
+              "Khufu: The Man Behind the Monument (Character Profile)",
+              "Engineering the Impossible: How the Great Pyramid Was Built (Interactive Animation)",
+              "Worker Village: Life of the Pyramid Builders (Archaeological Evidence)",
+              "The Pyramid Complex: More Than Just a Tomb (Site Map Exploration)",
+              "Solar Boats and Burial Treasures (Key Artifacts)",
+              "Quiz: Separating Pyramid Facts from Fiction (True/False Quiz)"
+            ]
+          },
+          {
+            "title": "Sprint 2.2: 'The Dynasty Continues' - Khafre, Menkaure, and Beyond",
+            "description": "Follow the Fourth Dynasty as Khufu's successors continue the pyramid-building tradition with their own massive monuments.",
+            "duration": "12 minutes",
+            "contentOutline": [
+              "Khafre's Legacy: The Pyramid and the Sphinx (Visual Tour)",
+              "Menkaure: The Smallest Great Pyramid (Architectural Analysis)",
+              "The Queens and Their Monuments (Notable Royal Women)",
+              "Royal Court Life: Nobles, Officials, and Servants (Social Structure Diagram)",
+              "Dynasty 5: The Rising Cult of the Sun (Religious Evolution)",
+              "Activity: Calculate Resources Needed for Pyramid Construction (Interactive Exercise)"
+            ]
+          },
+          {
+            "title": "Sprint 2.3: 'The Center Cannot Hold' - Old Kingdom Collapse",
+            "description": "Investigate the mysterious collapse of the Old Kingdom as Egypt descends into the chaotic First Intermediate Period.",
+            "duration": "13 minutes",
+            "contentOutline": [
+              "Dynasty 6: Pepi II's 94-Year Reign and Declining Authority (Timeline)",
+              "Environmental Disaster: Evidence for Climate Change and Nile Failures (Scientific Data)",
+              "The Text of Ipuwer: A Kingdom in Chaos (Primary Source Analysis)",
+              "Political Fragmentation: The Rise of Regional Nomarchs (Map of Power Centers)",
+              "Cultural Continuity Amid Political Collapse (Archaeological Evidence)",
+              "Debate: What Really Caused the Old Kingdom's Collapse? (Alternative Theories)"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Module 3: Resurrection and Empire: Middle and New Kingdoms",
+        "description": "Follow Egypt's resurrection under strong Middle Kingdom pharaohs and transformation into the New Kingdom imperial power.",
+        "sprints": [
+          {
+            "title": "Sprint 3.1: 'Order from Chaos' - The Middle Kingdom Revival",
+            "description": "Learn how powerful pharaohs from Thebes reunified Egypt and established the prosperous Middle Kingdom period.",
+            "duration": "12 minutes",
+            "contentOutline": [
+              "Mentuhotep II: The Reunifier (Character Profile/Achievements)",
+              "The 12th Dynasty: Senusret and Amenemhat's Stable Rule (Timeline/Key Events)",
+              "Administrative Innovations: The Return of Central Authority (Governmental Structure)",
+              "Fayum Reclamation Projects: Agricultural Engineering (Technical Explanation)",
+              "Middle Kingdom Literature and Arts: 'The Tale of Sinuhe' (Cultural Renaissance)",
+              "Activity: Analyze Middle Kingdom Royal Portraiture (Visual Exercise)"
+            ]
+          },
+          {
+            "title": "Sprint 3.2: 'Foreign Invaders' - The Hyksos Period",
+            "description": "Explore the dramatic Second Intermediate Period when foreign Hyksos rulers controlled northern Egypt.",
+            "duration": "10 minutes",
+            "contentOutline": [
+              "The Hyksos: Who Were These Mysterious Rulers? (Archaeological Evidence)",
+              "Military Innovations: Compound Bows, Chariots, and Bronze Weapons (Visual Comparison)",
+              "Cultural Exchange: Foreign Influences on Egyptian Society (Examples/Artifacts)",
+              "Theban Resistance: The 17th Dynasty Opposition (Key Figures/Events)",
+              "Kamose and Ahmose: The War of Liberation (Military Campaign Map)",
+              "Quiz: Innovations Introduced by the Hyksos (Multiple Choice)"
+            ]
+          },
+          {
+            "title": "Sprint 3.3: 'Empire Builders' - New Kingdom Expansion",
+            "description": "Witness Egypt's transformation into an imperial power under the warrior pharaohs of the early New Kingdom.",
+            "duration": "15 minutes",
+            "contentOutline": [
+              "Hatshepsut: The Female King (Character Study/Monuments)",
+              "Thutmose III: Egypt's Greatest Conqueror (Battle of Megiddo/Military Campaigns)",
+              "Imperial Administration: Governing an Empire (Administrative Structure)",
+              "Wealth of Nations: International Trade Networks (Trade Routes Map)",
+              "Amenhotep III: The Magnificent (Diplomatic Achievements/Building Projects)",
+              "Activity: Draft a Letter Between Egyptian and Foreign Rulers (Creative Exercise)"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Module 4: Revolutions and Golden Treasures",
+        "description": "Experience Egypt's religious revolution under Akhenaten, the restoration of traditional practices, and the boy-king Tutankhamun.",
+        "sprints": [
+          {
+            "title": "Sprint 4.1: 'The Heretic King' - Akhenaten's Religious Revolution",
+            "description": "Analyze one of history's first recorded religious revolutions as Akhenaten replaces traditional gods with the solar disk Aten.",
+            "duration": "15 minutes",
+            "contentOutline": [
+              "Amenhotep IV Becomes Akhenaten: A King's Transformation (Before/After Images)",
+              "Atenism: The World's First Monotheism? (Religious Analysis)",
+              "Amarna: The New Capital City (Urban Planning/Architecture)",
+              "Revolutionary Art: The Amarna Style (Visual Comparison with Traditional Art)",
+              "Queen Nefertiti: The Beautiful Co-ruler (Iconic Bust/Role Analysis)",
+              "Social Impact: Resistance and Adaptation to Religious Change (Historical Analysis)"
+            ]
+          },
+          {
+            "title": "Sprint 4.2: 'The Boy King' - Tutankhamun and Restoration",
+            "description": "Follow the dramatic return to orthodoxy after Akhenaten's death and discover the story behind King Tutankhamun's famous tomb.",
+            "duration": "12 minutes",
+            "contentOutline": [
+              "After Akhenaten: The Mysterious Smenkhkare and Neferneferuaten (Historical Debate)",
+              "Young Tutankhaten Becomes Tutankhamun (Character Profile)",
+              "Restoration Decree: Returning to Traditional Religion (Document Analysis)",
+              "The King's Men: Ay and Horemheb Behind the Throne (Power Politics)",
+              "The Boy King's Death: Theories and Evidence (Scientific Analysis)",
+              "Quiz: Sequence the Complicated Post-Amarna Succession (Interactive Timeline)"
+            ]
+          },
+          {
+            "title": "Sprint 4.3: 'Wonderful Things' - The Discovery of Tutankhamun's Tomb",
+            "description": "Experience the greatest archaeological discovery of all time: Howard Carter's unearthing of Tutankhamun's treasure-filled tomb.",
+            "duration": "13 minutes",
+            "contentOutline": [
+              "The Valley of the Kings: Royal Tombs and Grave Robbers (Site Overview)",
+              "Howard Carter and Lord Carnarvon: The Search for the Lost King (Historical Narrative)",
+              "November 4, 1922: The Discovery (Dramatic Reconstruction)",
+              "Treasures Beyond Imagination: Key Artifacts (Visual Gallery)",
+              "The 'Curse' of Tutankhamun: Myth vs. Reality (Critical Analysis)",
+              "Activity: You're the Archaeologist - Record Your First Impressions of the Tomb (Creative Exercise)"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Module 5: Final Glory and Fall",
+        "description": "Witness the last great Egyptian dynasty, the Ramessids, and the long decline leading to Cleopatra and Roman conquest.",
+        "sprints": [
+          {
+            "title": "Sprint 5.1: 'Ramesses the Great' - Dynasty 19 at Its Peak",
+            "description": "Explore Egypt's last period of imperial greatness under its most famous and self-promoting pharaoh, Ramesses II.",
+            "duration": "15 minutes",
+            "contentOutline": [
+              "Seti I and the Post-Amarna Recovery (Key Achievements)",
+              "Ramesses II: The Battle of Kadesh and Hittite Wars (Military Campaigns)",
+              "Master Builder: Pi-Ramesses, Abu Simbel, and Monumental Legacy (Architectural Review)",
+              "Royal Family Life: Nefertari and the King's Many Children (Family Structure)",
+              "The World's First Peace Treaty: The Egyptian-Hittite Alliance (Document Analysis)",
+              "Activity: Analyze Ramesses' Propaganda vs. Historical Reality (Critical Analysis)"
+            ]
+          },
+          {
+            "title": "Sprint 5.2: 'The Peoples of the Sea' - External Threats and Decline",
+            "description": "Witness how Egypt faced the Bronze Age collapse and the mysterious Sea Peoples invasion that reshaped the ancient world.",
+            "duration": "12 minutes",
+            "contentOutline": [
+              "The Late New Kingdom: Economic Stress and Corruption (Internal Problems)",
+              "Bronze Age Collapse: A World in Crisis (Broader Context)",
+              "Merneptah and the Libyan Wars (Military Developments)",
+              "Ramesses III vs. the Sea Peoples (Battle Scenes from Medinet Habu)",
+              "The Great Conspiracy: Royal Assassination Plot (Historical Detection)",
+              "Quiz: Match the Foreign Invaders to Their Historical Impact (Interactive Exercise)"
+            ]
+          },
+          {
+            "title": "Sprint 5.3: 'The Last Pharaoh' - Cleopatra and the End of Independent Egypt",
+            "description": "Follow Egypt's long decline through foreign rulers until Cleopatra's dramatic final act brings 3,000 years of Egyptian civilization to a close.",
+            "duration": "15 minutes",
+            "contentOutline": [
+              "The Third Intermediate Period: Libyan and Kushite Rule (Timeline of Fragmentation)",
+              "Persian Conquest and the 27th Dynasty (Imperial Control)",
+              "The Brief Native Revival and Second Persian Period (Resistance Movements)",
+              "Alexander and the Ptolemies: Greeks as Pharaohs (Cultural Fusion)",
+              "Cleopatra VII: Intelligence, Ambition, and Fateful Alliances (Character Study)",
+              "Actium, 31 BCE: The Final Battle and Roman Egypt (Historical Conclusion)",
+              "Activity: Write Cleopatra's Final Monologue (Creative Exercise)"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+} 

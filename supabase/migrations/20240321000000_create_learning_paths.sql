@@ -21,15 +21,18 @@ CREATE TABLE IF NOT EXISTS learning_paths (
 -- Enable Row Level Security
 ALTER TABLE learning_paths ENABLE ROW LEVEL SECURITY;
 
--- Create policies
-CREATE POLICY "Enable read access for all users" ON learning_paths
-  FOR SELECT USING (true);
+-- Create policies for learning_paths
+CREATE POLICY "Everyone can view learning paths"
+  ON learning_paths FOR SELECT
+  USING (true);
 
-CREATE POLICY "Enable insert for authenticated users only" ON learning_paths
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Only authenticated users can create learning paths"
+  ON learning_paths FOR INSERT
+  WITH CHECK (auth.role() = 'authenticated');
 
-CREATE POLICY "Enable update for authenticated users only" ON learning_paths
-  FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Only authenticated users can update learning paths"
+  ON learning_paths FOR UPDATE
+  USING (auth.role() = 'authenticated');
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -40,7 +43,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Create trigger for updated_at
+-- Create updated_at trigger
 CREATE TRIGGER update_learning_paths_updated_at
   BEFORE UPDATE ON learning_paths
   FOR EACH ROW

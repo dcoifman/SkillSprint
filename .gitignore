@@ -42,3 +42,7 @@ debug.log
 
 # Tools
 bfg.jar 
+
+# Ignore anatomy model binaries
+/public/models/anatomy/**/*.glb 
+.vercel

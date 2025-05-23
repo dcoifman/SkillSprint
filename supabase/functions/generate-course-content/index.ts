@@ -4,6 +4,8 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2.21.0";
 // @deno-types="npm:axios"
 import axios from "npm:axios";
+import JSON5 from "https://deno.land/x/json5@v1.0.1/mod.ts"; // Updated to a likely existing version
+import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 
 // Declare Deno namespace
 declare global {
@@ -51,6 +53,43 @@ const globalThis = {
   fs: fs
 };
 
+// Zod Schemas
+const CourseOutlineSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().min(1),
+  learningObjectives: z.array(z.string().min(1)),
+  prerequisites: z.array(z.string().min(1)).optional(),
+  modules: z.array(z.object({
+    title: z.string().min(1),
+    description: z.string().min(1),
+    sprints: z.array(z.object({
+      title: z.string().min(1),
+      description: z.string().min(1),
+      duration: z.string().min(1), // e.g., "5-15 minutes"
+      contentOutline: z.array(z.string().min(1)),
+    })),
+  })),
+});
+
+const SprintContentSchema = z.object({
+  title: z.string().min(1),
+  introduction: z.string().min(1),
+  content: z.array(z.object({
+    type: z.enum(["text", "key_point", "example", "visual_tree", "activity", "reflection"]),
+    value: z.string().min(1),
+  })),
+  quiz: z.array(z.object({
+    question: z.string().min(1),
+    type: z.enum(["multiple_choice", "fill_blank", "ordering"]),
+    options: z.array(z.string().min(1)).optional(), // Only for multiple_choice and ordering
+    correctAnswer: z.union([z.number(), z.string().min(1)]).optional(), // number for MC index, string for fill_blank
+    correctOrder: z.array(z.number()).optional(), // Only for ordering
+    explanation: z.string().optional(),
+  })).min(1), // Ensure at least one quiz question
+  summary: z.string().min(1),
+  nextSteps: z.string().min(1),
+});
+
 // Types
 interface CourseRequest {
   topic: string;
@@ -79,24 +118,35 @@ const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
-// Enhanced logging function
+// Enhanced logging function (MODIFIED: only console logs, no DB update)
 async function logDebug(supabase: SupabaseClient, requestId: string, message: string, data?: unknown) {
-  console.log(`[DEBUG] RequestID ${requestId}: ${message}`, data ? JSON.stringify(data) : '');
-  
-  const updates: RequestStatus = {
-    status: 'processing',
-    status_message: `${message}${data ? ' - ' + JSON.stringify(data) : ''}`,
-    updated_at: new Date().toISOString()
-  };
-  
-  try {
-    await supabase
-      .from('course_generation_requests')
-      .update(updates)
-      .eq('id', requestId);
-  } catch (error) {
-    console.error(`[ERROR] Failed to update status for ${requestId}:`, error);
+  console.log(`[DEBUG] RequestID ${requestId}: ${message}`, data ? JSON.stringify(data, null, 2) : '');
+  // Database update was removed from logDebug to reduce DB load.
+}
+
+// Helper function to check for cancellation
+async function checkIfCancelled(supabase: SupabaseClient, requestId: string): Promise<boolean> {
+  await logDebug(supabase, requestId, "Checking for cancellation status..."); // Console only
+  const { data, error } = await supabase
+    .from('course_generation_requests')
+    .select('status')
+    .eq('id', requestId)
+    .single();
+
+  if (error) {
+    // Log the error but don't stop the process for this, assume not cancelled if status check fails.
+    console.error(`[WARNING] RequestID ${requestId}: Error checking cancellation status:`, error.message);
+    await logDebug(supabase, requestId, "Error checking cancellation status, assuming not cancelled.", { error: error.message }); // Console only
+    return false; 
   }
+  
+  if (data?.status === 'cancelled') {
+    console.log(`[INFO] RequestID ${requestId}: Cancellation detected by status check.`);
+    await logDebug(supabase, requestId, "Cancellation detected by status check."); // Console only
+    return true;
+  }
+  await logDebug(supabase, requestId, "No cancellation detected.", { status: data?.status }); // Console only
+  return false;
 }
 
 // Prompt templates
@@ -139,7 +189,7 @@ Target audience: {audience}
 Skill level: {level}
 Duration target: {duration} minutes
 
-Format the response as a JSON object with the following structure:
+Format the response as a JSON object with the following structure. Ensure a variety of content types are used, including text, key points, examples, visual trees, activities, reflections, and consider adding interactive scenarios, video placeholders, and diagram suggestions where appropriate to enhance engagement.
 {
   "title": "Sprint title",
   "introduction": "A brief engaging introduction to the sprint topic (2-3 sentences)",
@@ -167,91 +217,120 @@ Format the response as a JSON object with the following structure:
     {
       "type": "reflection",
       "value": "A prompt for self-reflection to deepen understanding"
+    },
+    {
+      "type": "interactive_scenario",
+      "scenario_description": "Describe a situation or problem relevant to the sprint topic.",
+      "possible_choices": ["Choice A description", "Choice B description", "Choice C description"],
+      "ideal_outcome_description": "Describe what happens if the learner makes the best choice or series of choices."
+    },
+    {
+      "type": "video_placeholder",
+      "suggested_video_topic": "A concise description of what the video should cover to enhance this part of the sprint.",
+      "reasoning": "Explain why a video format would be particularly beneficial here (e.g., for visual demonstration of a process, expert interview, complex animation)."
+    },
+    {
+      "type": "diagram_suggestion",
+      "diagram_topic": "Clearly state what the diagram should illustrate or explain.",
+      "preferred_style": "flowchart, mindmap, venn, conceptual, comparison table, or process diagram"
     }
   ],
   "quiz": [
     {
-      "question": "Question text?",
+      "question": "Question text for a multiple-choice question?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correctAnswer": 0,
       "explanation": "Explanation of why this answer is correct",
       "type": "multiple_choice" 
     },
     {
-      "question": "Fill in the blank question?",
-      "correctAnswer": "The correct answer text",
+      "question": "Fill in the blank: The capital of France is ______.",
+      "correctAnswer": "Paris",
       "type": "fill_blank"
     },
     {
-      "question": "Drag and drop these concepts in the correct order",
-      "options": ["Item A", "Item B", "Item C", "Item D"],
+      "question": "Drag and drop these historical events into chronological order:",
+      "options": ["Event A", "Event B", "Event C", "Event D"],
       "correctOrder": [2, 0, 3, 1], 
       "type": "ordering"
+    },
+    {
+      "type": "matching_pairs",
+      "question": "Match the following terms with their correct definitions:",
+      "pairs": [
+        {"term": "Term A", "definition": "Definition for Term A"},
+        {"term": "Term B", "definition": "Definition for Term B"},
+        {"term": "Term C", "definition": "Definition for Term C"}
+      ],
+      "distractors": ["Extra definition not matching any term", "Another distractor definition"]
     }
   ],
   "summary": "A concise summary of what was learned in this sprint (2-3 sentences)",
   "nextSteps": "Suggestion for what to learn next"
 }
 
-Include at least one visual tree and one non-multiple-choice assessment.
-Vary teaching methods and assessment types across the content.
+Include at least one visual tree OR diagram suggestion. Aim for a mix of assessment types, including the new matching pairs type where suitable. 
+Vary teaching methods and assessment types across the content to maximize engagement.
+Consider incorporating interactive scenarios and video placeholders to make the content more dynamic.
 Output ONLY valid JSON. Do not include markdown, code fences, or any explanation.`
 };
 
-// Helper to strip code fences from Gemini responses
-function stripCodeFences(response: string): string {
-  let clean = response.trim();
+// Helper to strip code fences and parse JSON (now returns a parsed object or throws)
+function parseAIResponse(response: string, requestIdForLog: string): any {
+  let textToParse = response.trim();
   
   // Remove code fences
-  if (clean.startsWith('```json')) {
-    clean = clean.replace(/^```json/, '').replace(/```$/, '').trim();
-  } else if (clean.startsWith('```')) {
-    clean = clean.replace(/^```/, '').replace(/```$/, '').trim();
+  if (textToParse.startsWith('```json')) {
+    textToParse = textToParse.replace(/^```json/, '').replace(/```$/, '').trim();
+  } else if (textToParse.startsWith('```')) {
+    textToParse = textToParse.replace(/^```/, '').replace(/```$/, '').trim();
   }
-  
+
   try {
-    // Check if it's valid JSON first
-    JSON.parse(clean);
-    return clean;
-  } catch (e) {
-    // If not valid JSON, try to fix common issues
-    console.log(`JSON parse error: ${e.message}. Attempting to fix...`);
+    // Attempt parsing with JSON5 first (more tolerant)
+    return JSON5.parse(textToParse);
+  } catch (json5Error) {
+    console.log(`[DEBUG] RequestID ${requestIdForLog}: JSON5 parsing failed: ${json5Error.message}. Attempting fallback parsing...`);
     
-    // Fix line breaks inside strings
-    clean = clean.replace(/("[^"\\]*(?:\\.[^"\\]*)*")/, (match) => {
-      return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
-    });
-    
-    // Fix missing commas between properties
-    clean = clean.replace(/"\s*\n\s*"/g, '",\n"');
-    
-    // Fix missing commas between array items
-    clean = clean.replace(/}\s*{/g, '}, {');
-    
-    // Fix missing commas in arrays
-    clean = clean.replace(/]\s*\[/g, '], [');
-    
-    // Fix trailing commas before closing brackets
-    clean = clean.replace(/,(\s*[\]}])/g, '$1');
-    
-    // Fix unescaped quotes in strings
-    clean = clean.replace(/"([^"]*)(?<!\\)"/g, (match, p1) => {
-      return '"' + p1.replace(/(?<!\\)"/g, '\\"') + '"';
-    });
+    // Fallback to existing aggressive fixes and standard JSON.parse
+    let fixedText = textToParse;
+    // Fix line breaks inside strings (more targeted)
+    fixedText = fixedText.replace(/"[^"\\]*(\\.[^"\\]*)*"/g, (match) => match.replace(/\n/g, '\\n').replace(/\r/g, '\\r'));
+    // Fix missing commas between properties: "prop1": "value1" "prop2": "value2" -> "prop1": "value1", "prop2": "value2"
+    fixedText = fixedText.replace(/\"\s*\n\s*\"/g, '",\n"');
+    // Fix missing commas between array items: } { -> }, {
+    fixedText = fixedText.replace(/}\s*\n?\s*{/g, '}, {');
+     // Fix missing commas in arrays ] [ -> ], [
+    fixedText = fixedText.replace(/]\s*\n?\s*\[/g, '], [');
+    // Fix trailing commas before closing brackets/braces ,] -> ] or ,} -> }
+    fixedText = fixedText.replace(/,(\s*[\]}])/g, '$1');
+    // Attempt to fix unescaped quotes within strings (basic attempt)
+    // This is tricky and might need refinement.
+    // Example: "value": "string with "quote" inside"
+    // fixedText = fixedText.replace(/: *"([^"\\]*(?:\\.[^"\\]*)*)"/g, (match, group1) => {
+    //   return ': "' + group1.replace(/(?<!\\)"/g, '\\"') + '"';
+    // });
     
     try {
-      // Final validation
-      JSON.parse(clean);
-      console.log("Successfully fixed JSON");
-    } catch (e) {
-      console.log(`Still invalid JSON after fixes: ${e.message}`);
-      // Last resort - try a more aggressive approach
-      clean = clean.replace(/(\w+):/g, '"$1":'); // Ensure property names are quoted
-      clean = clean.replace(/,\s*}/g, '}'); // Remove trailing commas
-      clean = clean.replace(/,\s*]/g, ']'); // Remove trailing commas in arrays
+      const parsedWithFallback = JSON.parse(fixedText);
+      console.log(`[DEBUG] RequestID ${requestIdForLog}: Successfully parsed with fallback string manipulations.`);
+      return parsedWithFallback;
+    } catch (fallbackParseError) {
+      console.log(`[DEBUG] RequestID ${requestIdForLog}: Fallback JSON parsing also failed: ${fallbackParseError.message}. Applying aggressive fixes...`);
+      // Last resort - very aggressive fixes (potentially unsafe)
+      let aggressiveFixedText = textToParse; // Start from original text for aggressive fixes
+      aggressiveFixedText = aggressiveFixedText.replace(/(\w+):/g, '"$1":'); // Ensure property names are quoted
+      aggressiveFixedText = aggressiveFixedText.replace(/,\s*([}\]])/g, '$1'); // Remove trailing commas more aggressively
+      
+      try {
+        const parsedWithAggressiveFallback = JSON.parse(aggressiveFixedText);
+        console.log(`[DEBUG] RequestID ${requestIdForLog}: Successfully parsed with AGGRESSIVE fallback string manipulations.`);
+        return parsedWithAggressiveFallback;
+      } catch (aggressiveFallbackError) {
+         console.error(`[ERROR] RequestID ${requestIdForLog}: All JSON parsing attempts failed. Original text (first 300 chars): ${response.substring(0,300)}`, aggressiveFallbackError);
+         throw new Error(`Failed to parse JSON response after multiple attempts: ${aggressiveFallbackError.message}`);
+      }
     }
-    
-    return clean;
   }
 }
 
@@ -360,7 +439,8 @@ async function updateRequestStatus(
     updates.course_data = courseData;
   }
   
-  await logDebug(supabase, requestId, 'Updating request status', { updates });
+  // logDebug was removed from here previously.
+  console.log(`[INFO] RequestID ${requestId}: Updating request status with:`, { status, statusMessage, progress, errorMessage });
   
   const { data, error } = await supabase
     .from('course_generation_requests')
@@ -368,7 +448,7 @@ async function updateRequestStatus(
     .eq('id', requestId);
     
   if (error) {
-    await logDebug(supabase, requestId, 'Error updating request status', { error });
+    console.error(`[CRITICAL] RequestID ${requestId}: Error updating request status in DB:`, error);
   }
   
   return { data, error };
@@ -383,6 +463,14 @@ async function generateCourseContent(
   try {
     await logDebug(supabase, requestId, 'Starting course generation', { courseRequest });
     
+    // === CANCELLATION CHECK 1: Before starting anything significant ===
+    if (await checkIfCancelled(supabase, requestId)) {
+      await logDebug(supabase, requestId, 'Cancellation detected before outline generation.');
+      // No need to update status again if it's already 'cancelled'. 
+      // The cancellation function should set the status_message.
+      return { success: false, error: 'Course generation cancelled by user.' };
+    }
+
     // 1. Update status to processing
     await updateRequestStatus(
       supabase, 
@@ -418,33 +506,57 @@ async function generateCourseContent(
       responseLength: outlineResponse.length
     });
     
-    const cleanOutlineResponse = stripCodeFences(outlineResponse);
-    await logDebug(supabase, requestId, 'Cleaned outline response', {
-      cleanedLength: cleanOutlineResponse.length
-    });
-    
-    let courseData: any;
+    let parsedOutline: any;
     try {
-      courseData = JSON.parse(cleanOutlineResponse);
-      await logDebug(supabase, requestId, 'Successfully parsed course outline JSON', {
-        modules: courseData.modules?.length,
-        title: courseData.title
+      parsedOutline = parseAIResponse(outlineResponse, requestId); // Use new parsing function
+      await logDebug(supabase, requestId, 'Successfully parsed course outline candidate JSON', {
+        title: parsedOutline.title
       });
     } catch (parseError) {
-      await logDebug(supabase, requestId, 'Error parsing course outline JSON', {
+      await logDebug(supabase, requestId, 'Critical Error: Failed to parse course outline JSON after all fallbacks', {
         error: parseError instanceof Error ? parseError.message : 'Unknown error',
-        rawResponse: cleanOutlineResponse
+        rawResponsePreview: outlineResponse.substring(0, 300) + "..."
       });
-      
       await updateRequestStatus(
         supabase,
         requestId,
         'failed',
         'Failed to parse course outline',
         0,
-        'Invalid JSON response from AI model'
+        `Invalid JSON response from AI model: ${parseError.message}`
       );
       return { error: 'Failed to parse course outline' };
+    }
+
+    // Validate parsed outline with Zod
+    const outlineValidationResult = CourseOutlineSchema.safeParse(parsedOutline);
+    if (!outlineValidationResult.success) {
+      await logDebug(supabase, requestId, 'Critical Error: Course outline JSON failed schema validation', {
+        errors: outlineValidationResult.error.flatten(),
+        parsedOutlinePreview: JSON.stringify(parsedOutline).substring(0, 300) + "..."
+      });
+      await updateRequestStatus(
+        supabase,
+        requestId,
+        'failed',
+        'Course outline structure is invalid',
+        0,
+        `Invalid structure in AI response for course outline: ${outlineValidationResult.error.message}`
+      );
+      return { error: 'Course outline structure is invalid' };
+    }
+    
+    const courseData = outlineValidationResult.data;
+    await logDebug(supabase, requestId, 'Successfully validated course outline structure', {
+        modules: courseData.modules?.length,
+        title: courseData.title
+    });
+
+    // === CANCELLATION CHECK 2: After outline, before sprint generation ===
+    if (await checkIfCancelled(supabase, requestId)) {
+      await logDebug(supabase, requestId, 'Cancellation detected after outline generation.');
+      await updateRequestStatus(supabase, requestId, 'cancelled', 'Processing halted: User cancelled after outline generation.');
+      return { success: false, error: 'Course generation cancelled by user.' };
     }
     
     // 3. Update status with progress
@@ -467,122 +579,187 @@ async function generateCourseContent(
     const sprintErrors: string[] = [];
     
     // Process sprints in smaller batches to manage memory
-    const BATCH_SIZE = 2;
-    
-    for (let moduleIndex = 0; moduleIndex < courseData.modules.length; moduleIndex++) {
-      const module = courseData.modules[moduleIndex];
+    const BATCH_SIZE = 2; // Max 2 concurrent LLM calls
+
+    // Create a flat list of all sprints to be generated
+    const allSprintsToGenerate: any[] = [];
+    courseData.modules.forEach((module: any, moduleIndex: number) => {
+      module.sprints.forEach((sprint: any, sprintIndex: number) => {
+        allSprintsToGenerate.push({
+          module,
+          sprint,
+          moduleIndex,
+          sprintIndex,
+          courseTitle: courseData.title,
+        });
+      });
+    });
+
+    for (let i = 0; i < allSprintsToGenerate.length; i += BATCH_SIZE) {
+      // === CANCELLATION CHECK 3: Before each sprint batch ===
+      if (await checkIfCancelled(supabase, requestId)) {
+        await logDebug(supabase, requestId, `Cancellation detected before sprint batch ${i / BATCH_SIZE + 1}.`);
+        await updateRequestStatus(supabase, requestId, 'cancelled', `Processing halted: User cancelled before sprint batch ${i / BATCH_SIZE + 1}.`);
+        return { success: false, error: 'Course generation cancelled by user during sprint processing.' };
+      }
+
+      const batch = allSprintsToGenerate.slice(i, i + BATCH_SIZE);
       
-      for (let sprintIndex = 0; sprintIndex < module.sprints.length; sprintIndex++) {
-        const sprint = module.sprints[sprintIndex];
-        
-        // Update progress
-        const progressPercent = 20 + Math.floor((processedSprints / totalSprints) * 70);
-        await updateRequestStatus(
-          supabase,
-          requestId,
-          'processing',
-          `Generating sprint ${processedSprints + 1} of ${totalSprints}: ${sprint.title}`,
-          progressPercent
-        );
-        
-        // Generate sprint content
+      const progressPercent = 20 + Math.floor(((processedSprints + failedSprints) / totalSprints) * 70);
+      await updateRequestStatus(
+        supabase,
+        requestId,
+        'processing',
+        `Generating sprints ${processedSprints + failedSprints + 1} through ${Math.min(processedSprints + failedSprints + batch.length, totalSprints)} of ${totalSprints}...`,
+        progressPercent
+      );
+
+      const sprintPromises = batch.map(async (sprintDetails) => {
+        const { module, sprint, moduleIndex, sprintIndex, courseTitle } = sprintDetails;
         try {
           const sprintPrompt = PROMPT_TEMPLATES.SPRINT_CONTENT
             .replace('{title}', sprint.title)
             .replace('{module}', module.title)
-            .replace('{course}', courseData.title)
+            .replace('{course}', courseTitle)
             .replace('{outline}', sprint.contentOutline.join(', '))
             .replace('{audience}', courseRequest.audience)
             .replace('{level}', courseRequest.level)
             .replace('{duration}', sprint.duration || '10');
-          
+
           const sprintResponse = await generateContent(supabase, requestId, sprintPrompt, 0.7);
-          let cleanSprintResponse = stripCodeFences(sprintResponse);
-          
+          let parsedSprintJson: any;
+          let sprintContent: any;
+
           try {
-            // Try to parse the sprint content JSON
-            let sprintContent;
-            try {
-              sprintContent = JSON.parse(cleanSprintResponse);
-            } catch (parseError) {
-              // If parsing fails, try a more aggressive JSON fix
-              await logDebug(supabase, requestId, `Error parsing sprint content JSON for sprint ${moduleIndex}-${sprintIndex}`, { 
-                error: parseError.message,
-                originalResponse: sprintResponse.substring(0, 200) + '...'
-              });
-              
-              // Make one last attempt with a more aggressive fix
-              cleanSprintResponse = cleanSprintResponse
-                .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":') // Ensure all keys are properly quoted
-                .replace(/'/g, '"') // Replace single quotes with double quotes
-                .replace(/,(\s*[}\]])/g, '$1'); // Remove trailing commas
-                
-              try {
-                sprintContent = JSON.parse(cleanSprintResponse);
-                await logDebug(supabase, requestId, `Successfully fixed JSON for sprint ${moduleIndex}-${sprintIndex} with aggressive repair`);
-              } catch (finalError) {
-                // Create a simplified placeholder content if all parsing attempts fail
-                await logDebug(supabase, requestId, `Failed to parse JSON even after aggressive fix: ${finalError.message}`);
-                failedSprints++;
-                sprintErrors.push(finalError.message);
-                
-                // Create placeholder content
-                sprintContent = {
-                  title: sprint.title,
-                  introduction: `Introduction to ${sprint.title}`,
-                  content: sprint.contentOutline.map(item => ({ type: "text", value: item })),
-                  summary: `Summary of ${sprint.title}`,
-                  quiz: [
-                    {
-                      question: "Placeholder question about " + sprint.title,
-                      options: ["Option A", "Option B", "Option C", "Option D"],
-                      correctAnswer: 0,
-                      explanation: "This is a placeholder quiz question",
-                      type: "multiple_choice"
-                    }
-                  ],
-                  nextSteps: "Continue to the next sprint"
-                };
-              }
-            }
+            parsedSprintJson = parseAIResponse(sprintResponse, requestId); // Use new parsing function
             
-            // Store sprint content in database
-            await supabase
-              .from('sprint_contents')
-              .insert([{
-                request_id: requestId,
-                module_index: moduleIndex,
-                sprint_index: sprintIndex,
-                content: sprintContent
-              }]);
-              
-          } catch (storeError) {
-            console.error(`Error storing sprint content for sprint ${moduleIndex}-${sprintIndex}:`, storeError);
-            failedSprints++;
-            sprintErrors.push(storeError.message);
+            const sprintValidationResult = SprintContentSchema.safeParse(parsedSprintJson);
+            if (!sprintValidationResult.success) {
+              await logDebug(supabase, requestId, `Sprint content JSON failed schema validation for sprint ${moduleIndex}-${sprintIndex}`, {
+                errors: sprintValidationResult.error.flatten(),
+                parsedSprintJsonPreview: JSON.stringify(parsedSprintJson).substring(0, 200) + "..."
+              });
+              // This error will be caught by the outer catch, leading to placeholder
+              throw new Error(`Sprint content structure is invalid for "${sprint.title}": ${sprintValidationResult.error.message}`);
+            }
+            sprintContent = sprintValidationResult.data;
+            await logDebug(supabase, requestId, `Successfully parsed and validated sprint content for ${sprint.title}`);
+
+          } catch (error) { // Catches errors from parseAIResponse or Zod validation
+             await logDebug(supabase, requestId, `Error processing sprint content for ${sprint.title}, falling back to placeholder.`, {
+                originalResponsePreview: sprintResponse.substring(0, 200) + '...',
+                error: error.message
+             });
+            // Create placeholder content
+            sprintContent = {
+              title: sprint.title,
+              introduction: `Introduction to ${sprint.title}. (Content generation error: ${error.message})`,
+              content: sprint.contentOutline.map((item: string) => ({ type: "text", value: item })),
+              summary: `Summary of ${sprint.title}.`,
+              quiz: [
+                {
+                  question: "Placeholder question about " + sprint.title,
+                  options: ["Option A", "Option B", "Option C", "Option D"],
+                  correctAnswer: 0,
+                  explanation: "This is a placeholder quiz question due to a content generation error.",
+                  type: "multiple_choice"
+                }
+              ],
+              nextSteps: "Continue to the next sprint or review previous content."
+            };
+            // This error will be caught by the *outermost* catch for this sprintPromise,
+            // ensuring it's counted as a 'failedSprint' correctly.
+            // We re-throw so it's handled by the Promise.allSettled logic properly.
+            throw new Error(`Failed to generate/validate sprint content for "${sprint.title}": ${error.message}`);
           }
+          
+          await supabase
+            .from('sprint_contents')
+            .insert([{
+              request_id: requestId,
+              module_index: moduleIndex,
+              sprint_index: sprintIndex,
+              content: sprintContent
+            }]);
+          return { status: 'fulfilled', value: { moduleIndex, sprintIndex } };
         } catch (error) {
-          console.error(`Error generating sprint content for ${moduleIndex}-${sprintIndex}:`, error);
+          console.error(`Error processing sprint ${moduleIndex}-${sprintIndex} (${sprint.title}):`, error);
+          // Ensure placeholder content is created even if generation/storage fails
+           const placeholderContent = {
+              title: sprint.title,
+              introduction: `Introduction to ${sprint.title}`,
+              content: sprint.contentOutline.map((item: string) => ({ type: "text", value: item })),
+              summary: `Summary of ${sprint.title}`,
+              quiz: [
+                {
+                  question: "Placeholder question about " + sprint.title,
+                  options: ["Option A", "Option B", "Option C", "Option D"],
+                  correctAnswer: 0,
+                  explanation: "This is a placeholder quiz question due to generation error.",
+                  type: "multiple_choice"
+                }
+              ],
+              nextSteps: "Continue to the next sprint"
+            };
+           try {
+             await supabase
+                .from('sprint_contents')
+                .insert([{
+                  request_id: requestId,
+                  module_index: moduleIndex,
+                  sprint_index: sprintIndex,
+                  content: placeholderContent,
+                  generation_error: error.message 
+                }]);
+           } catch (dbError) {
+             console.error(`Error storing placeholder content for sprint ${moduleIndex}-${sprintIndex}:`, dbError);
+           }
+          return { status: 'rejected', reason: error.message, moduleIndex, sprintIndex, sprintTitle: sprint.title };
+        }
+      });
+
+      const results = await Promise.allSettled(sprintPromises);
+
+      results.forEach(result => {
+        if (result.status === 'fulfilled' && result.value.status !== 'rejected') { // Check inner status for explicit rejections
+          processedSprints++;
+        } else {
           failedSprints++;
-          sprintErrors.push(error.message);
+          const reason = result.status === 'rejected' ? result.reason : (result.value as any).reason;
+          const sprintTitle = result.status === 'rejected' ? (result.reason as any).sprintTitle : (result.value as any).sprintTitle;
+          sprintErrors.push(`Sprint "${sprintTitle || 'Unknown'}" failed: ${reason}`);
+          logDebug(supabase, requestId, `Sprint generation failed for "${sprintTitle || 'Unknown'}"`, { error: reason });
         }
-        
-        processedSprints++;
-        
-        // Add a small delay between sprints to prevent rate limiting
-        if (processedSprints % BATCH_SIZE === 0) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
+      });
+      
+      // Add delay after each batch
+      if (i + BATCH_SIZE < allSprintsToGenerate.length) { // Check if it's not the last batch
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
       }
     }
     
-    // 5. Fetch all sprint contents and create final course data
-    const { data: sprintContents } = await supabase
+    // === CANCELLATION CHECK 4: After all sprint batches complete, before final data assembly ===
+    if (await checkIfCancelled(supabase, requestId)) {
+      await logDebug(supabase, requestId, 'Cancellation detected before final data assembly.');
+      await updateRequestStatus(supabase, requestId, 'cancelled', 'Processing halted: User cancelled before final data assembly.');
+      return { success: false, error: 'Course generation cancelled by user.' };
+    }
+
+    // 5. Fetch all sprint contents (including placeholders) and create final course data
+    const { data: sprintContentsData, error: fetchError } = await supabase
       .from('sprint_contents')
       .select('*')
-      .eq('request_id', requestId);
+      .eq('request_id', requestId)
+      .order('module_index', { ascending: true })
+      .order('sprint_index', { ascending: true });
+
+    if (fetchError) {
+      await logDebug(supabase, requestId, 'Error fetching sprint contents', { error: fetchError });
+      // Potentially update status to failed if this is critical
+      throw new Error(`Failed to fetch sprint contents: ${fetchError.message}`);
+    }
       
-    const sprintContentMap = sprintContents.reduce((acc: any, sprint: any) => {
+    const sprintContentMap = (sprintContentsData || []).reduce((acc: any, sprint: any) => {
       acc[`${sprint.module_index}-${sprint.sprint_index}`] = sprint.content;
       return acc;
     }, {});
@@ -620,15 +797,33 @@ async function generateCourseContent(
       stack: error instanceof Error ? error.stack : undefined
     });
     
-    // Update status to failed
-    await updateRequestStatus(
-      supabase, 
-      requestId, 
-      'failed', 
-      'Course generation failed',
-      0,
-      error instanceof Error ? error.message : 'Unknown error'
-    );
+    // Before setting to 'failed', check if it was 'cancelled' by another process.
+    // This avoids race conditions where cancellation happens during this error handling.
+    const { data: currentStatusData, error: statusCheckError } = await supabase
+        .from('course_generation_requests')
+        .select('status')
+        .eq('id', requestId)
+        .single();
+
+    if (statusCheckError) {
+        await logDebug(supabase, requestId, 'Failed to re-check status before setting to failed in error handler.', { error: statusCheckError.message });
+    }
+
+    if (currentStatusData?.status !== 'cancelled') {
+      await updateRequestStatus(
+        supabase, 
+        requestId, 
+        'failed', 
+        'Course generation failed',
+        0,
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+    } else {
+       // If it was cancelled, just preserve that status and perhaps log the original error
+       await logDebug(supabase, requestId, 'Course generation process encountered an error, but request was already cancelled.', {
+         originalError: error instanceof Error ? error.message : 'Unknown error'
+       });
+    }
     
     return { 
       success: false,

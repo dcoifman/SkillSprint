@@ -90,8 +90,11 @@ const CourseGenerationPage = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const highlightColor = useColorModeValue('blue.50', 'blue.900');
+  const bgColor = useColorModeValue('var(--surface-color)', 'gray.800'); // Use CSS var for light mode
+  const cardBgColor = useColorModeValue('white', 'gray.700'); // Slightly different for cards if needed, or same as bgColor
+  const highlightColor = useColorModeValue('blue.50', 'blue.700'); // Adjusted dark mode for better contrast
+  const primaryColor = useColorModeValue('var(--primary-color)', 'blue.300'); // CSS var for light, Chakra for dark
+  const textColorLight = useColorModeValue('var(--text-light-color)', 'gray.400');
 
   // Function to fetch all course generation requests
   const fetchGenerationRequests = async () => {
@@ -217,36 +220,38 @@ const CourseGenerationPage = () => {
       <VStack spacing={6} align="stretch">
         <HStack>
           <Box>
-            <Heading size="lg">Course Generation Dashboard</Heading>
-            <Text color="gray.500">Monitor and manage your AI-generated course content</Text>
+            <Heading size="lg" color={useColorModeValue('var(--text-color)', 'white')}>Course Generation Dashboard</Heading>
+            <Text color={textColorLight}>Monitor and manage your AI-generated course content</Text>
           </Box>
           <Spacer />
-          <Tooltip label="Refresh data">
+          <Tooltip label="Refresh data" placement="top">
             <IconButton
               icon={<FiRefreshCw />}
               aria-label="Refresh"
               onClick={fetchGenerationRequests}
               isLoading={loading}
+              colorScheme="blue" // Align with primary color
+              variant="outline"
             />
           </Tooltip>
         </HStack>
         
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={5}>
-          <Stat bg={bgColor} p={4} borderRadius="lg" boxShadow="sm">
-            <StatLabel>Total Requests</StatLabel>
-            <StatNumber>{generationRequests.length}</StatNumber>
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}> {/* Increased spacing slightly */}
+          <Stat bg={cardBgColor} p={5} borderRadius="lg" boxShadow="var(--shadow-md)"> {/* Use CSS var for shadow */}
+            <StatLabel color={textColorLight}>Total Requests</StatLabel>
+            <StatNumber color={useColorModeValue('var(--text-color)', 'white')}>{generationRequests.length}</StatNumber>
           </Stat>
           
-          <Stat bg={bgColor} p={4} borderRadius="lg" boxShadow="sm">
-            <StatLabel>Completed</StatLabel>
-            <StatNumber>
+          <Stat bg={cardBgColor} p={5} borderRadius="lg" boxShadow="var(--shadow-md)"> {/* Use CSS var for shadow */}
+            <StatLabel color={textColorLight}>Completed</StatLabel>
+            <StatNumber color={useColorModeValue('var(--text-color)', 'white')}>
               {generationRequests.filter(req => req.status === 'completed').length}
             </StatNumber>
           </Stat>
           
-          <Stat bg={bgColor} p={4} borderRadius="lg" boxShadow="sm">
-            <StatLabel>In Progress</StatLabel>
-            <StatNumber>
+          <Stat bg={cardBgColor} p={5} borderRadius="lg" boxShadow="var(--shadow-md)"> {/* Use CSS var for shadow */}
+            <StatLabel color={textColorLight}>In Progress</StatLabel>
+            <StatNumber color={useColorModeValue('var(--text-color)', 'white')}>
               {generationRequests.filter(req => req.status === 'pending' || req.status === 'processing').length}
             </StatNumber>
           </Stat>
@@ -254,19 +259,27 @@ const CourseGenerationPage = () => {
         
         {loading ? (
           <Flex justify="center" py={10}>
-            <Spinner size="xl" thickness="4px" color="blue.500" />
+            <Spinner size="xl" thickness="4px" color={primaryColor} speed="0.65s" />
           </Flex>
         ) : generationRequests.length > 0 ? (
-          <VStack spacing={4} align="stretch">
+          <VStack spacing={5} align="stretch"> {/* Increased spacing */}
             {generationRequests.map(request => (
-              <Card key={request.id} bg={bgColor} boxShadow="sm" position="relative">
-                <CardHeader pb={0}>
+              <Card 
+                key={request.id} 
+                bg={cardBgColor} 
+                boxShadow="var(--shadow-md)" // Use CSS var for shadow
+                _hover={{ boxShadow: "var(--shadow-lg)", transform: "translateY(-4px)" }} // Use CSS vars
+                transition="var(--transition-base)" // Use CSS var
+                position="relative"
+                borderRadius="var(--border-radius-lg)" // Use CSS var
+              >
+                <CardHeader pb={2}> {/* Adjusted padding */}
                   <HStack>
                     <VStack align="start" spacing={1}>
-                      <Heading size="md" noOfLines={1}>
+                      <Heading size="md" noOfLines={1} color={useColorModeValue('var(--text-color)', 'white')}>
                         {request.request_data?.topic || 'Untitled Course'}
                       </Heading>
-                      <Text fontSize="sm" color="gray.500">
+                      <Text fontSize="sm" color={textColorLight}>
                         Created {formatRelative(new Date(request.created_at), new Date())}
                       </Text>
                     </VStack>
@@ -277,64 +290,70 @@ const CourseGenerationPage = () => {
                 
                 <CardBody py={4}>
                   <VStack align="stretch" spacing={3}>
-                    <HStack spacing={2}>
-                      <Tag size="sm">
+                    <HStack spacing={3}> {/* Increased spacing */}
+                      <Tag size="sm" colorScheme="teal" variant="subtle"> {/* Using a color from our palette */}
                         {request.request_data?.audience || 'General audience'}
                       </Tag>
-                      <Tag size="sm">
+                      <Tag size="sm" colorScheme="orange" variant="subtle"> {/* Using a color from our palette */}
                         {request.request_data?.level || 'All levels'}
                       </Tag>
-                      <Tag size="sm">
+                      <Tag size="sm" colorScheme="blue" variant="subtle"> {/* Using a color from our palette */}
                         {request.request_data?.duration || 'Variable duration'}
                       </Tag>
                     </HStack>
                     
-                    <Box>
-                      <Text fontSize="sm" mb={1}>
+                    <Box pt={2}> {/* Added padding top */}
+                      <Text fontSize="sm" mb={1} color={textColorLight}>
                         {request.status_message || 'Waiting to start...'}
                       </Text>
                       <Progress 
                         value={request.progress || 0} 
-                        size="sm" 
+                        size="md" // Slightly larger progress bar
                         colorScheme={
                           request.status === 'completed' ? 'green' :
-                          request.status === 'failed' ? 'red' : 'blue'
+                          request.status === 'failed' ? 'red' : 
+                          request.status === 'processing' ? 'blue' : 'yellow' // Ensure pending also has a color
                         }
-                        borderRadius="full"
+                        borderRadius="var(--border-radius-md)" // Use CSS var
+                        hasStripe={request.status === 'processing'}
+                        isAnimated={request.status === 'processing'}
                       />
                     </Box>
                   </VStack>
                 </CardBody>
                 
-                <Divider />
+                <Divider color={useColorModeValue('gray.200', 'gray.600')} />
                 
                 <CardFooter>
-                  <HStack spacing={2}>
+                  <HStack spacing={3}> {/* Increased spacing */}
                     <Button
                       leftIcon={<FiEye />}
-                      size="sm"
+                      size="sm" // Keep sm for density, or md for easier clicks
+                      colorScheme="blue" // Primary action
                       onClick={() => viewRequestDetails(request)}
                     >
                       View Details
                     </Button>
                     
-                    <Tooltip label={request.content_generated ? 'Download course data' : 'No data available'}>
+                    <Tooltip label={request.content_generated ? 'Download course data' : 'No data available'} placement="top">
                       <IconButton
                         icon={<FiDownload />}
                         aria-label="Download"
                         size="sm"
+                        colorScheme="gray" // Secondary action
+                        variant="outline"
                         isDisabled={!request.content_generated}
                         onClick={() => downloadCourseData(request)}
                       />
                     </Tooltip>
                     
-                    <Tooltip label="Delete request">
+                    <Tooltip label="Delete request" placement="top">
                       <IconButton
                         icon={<FiTrash2 />}
                         aria-label="Delete"
                         size="sm"
                         colorScheme="red"
-                        variant="ghost"
+                        variant="ghost" // Ghost for less emphasis on destructive
                         onClick={() => deleteRequest(request.id)}
                       />
                     </Tooltip>
@@ -344,9 +363,15 @@ const CourseGenerationPage = () => {
             ))}
           </VStack>
         ) : (
-          <Box textAlign="center" py={10} bg={bgColor} borderRadius="lg" boxShadow="sm">
-            <Text fontSize="lg">No course generation requests found</Text>
-            <Text color="gray.500">
+          <Box 
+            textAlign="center" 
+            py={10} 
+            bg={cardBgColor} 
+            borderRadius="var(--border-radius-lg)" // Use CSS var
+            boxShadow="var(--shadow-md)" // Use CSS var
+          >
+            <Heading size="md" color={useColorModeValue('var(--text-color)', 'white')} mb={2}>No course generation requests found</Heading>
+            <Text color={textColorLight}>
               Start by creating a new course to see generation requests here
             </Text>
           </Box>
@@ -354,98 +379,109 @@ const CourseGenerationPage = () => {
       </VStack>
       
       {/* Detail Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            {selectedRequest?.request_data?.topic || 'Course Details'}
-            <Text fontSize="sm" fontWeight="normal" color="gray.500">
-              {selectedRequest?.id}
+      <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside" isCentered> {/* Changed size to 2xl & centered */}
+        <ModalOverlay bg="blackAlpha.400" /> {/* Darker overlay */}
+        <ModalContent bg={bgColor} borderRadius="var(--border-radius-lg)" boxShadow="var(--shadow-lg)"> {/* Use CSS Vars */}
+          <ModalHeader borderTopRadius="var(--border-radius-lg)"> {/* Ensure radius is applied if bg is different */}
+            <Heading size="lg" color={useColorModeValue('var(--text-color)', 'white')}>
+              {selectedRequest?.request_data?.topic || 'Course Details'}
+            </Heading>
+            <Text fontSize="xs" color={textColorLight} mt={1}>
+              ID: {selectedRequest?.id}
             </Text>
           </ModalHeader>
           <ModalCloseButton />
           
-          <ModalBody>
+          <ModalBody py={6}> {/* Increased padding */}
             {selectedRequest && (
-              <VStack spacing={5} align="stretch">
-                <Box>
-                  <Heading size="sm" mb={2}>Status</Heading>
-                  <HStack>
+              <VStack spacing={6} align="stretch"> {/* Increased spacing */}
+                <Box p={4} bg={useColorModeValue('gray.50', 'gray.700')} borderRadius="var(--border-radius-md)">
+                  <Heading size="sm" mb={3} color={useColorModeValue('var(--text-color)', 'white')}>Status</Heading>
+                  <HStack alignItems="center">
                     <StatusBadge status={selectedRequest.status} />
-                    <Text fontSize="sm">{selectedRequest.status_message}</Text>
+                    <Text fontSize="sm" color={textColorLight}>{selectedRequest.status_message}</Text>
                   </HStack>
                   <Progress 
                     value={selectedRequest.progress || 0} 
-                    size="sm" 
-                    mt={2}
+                    size="md" // Slightly larger
+                    mt={3} // Increased margin top
                     colorScheme={
                       selectedRequest.status === 'completed' ? 'green' :
-                      selectedRequest.status === 'failed' ? 'red' : 'blue'
+                      selectedRequest.status === 'failed' ? 'red' : 
+                      selectedRequest.status === 'processing' ? 'blue' : 'yellow'
                     }
-                    borderRadius="full"
+                    borderRadius="var(--border-radius-md)" // Use CSS var
+                    hasStripe={selectedRequest.status === 'processing'}
+                    isAnimated={selectedRequest.status === 'processing'}
                   />
                 </Box>
                 
-                <Box>
-                  <Heading size="sm" mb={2}>Request Information</Heading>
-                  <SimpleGrid columns={2} spacing={4}>
+                <Box p={4} bg={useColorModeValue('gray.50', 'gray.700')} borderRadius="var(--border-radius-md)">
+                  <Heading size="sm" mb={3} color={useColorModeValue('var(--text-color)', 'white')}>Request Information</Heading>
+                  <SimpleGrid columns={{base: 1, md: 2}} spacingY={3} spacingX={5}> {/* Adjusted spacing */}
                     <Box>
-                      <Text fontWeight="bold">Topic</Text>
-                      <Text>{selectedRequest.request_data?.topic || 'Not specified'}</Text>
+                      <Text fontWeight="medium" color={textColorLight}>Topic</Text>
+                      <Text color={useColorModeValue('var(--text-color)', 'white')}>{selectedRequest.request_data?.topic || 'Not specified'}</Text>
                     </Box>
                     <Box>
-                      <Text fontWeight="bold">Audience</Text>
-                      <Text>{selectedRequest.request_data?.audience || 'Not specified'}</Text>
+                      <Text fontWeight="medium" color={textColorLight}>Audience</Text>
+                      <Text color={useColorModeValue('var(--text-color)', 'white')}>{selectedRequest.request_data?.audience || 'Not specified'}</Text>
                     </Box>
                     <Box>
-                      <Text fontWeight="bold">Level</Text>
-                      <Text>{selectedRequest.request_data?.level || 'Not specified'}</Text>
+                      <Text fontWeight="medium" color={textColorLight}>Level</Text>
+                      <Text color={useColorModeValue('var(--text-color)', 'white')}>{selectedRequest.request_data?.level || 'Not specified'}</Text>
                     </Box>
                     <Box>
-                      <Text fontWeight="bold">Duration</Text>
-                      <Text>{selectedRequest.request_data?.duration || 'Not specified'}</Text>
+                      <Text fontWeight="medium" color={textColorLight}>Duration</Text>
+                      <Text color={useColorModeValue('var(--text-color)', 'white')}>{selectedRequest.request_data?.duration || 'Not specified'}</Text>
                     </Box>
                   </SimpleGrid>
                 </Box>
                 
-                <Box>
-                  <Heading size="sm" mb={2}>Learning Goals</Heading>
-                  <Text>{selectedRequest.request_data?.goals || 'No goals specified'}</Text>
+                <Box p={4} bg={useColorModeValue('gray.50', 'gray.700')} borderRadius="var(--border-radius-md)">
+                  <Heading size="sm" mb={3} color={useColorModeValue('var(--text-color)', 'white')}>Learning Goals</Heading>
+                  <Text color={useColorModeValue('var(--text-color)', 'white')}>{selectedRequest.request_data?.goals || 'No goals specified'}</Text>
                 </Box>
                 
                 {selectedRequest.error_message && (
-                  <Box bg="red.50" p={3} borderRadius="md">
-                    <Heading size="sm" color="red.500" mb={1}>Error</Heading>
-                    <Text color="red.700">{selectedRequest.error_message}</Text>
+                  <Box bg="red.100" p={4} borderRadius="var(--border-radius-md)"> {/* Use a lighter red, more padding */}
+                    <HStack>
+                      <FiAlertCircle color="var(--error-color)" />
+                      <Heading size="sm" color="var(--error-color)">Error</Heading>
+                    </HStack>
+                    <Text color="red.700" mt={2}>{selectedRequest.error_message}</Text>
                   </Box>
                 )}
                 
                 {selectedRequest.content_generated && selectedRequest.course_data && (
-                  <Box>
-                    <Heading size="sm" mb={2}>Generated Course Structure</Heading>
-                    <VStack align="stretch" spacing={3}>
-                      <Box p={3} bg={highlightColor} borderRadius="md">
-                        <Text fontWeight="bold">{selectedRequest.course_data.course?.title}</Text>
-                        <Text fontSize="sm">{selectedRequest.course_data.course?.description}</Text>
+                  <Box p={4} bg={useColorModeValue('gray.50', 'gray.700')} borderRadius="var(--border-radius-md)">
+                    <Heading size="sm" mb={3} color={useColorModeValue('var(--text-color)', 'white')}>Generated Course Structure</Heading>
+                    <VStack align="stretch" spacing={4}> {/* Increased spacing */}
+                      <Box p={4} bg={highlightColor} borderRadius="var(--border-radius-md)" shadow="sm">
+                        <Heading size="md" color={useColorModeValue('blue.800', 'blue.50')}>{selectedRequest.course_data.course?.title}</Heading>
+                        <Text fontSize="sm" color={useColorModeValue('blue.700', 'blue.100')} mt={1}>{selectedRequest.course_data.course?.description}</Text>
                       </Box>
                       
                       <Box>
-                        <Text fontWeight="bold">Learning Objectives</Text>
-                        <VStack align="stretch" mt={1}>
+                        <Text fontWeight="semibold" color={useColorModeValue('var(--text-color)', 'white')}>Learning Objectives</Text>
+                        <VStack align="stretch" mt={2} spacing={1}>
                           {selectedRequest.course_data.course?.learningObjectives?.map((objective, i) => (
-                            <Text key={i} fontSize="sm">• {objective}</Text>
+                            <HStack key={i} alignItems="flex-start">
+                              <Text color={textColorLight}>•</Text>
+                              <Text fontSize="sm" color={textColorLight}>{objective}</Text>
+                            </HStack>
                           ))}
                         </VStack>
                       </Box>
                       
                       <Box>
-                        <Text fontWeight="bold">Modules ({selectedRequest.course_data.course?.modules?.length || 0})</Text>
-                        <VStack align="stretch" mt={2} spacing={2}>
+                        <Text fontWeight="semibold" color={useColorModeValue('var(--text-color)', 'white')}>Modules ({selectedRequest.course_data.course?.modules?.length || 0})</Text>
+                        <VStack align="stretch" mt={2} spacing={3}> {/* Increased spacing */}
                           {selectedRequest.course_data.course?.modules?.map((module, i) => (
-                            <Box key={i} p={2} borderWidth="1px" borderRadius="md">
-                              <Text fontWeight="bold">{module.title}</Text>
-                              <Text fontSize="sm">{module.description}</Text>
-                              <Text fontSize="xs" mt={1} fontWeight="medium">
+                            <Box key={i} p={3} borderWidth="1px" borderColor={useColorModeValue('gray.200', 'gray.600')} borderRadius="var(--border-radius-md)" _hover={{borderColor: 'var(--primary-color)'}} transition="var(--transition-fast)">
+                              <Heading size="xs" textTransform="uppercase" letterSpacing="wide" color={primaryColor}>{module.title}</Heading>
+                              <Text fontSize="sm" color={textColorLight} mt={1}>{module.description}</Text>
+                              <Text fontSize="xs" color={textColorLight} mt={2} fontWeight="medium">
                                 {module.sprints?.length || 0} sprints
                               </Text>
                             </Box>
@@ -470,7 +506,13 @@ const CourseGenerationPage = () => {
                 Download JSON
               </Button>
             )}
-            <Button onClick={onClose}>Close</Button>
+            <Button 
+              onClick={onClose} 
+              variant="outline" 
+              colorScheme="gray"
+            >
+              Close
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

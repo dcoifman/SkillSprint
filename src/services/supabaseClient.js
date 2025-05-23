@@ -851,6 +851,706 @@ export const getCourseGenerationStatus = async (requestId) => {
   }
 };
 
+export const fetchUserStats = async () => {
+// ... existing code ...
+};
+
+export const savePracticeProblems = async (sprintId, problems) => {
+  try {
+    const { user, error: userError } = await getCurrentUser();
+    if (userError || !user) {
+      return { data: null, error: userError || { message: 'User not authenticated' } };
+    }
+
+    console.log('Authenticated user object before saving practice problems:', user);
+    console.log('Attempting to save practice problems for sprintId:', sprintId, 'and userId:', user.id);
+    // Assuming a 'user_practice_problems' table with columns: user_id, sprint_id, problems_data (jsonb)
+    const { data, error } = await supabase
+      .from('user_practice_problems')
+      .upsert(
+        {
+          user_id: user.id,
+          sprint_id: sprintId,
+          problems_data: problems, // Store problems as JSON
+        },
+        { onConflict: ['user_id', 'sprint_id'] } // Upsert based on user and sprint
+      )
+      .select();
+
+    if (error) {
+      console.error('Error saving practice problems:', error);
+    }
+
+    return { data, error };
+
+  } catch (err) {
+    console.error('Exception during saving practice problems:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const saveLearningSummary = async (pathId, summary) => {
+  try {
+    const { user, error: userError } = await getCurrentUser();
+    if (userError || !user) {
+      return { data: null, error: userError || { message: 'User not authenticated' } };
+    }
+
+    // Assuming a 'user_learning_summaries' table with columns: user_id, path_id, summary_text, generated_at
+    const { data, error } = await supabase
+      .from('user_learning_summaries')
+      .upsert(
+        {
+          user_id: user.id,
+          path_id: pathId,
+          summary_text: summary,
+          generated_at: new Date().toISOString(),
+        },
+        { onConflict: ['user_id', 'path_id'] } // Upsert based on user and path
+      )
+      .select();
+
+    if (error) {
+      console.error('Error saving learning summary:', error);
+    }
+
+    return { data, error };
+
+  } catch (err) {
+    console.error('Exception during saving learning summary:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const fetchPracticeProblems = async (sprintId) => {
+  try {
+    const { user, error: userError } = await getCurrentUser();
+    if (userError || !user) {
+      return { data: null, error: userError || { message: 'User not authenticated' } };
+    }
+
+    console.log('Authenticated user object before fetching practice problems:', user);
+    console.log('Attempting to fetch practice problems for sprintId:', sprintId, 'and userId:', user.id);
+    const { data, error } = await supabase
+      .from('user_practice_problems')
+      .select('problems_data')
+      .eq('user_id', user.id)
+      .eq('sprint_id', sprintId)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 means row not found, which is okay
+      console.error('Error fetching saved practice problems:', error);
+    }
+
+    return { data: data ? data.problems_data : null, error: error && error.code === 'PGRST116' ? null : error };
+
+  } catch (err) {
+    console.error('Exception during fetching practice problems:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const fetchLearningSummary = async (pathId) => {
+  try {
+    const { user, error: userError } = await getCurrentUser();
+    if (userError || !user) {
+      return { data: null, error: userError || { message: 'User not authenticated' } };
+    }
+
+    const { data, error } = await supabase
+      .from('user_learning_summaries')
+      .select('summary_text')
+      .eq('user_id', user.id)
+      .eq('path_id', pathId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 means row not found, which is okay
+      console.error('Error fetching learning summary:', error);
+    }
+
+    return { data: data ? data.summary_text : null, error: error && error.code === 'PGRST116' ? null : error };
+
+  } catch (err) {
+    console.error('Exception during fetching learning summary:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Function to fetch user's enrolled paths with progress and next incomplete sprint
+export const fetchUserEnrolledPathsWithNextSprint = async () => {
+  try {
+    const { user, error: userError } = await getCurrentUser();
+    if (userError || !user) {
+      return { data: null, error: userError || { message: 'User not authenticated' } };
+    }
+
+    // Fetch all paths the user is enrolled in
+    const { data: userPaths, error: userPathsError } = await supabase
+      .from('user_paths')
+      .select(`
+        path:path_id (
+          id,
+          title,
+          description,
+          category,
+          level,
+          image,
+          total_sprints,
+          estimated_time,
+          rating,
+          review_count,
+          students_count,
+          tags,
+          objectives,
+          prerequisites,
+          instructor_id,
+          created_at,
+          updated_at,
+          modules (
+            *,
+            sprints (*)
+          )
+        )
+      `)
+      .eq('user_id', user.id);
+
+    if (userPathsError) {
+      console.error('Error fetching user paths:', userPathsError);
+      return { data: null, error: userPathsError };
+    }
+
+    const enrolledPathsData = [];
+
+    for (const userPath of userPaths) {
+      const path = userPath.path;
+      if (!path) continue; // Skip if path data is null
+
+      // Fetch user's progress for this specific path
+      const { data: userProgress, error: userProgressError } = await supabase
+        .from('user_progress')
+        .select('sprint_id, is_completed')
+        .eq('user_id', user.id)
+        .eq('path_id', path.id);
+
+      if (userProgressError) {
+        console.error(`Error fetching user progress for path ${path.id}:`, userProgressError);
+        // Continue to the next path even if progress fetch fails for one
+        enrolledPathsData.push({ ...path, progress: 0, nextSprint: null });
+        continue;
+      }
+
+      const completedSprints = userProgress ? userProgress.filter(p => p.is_completed).length : 0;
+      const totalSprints = path.total_sprints || 0;
+      const progress = totalSprints > 0 ? Math.round((completedSprints / totalSprints) * 100) : 0;
+
+      let nextSprint = null;
+
+      // Find the next incomplete sprint
+      if (path.modules && path.modules.length > 0) {
+        for (const module of path.modules) {
+          if (module.sprints && module.sprints.length > 0) {
+            // Sort sprints within module by order_index
+            const sortedSprints = module.sprints.sort((a, b) => a.order_index - b.order_index);
+
+            for (const sprint of sortedSprints) {
+              const progressEntry = userProgress ? userProgress.find(p => p.sprint_id === sprint.id) : null;
+              const isCompleted = progressEntry ? progressEntry.is_completed : false;
+
+              if (!isCompleted) {
+                nextSprint = {
+                  id: sprint.id,
+                  title: sprint.title,
+                  time: sprint.time,
+                };
+                break; // Found the next incomplete sprint for this path
+              }
+            }
+          }
+          if (nextSprint) break; // Found next sprint in a module, move to next path
+        }
+      }
+
+      enrolledPathsData.push({ ...path, progress, nextSprint });
+    }
+
+    return { data: enrolledPathsData, error: null };
+
+  } catch (err) {
+    console.error('Exception during fetching user enrolled paths with next sprint:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Function to fetch user's most recent sprints
+export const fetchRecentSprints = async (limit = 3) => {
+  try {
+    const { user, error: userError } = await getCurrentUser();
+    if (userError || !user) {
+      return { data: null, error: userError || { message: 'User not authenticated' } };
+    }
+
+    const { data, error } = await supabase
+      .from('user_progress')
+      .select(`
+        sprint_id,
+        sprint:sprint_id (
+          id,
+          title,
+          time
+        )
+      `)
+      .eq('user_id', user.id)
+      .not('sprint', 'is', null) // Ensure sprint data is fetched
+      .order('updated_at', { ascending: false }) // Order by last activity
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching recent sprints:', error);
+      return { data: null, error };
+    }
+
+    // Extract sprint data and filter out any nulls
+    const recentSprintsData = data.map(item => item.sprint).filter(sprint => sprint !== null);
+
+    return { data: recentSprintsData, error: null };
+
+  } catch (err) {
+    console.error('Exception during fetching recent sprints:', err);
+    return { data: null, error: err };
+  }
+};
+
+// --- Code Snippets Functions ---
+
+// Function to save a code snippet
+export const saveCodeSnippet = async (userId, language, code) => {
+  try {
+    console.log(`Saving code snippet for user ${userId}, language ${language}`);
+    
+    // Check if a snippet for this user and language already exists
+    const { data: existingSnippet, error: fetchError } = await supabase
+      .from('code_snippets')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('language', language)
+      .single();
+
+    let upsertData = {
+      user_id: userId,
+      language: language,
+      code: code,
+    };
+
+    let query;
+    if (existingSnippet) {
+      // If exists, update the existing one
+      query = supabase
+        .from('code_snippets')
+        .update(upsertData)
+        .eq('id', existingSnippet.id);
+        console.log('Updating existing snippet');
+    } else {
+      // If not exists, insert a new one
+      query = supabase
+        .from('code_snippets')
+        .insert(upsertData);
+        console.log('Inserting new snippet');
+    }
+    
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error saving code snippet:', error);
+      return { data: null, error };
+    }
+
+    console.log('Code snippet saved successfully');
+    return { data, error: null };
+
+  } catch (err) {
+    console.error('Exception during saving code snippet:', err);
+    const formattedError = formatError(err);
+    return { data: null, error: formattedError };
+  }
+};
+
+// Function to load a code snippet
+export const loadCodeSnippet = async (userId, language) => {
+  try {
+    console.log(`Loading code snippet for user ${userId}, language ${language}`);
+    
+    const { data, error } = await supabase
+      .from('code_snippets')
+      .select('code')
+      .eq('user_id', userId)
+      .eq('language', language)
+      .order('created_at', { ascending: false }) // Get the latest one
+      .limit(1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found (expected for new users)
+      console.error('Error loading code snippet:', error);
+      return { data: null, error };
+    }
+    
+    // Return the code or null if not found
+    const code = data ? data.code : null;
+    console.log('Code snippet loaded:', code ? 'found' : 'not found');
+    return { code, error: null };
+
+  } catch (err) {
+    console.error('Exception during loading code snippet:', err);
+    const formattedError = formatError(err);
+    return { code: null, error: formattedError };
+  }
+};
+
+// --- Instructor Analytics Functions ---
+
+// Function to fetch enrollment count for a course
+export const fetchCourseEnrollmentCount = async (pathId) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_paths')
+      .select('user_id', { count: 'exact' })
+      .eq('path_id', pathId);
+    
+    if (error) {
+      console.error('Error fetching course enrollment count:', error);
+      return { count: 0, error };
+    }
+    
+    return { count: data.length, error: null };
+  } catch (err) {
+    console.error('Exception during fetching course enrollment count:', err);
+    return { count: 0, error: err };
+  }
+};
+
+// Function to fetch course completion rate
+export const fetchCourseCompletionRate = async (pathId) => {
+  try {
+    // First get all sprints for this path
+    const { data: pathData, error: pathError } = await supabase
+      .from('learning_paths')
+      .select(`
+        total_sprints,
+        modules!learning_paths_id_fkey (
+          id
+        )
+      `)
+      .eq('id', pathId)
+      .single();
+
+    if (pathError) {
+      console.error('Error fetching path data:', pathError);
+      return { completionRate: 0, error: pathError };
+    }
+
+    const totalSprints = pathData.total_sprints || 0;
+    if (totalSprints === 0) {
+      return { completionRate: 0, error: null };
+    }
+
+    // Get module IDs for this path
+    const moduleIds = pathData.modules.map(m => m.id);
+    
+    if (moduleIds.length === 0) {
+      return { completionRate: 0, error: null };
+    }
+
+    // Get all sprints for these modules
+    const { data: sprintsData, error: sprintsError } = await supabase
+      .from('sprints')
+      .select('id')
+      .in('module_id', moduleIds);
+
+    if (sprintsError) {
+      console.error('Error fetching sprints:', sprintsError);
+      return { completionRate: 0, error: sprintsError };
+    }
+
+    // Get all student progress entries for these sprints
+    const sprintIds = sprintsData.map(s => s.id);
+    
+    if (sprintIds.length === 0) {
+      return { completionRate: 0, error: null };
+    }
+
+    // Get all users enrolled in this path
+    const { data: enrolledUsers, error: enrollmentError } = await supabase
+      .from('user_paths')
+      .select('user_id')
+      .eq('path_id', pathId);
+
+    if (enrollmentError) {
+      console.error('Error fetching enrolled users:', enrollmentError);
+      return { completionRate: 0, error: enrollmentError };
+    }
+
+    const userIds = enrolledUsers.map(u => u.user_id);
+    
+    if (userIds.length === 0) {
+      return { completionRate: 0, error: null }; // No enrolled users
+    }
+
+    // Get completion data
+    const { data: completionData, error: completionError } = await supabase
+      .from('user_progress')
+      .select('user_id, sprint_id, is_completed')
+      .in('user_id', userIds)
+      .in('sprint_id', sprintIds)
+      .eq('is_completed', true);
+
+    if (completionError) {
+      console.error('Error fetching completion data:', completionError);
+      return { completionRate: 0, error: completionError };
+    }
+
+    // Calculate completion rate
+    // Formula: (Number of completed sprints) / (Number of enrolled users × Total sprints)
+    const totalPossibleCompletions = userIds.length * totalSprints;
+    const totalCompletions = completionData.length;
+    
+    const completionRate = totalPossibleCompletions > 0 
+      ? (totalCompletions / totalPossibleCompletions) * 100 
+      : 0;
+
+    return { 
+      completionRate: Math.round(completionRate * 10) / 10, // Round to 1 decimal place
+      totalCompletions,
+      totalPossibleCompletions,
+      enrolledCount: userIds.length,
+      totalSprints,
+      error: null 
+    };
+
+  } catch (err) {
+    console.error('Exception during calculating course completion rate:', err);
+    return { completionRate: 0, error: err };
+  }
+};
+
+// Function to fetch sprint completion rates for a course
+export const fetchSprintCompletionRatesForCourse = async (pathId) => {
+  try {
+    // Get all modules for this path
+    const { data: modulesData, error: modulesError } = await supabase
+      .from('modules')
+      .select('id, title, order_index')
+      .eq('path_id', pathId)
+      .order('order_index');
+
+    if (modulesError) {
+      console.error('Error fetching modules:', modulesError);
+      return { data: [], error: modulesError };
+    }
+
+    // Get all sprints for these modules
+    const moduleIds = modulesData.map(m => m.id);
+    
+    if (moduleIds.length === 0) {
+      return { data: [], error: null };
+    }
+
+    const { data: sprintsData, error: sprintsError } = await supabase
+      .from('sprints')
+      .select('id, title, module_id, order_index, time')
+      .in('module_id', moduleIds)
+      .order('order_index');
+
+    if (sprintsError) {
+      console.error('Error fetching sprints:', sprintsError);
+      return { data: [], error: sprintsError };
+    }
+
+    // Get all users enrolled in this path
+    const { data: enrolledUsers, error: enrollmentError } = await supabase
+      .from('user_paths')
+      .select('user_id')
+      .eq('path_id', pathId);
+
+    if (enrollmentError) {
+      console.error('Error fetching enrolled users:', enrollmentError);
+      return { data: [], error: enrollmentError };
+    }
+
+    const userIds = enrolledUsers.map(u => u.user_id);
+    const totalUsers = userIds.length;
+    
+    if (totalUsers === 0) {
+      // If no users are enrolled, return sprints with 0% completion
+      const formattedData = sprintsData.map(sprint => {
+        const module = modulesData.find(m => m.id === sprint.module_id);
+        return {
+          id: sprint.id,
+          title: sprint.title,
+          moduleTitle: module?.title || 'Unknown Module',
+          moduleIndex: module?.order_index || 0,
+          sprintIndex: sprint.order_index,
+          completionCount: 0,
+          totalUsers: 0,
+          completionRate: 0
+        };
+      });
+      return { data: formattedData, error: null };
+    }
+
+    // Get all completion data for these sprints and users
+    const { data: progressData, error: progressError } = await supabase
+      .from('user_progress')
+      .select('user_id, sprint_id, is_completed')
+      .in('user_id', userIds)
+      .in('sprint_id', sprintsData.map(s => s.id));
+
+    if (progressError) {
+      console.error('Error fetching progress data:', progressError);
+      return { data: [], error: progressError };
+    }
+
+    // Calculate completion rate for each sprint
+    const formattedData = sprintsData.map(sprint => {
+      const completedEntries = progressData.filter(
+        p => p.sprint_id === sprint.id && p.is_completed
+      );
+      
+      const module = modulesData.find(m => m.id === sprint.module_id);
+      
+      return {
+        id: sprint.id,
+        title: sprint.title,
+        moduleTitle: module?.title || 'Unknown Module',
+        moduleIndex: module?.order_index || 0,
+        sprintIndex: sprint.order_index,
+        completionCount: completedEntries.length,
+        totalUsers,
+        completionRate: totalUsers > 0 
+          ? Math.round((completedEntries.length / totalUsers) * 100)
+          : 0
+      };
+    });
+
+    // Sort by module and then sprint order
+    formattedData.sort((a, b) => {
+      if (a.moduleIndex !== b.moduleIndex) {
+        return a.moduleIndex - b.moduleIndex;
+      }
+      return a.sprintIndex - b.sprintIndex;
+    });
+
+    return { data: formattedData, error: null };
+
+  } catch (err) {
+    console.error('Exception during fetching sprint completion rates:', err);
+    return { data: [], error: err };
+  }
+};
+
+// Function to fetch individual student progress on a course
+export const fetchStudentProgressOnCourse = async (pathId) => {
+  try {
+    // Get all users enrolled in this path
+    const { data: enrolledUsers, error: enrollmentError } = await supabase
+      .from('user_paths')
+      .select(`
+        user_id,
+        user:user_id (
+          email,
+          user_metadata
+        )
+      `)
+      .eq('path_id', pathId);
+
+    if (enrollmentError) {
+      console.error('Error fetching enrolled users:', enrollmentError);
+      return { data: [], error: enrollmentError };
+    }
+
+    if (enrolledUsers.length === 0) {
+      return { data: [], error: null }; // No enrolled users
+    }
+
+    // Get all modules for this path
+    const { data: modulesData, error: modulesError } = await supabase
+      .from('modules')
+      .select('id')
+      .eq('path_id', pathId);
+
+    if (modulesError) {
+      console.error('Error fetching modules:', modulesError);
+      return { data: [], error: modulesError };
+    }
+
+    // Get all sprints for these modules
+    const moduleIds = modulesData.map(m => m.id);
+    
+    if (moduleIds.length === 0) {
+      return { data: [], error: null };
+    }
+
+    const { data: sprintsData, error: sprintsError } = await supabase
+      .from('sprints')
+      .select('id')
+      .in('module_id', moduleIds);
+
+    if (sprintsError) {
+      console.error('Error fetching sprints:', sprintsError);
+      return { data: [], error: sprintsError };
+    }
+
+    const sprintIds = sprintsData.map(s => s.id);
+    const totalSprints = sprintIds.length;
+    
+    if (totalSprints === 0) {
+      return { data: [], error: null };
+    }
+
+    // Get all progress data for these users and sprints
+    const { data: progressData, error: progressError } = await supabase
+      .from('user_progress')
+      .select('user_id, sprint_id, is_completed, updated_at')
+      .in('user_id', enrolledUsers.map(u => u.user_id))
+      .in('sprint_id', sprintIds)
+      .eq('is_completed', true);
+
+    if (progressError) {
+      console.error('Error fetching progress data:', progressError);
+      return { data: [], error: progressError };
+    }
+
+    // Format student progress data
+    const studentProgressData = enrolledUsers.map(enrollment => {
+      const user = enrollment.user;
+      const completedSprints = progressData.filter(p => p.user_id === enrollment.user_id);
+      
+      // Find the most recent activity timestamp
+      let lastActivity = null;
+      if (completedSprints.length > 0) {
+        const timestamps = completedSprints.map(p => new Date(p.updated_at));
+        lastActivity = new Date(Math.max(...timestamps.map(t => t.getTime())));
+      }
+      
+      return {
+        userId: enrollment.user_id,
+        email: user.email,
+        name: user.user_metadata?.full_name || 'Unnamed Student',
+        completedCount: completedSprints.length,
+        totalSprints,
+        progressPercent: totalSprints > 0 
+          ? Math.round((completedSprints.length / totalSprints) * 100) 
+          : 0,
+        lastActivity: lastActivity ? lastActivity.toISOString() : null
+      };
+    });
+
+    return { data: studentProgressData, error: null };
+
+  } catch (err) {
+    console.error('Exception during fetching student progress:', err);
+    return { data: [], error: err };
+  }
+};
+
 // Create a named object for export
 const supabaseClient = {
   signUp,
@@ -875,7 +1575,20 @@ const supabaseClient = {
   safeJsonParse,
   supabase,
   generateCourseContentBackend,
-  getCourseGenerationStatus
+  getCourseGenerationStatus,
+  fetchUserStats,
+  savePracticeProblems,
+  saveLearningSummary,
+  fetchPracticeProblems,
+  fetchLearningSummary,
+  fetchUserEnrolledPathsWithNextSprint,
+  fetchRecentSprints,
+  saveCodeSnippet,
+  loadCodeSnippet,
+  fetchCourseEnrollmentCount,
+  fetchCourseCompletionRate,
+  fetchSprintCompletionRatesForCourse,
+  fetchStudentProgressOnCourse,
 };
 
 // Export the named object

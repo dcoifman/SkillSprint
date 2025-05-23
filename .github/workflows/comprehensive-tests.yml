@@ -85,7 +85,7 @@ jobs:
         ports:
           - 54322:5432
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
     steps:
     - uses: actions/checkout@v3
     
